@@ -1,9 +1,10 @@
 <p align="center">
-  <img width="600" height="200" src="https://www.python.org/python-.png">
+  <img width="300" height="300" src="./readme/vovy_logo_1k.png">
 </p>
+
 # VOVY Game Engine
 
-## Very Optimal? Very Yes!
+### Very Optimal? Very Yes!
 
 Beats opengl suckers 😎
 
