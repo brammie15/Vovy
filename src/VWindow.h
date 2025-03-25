@@ -8,7 +8,7 @@
 
 class VWindow {
 public:
-    VWindow(uint32_t width, uint32_t height, const std::pmr::string& windowName);
+    VWindow(uint32_t width, uint32_t height, const std::string& windowName);
 
     ~VWindow();
 

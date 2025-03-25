@@ -2,7 +2,7 @@
 
 #include <stdexcept>
 
-VWindow::VWindow(uint32_t width, uint32_t height, const std::pmr::string& windowName): m_width(width), m_height(height),
+VWindow::VWindow(uint32_t width, uint32_t height, const std::string& windowName): m_width(width), m_height(height),
                                                                                        m_windowName(windowName) {
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);

@@ -1,5 +1,6 @@
 #ifndef VAPP_H
 #define VAPP_H
+
 #include <memory>
 
 #include "VDevice.h"
@@ -7,20 +8,20 @@
 #include "VPipeline.h"
 #include "VSwapchain.h"
 #include "VWindow.h"
-
-
-namespace std {
-    template<typename T>
-    using freaky_ptr = unique_ptr<T>;
-
-    template<typename T>
-    using diddy_ptr = shared_ptr<T>;
-
-    template <typename T, typename... Args>
-    freaky_ptr<T> get_freaky(Args&&... args) {
-        return std::make_unique<T>(std::forward<Args>(args)...);
-    }
-}
+//
+//
+// namespace std2 {
+//     template<typename T>
+//     using freaky_ptr = unique_ptr<T>;
+//
+//     template<typename T>
+//     using diddy_ptr = shared_ptr<T>;
+//
+//     template <typename T, typename... Args>
+//     freaky_ptr<T> get_freaky(Args&&... args) {
+//         return std::make_unique<T>(std::forward<Args>(args)...);
+//     }
+// }
 
 
 
@@ -55,12 +56,12 @@ private:
 
     VWindow m_window{WIDTH, HEIGHT, "Hello Vulkan!"};
     VDevice m_device{m_window};
-    std::freaky_ptr<VSwapchain> m_swapChain;
-    std::freaky_ptr<VPipeline> m_pipeline;
+    std::unique_ptr<VSwapchain> m_swapChain;
+    std::unique_ptr<VPipeline> m_pipeline;
     VkPipelineLayout m_pipelineLayout;
     std::vector<VkCommandBuffer> m_commandBuffers;
 
-    std::freaky_ptr<VModel> m_model;
+    std::unique_ptr<VModel> m_model;
 
 };
 

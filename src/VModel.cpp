@@ -1,5 +1,7 @@
 #include "VModel.h"
 
+#include "VBuffer.h"
+
 std::vector<VkVertexInputBindingDescription> VModel::Vertex::getBindingDescriptions() {
     std::vector<VkVertexInputBindingDescription> bindingDescriptions(1);
     bindingDescriptions[0].binding = 0;
@@ -17,45 +19,79 @@ std::vector<VkVertexInputAttributeDescription> VModel::Vertex::getAttributeDescr
     return attributeDescriptions;
 }
 
-VModel::VModel(VDevice& device, const std::vector<Vertex>& vertices): m_device{device} {
+VModel::VModel(VDevice& device, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices): m_device{device} {
     createVertexBuffer(vertices);
+    if (!indices.empty()) {
+        createIndexBuffer(indices);
+        m_usingIndexBuffer = true;
+    }
 }
 
-VModel::~VModel() {
-    vkDestroyBuffer(m_device.device(), m_vertexBuffer, nullptr);
-    vmaFreeMemory(m_device.allocator(), m_vertexAllocation);
-}
+VModel::~VModel() = default;
 
 void VModel::bind(VkCommandBuffer commandBuffer) const {
-    VkBuffer vertexBuffers[] = {m_vertexBuffer};
+    VkBuffer buffers[] = {m_vertexBuffer->getBuffer()};
     VkDeviceSize offsets[] = {0};
-    vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+    vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
+
+    if (m_usingIndexBuffer) {
+        vkCmdBindIndexBuffer(commandBuffer, m_indexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
+    }
 }
 
 void VModel::draw(VkCommandBuffer commandBuffer) const {
-    vkCmdDraw(commandBuffer, m_vertexCount, 1, 0, 0);
+    if (m_usingIndexBuffer) {
+        vkCmdDrawIndexed(commandBuffer, m_indexCount, 1, 0, 0, 0);
+    } else {
+        vkCmdDraw(commandBuffer, m_vertexCount, 1, 0, 0);
+    }
 }
 
 void VModel::createVertexBuffer(const std::vector<Vertex>& vertices) {
     m_vertexCount = static_cast<uint32_t>(vertices.size());
-
     VkDeviceSize bufferSize = sizeof(vertices[0]) * m_vertexCount;
 
-    VmaAllocationCreateInfo allocInfo{};
-    allocInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
-    allocInfo.requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+    // Create staging buffer (CPU-accessible)
+    std::unique_ptr<VBuffer> stagingBuffer = std::make_unique<VBuffer>(
+        m_device, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY
+    );
 
+    // Map staging buffer and copy vertex data
+    stagingBuffer->map();
+    stagingBuffer->copyTo((void*)vertices.data(), bufferSize);
+    stagingBuffer->unmap();
 
-    VkBufferUsageFlags bufferUsage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-    VmaMemoryUsage memoryUsage = VMA_MEMORY_USAGE_CPU_TO_GPU;
-    m_device.CreateBuffer(bufferSize, bufferUsage, memoryUsage, true, m_vertexBuffer, m_vertexAllocation);
+    // Create vertex buffer in device-local memory
+    m_vertexBuffer = std::make_unique<VBuffer>(
+        m_device, bufferSize,
+        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+        VMA_MEMORY_USAGE_GPU_ONLY
+    );
 
+    // Copy data from staging buffer to vertex buffer
+    m_device.copyBuffer(stagingBuffer.get(), m_vertexBuffer.get(), bufferSize);
+}
 
+void VModel::createIndexBuffer(const std::vector<uint32_t>& indices) {
+    m_indexCount = static_cast<uint32_t>(indices.size());
+    VkDeviceSize bufferSize = sizeof(indices[0]) * m_indexCount;
 
-    void* data;
-    vmaMapMemory(m_device.allocator(), m_vertexAllocation, &data);
-    memcpy(data, vertices.data(), static_cast<size_t>(bufferSize));
-    vmaUnmapMemory(m_device.allocator(), m_vertexAllocation);
+    std::unique_ptr<VBuffer> stagingBuffer = std::make_unique<VBuffer>(
+        m_device, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY
+    );
 
-    //TODO: look into vma more cuz damm
+    // Map staging buffer and copy vertex data
+    stagingBuffer->map();
+    stagingBuffer->copyTo((void*)indices.data(), bufferSize);
+    stagingBuffer->unmap();
+
+    // Create vertex buffer in device-local memory
+    m_indexBuffer = std::make_unique<VBuffer>(
+        m_device, bufferSize,
+        VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+        VMA_MEMORY_USAGE_GPU_ONLY
+    );
+
+    // Copy data from staging buffer to vertex buffer
+    m_device.copyBuffer(stagingBuffer.get(), m_indexBuffer.get(), bufferSize);
 }

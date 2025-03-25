@@ -5,9 +5,11 @@
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#include <memory>
 #include <glm/glm.hpp>
 
 #include "VDevice.h"
+#include "VBuffer.h"
 
 class VModel {
 public:
@@ -19,7 +21,7 @@ public:
         static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions();
     };
 
-    VModel(VDevice& device, const std::vector<Vertex>& vertices);
+    VModel(VDevice& device, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices);
     ~VModel();
 
     void bind(VkCommandBuffer commandBuffer) const;
@@ -27,11 +29,15 @@ public:
 
 private:
     void createVertexBuffer(const std::vector<Vertex> &vertices);
+    void createIndexBuffer(const std::vector<uint32_t> &indices);
 
     VDevice &m_device;
-    VkBuffer m_vertexBuffer;
-    VmaAllocation m_vertexAllocation;
     uint32_t m_vertexCount;
+    std::unique_ptr<VBuffer> m_vertexBuffer;
+
+    bool m_usingIndexBuffer{ false };
+    uint32_t m_indexCount;
+    std::unique_ptr<VBuffer> m_indexBuffer;
 };
 
 

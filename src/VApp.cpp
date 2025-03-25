@@ -2,6 +2,16 @@
 
 #include "VModel.h"
 
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#include <glm/glm.hpp>
+
+struct PushConstantData {
+    glm::mat2 transform{1.f};
+    glm::vec2 offset;
+    alignas(16) glm::vec3 color;
+};
+
 VApp::VApp() {
     loadModels();
     createPipelineLayout();
@@ -23,12 +33,18 @@ void VApp::run() {
 
 void VApp::createPipelineLayout() {
 
+    VkPushConstantRange pushConstantRange{};
+    pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+    pushConstantRange.offset = 0;
+    pushConstantRange.size = sizeof(PushConstantData);
+
+
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.setLayoutCount = 0;
     pipelineLayoutInfo.pSetLayouts = nullptr;
-    pipelineLayoutInfo.pushConstantRangeCount = 0;
-    pipelineLayoutInfo.pPushConstantRanges = nullptr;
+    pipelineLayoutInfo.pushConstantRangeCount = 1;
+    pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
 
     if (vkCreatePipelineLayout(m_device.device(), &pipelineLayoutInfo, nullptr, &m_pipelineLayout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create pipeline layout!");
@@ -44,7 +60,7 @@ void VApp::createPipeline() {
 
     pipelineConfig.renderPass = m_swapChain->getRenderPass();
     pipelineConfig.pipelineLayout = m_pipelineLayout;
-    m_pipeline = std::get_freaky<VPipeline>(
+    m_pipeline = std::make_unique<VPipeline>(
     m_device, "shaders/shader.vert.spv", "shaders/shader.frag.spv", pipelineConfig
     );
 }
@@ -103,9 +119,9 @@ void VApp::recreateSwapChain() {
     vkDeviceWaitIdle(m_device.device());
 
     if (m_swapChain == nullptr) {
-        m_swapChain = std::get_freaky<VSwapchain>(m_device, extent);
+        m_swapChain = std::make_unique<VSwapchain>(m_device, extent);
     } else {
-        m_swapChain = std::get_freaky<VSwapchain>(m_device, extent, std::move(m_swapChain));
+        m_swapChain = std::make_unique<VSwapchain>(m_device, extent, std::move(m_swapChain));
         if (m_swapChain->imageCount() != m_commandBuffers.size()) {
             freeCommandBuffers();
             createCommandBuffers();
@@ -164,7 +180,14 @@ void VApp::recordCommandBuffer(int imageIndex) {
     m_pipeline->bind(m_commandBuffers[imageIndex]);
 
     m_model->bind(m_commandBuffers[imageIndex]);
-    m_model->draw(m_commandBuffers[imageIndex]);
+
+    for (int j = 0; j < 4; ++j) {
+        PushConstantData push{};
+        push.offset = {0.0f + 0.1 * j, -0.4f + j * 0.25f};
+        push.color = {0.0f, 0.0f, 0.2f + 0.2f * j};
+        vkCmdPushConstants(m_commandBuffers[imageIndex], m_pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstantData), &push);
+        m_model->draw(m_commandBuffers[imageIndex]);
+    }
 
     vkCmdEndRenderPass(m_commandBuffers[imageIndex]);
     if (vkEndCommandBuffer(m_commandBuffers[imageIndex]) != VK_SUCCESS) {
@@ -173,14 +196,17 @@ void VApp::recordCommandBuffer(int imageIndex) {
 }
 
 void VApp::loadModels() {
-    std::vector<VModel::Vertex> verticies {
-        {{0.5f, 0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-        {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
-        {{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}},
-        {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}},
-        {{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}},
-        {{0.5f, 0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
+    std::vector<VModel::Vertex> vertices {
+        {{-0.5f,  0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}}, // Top-left
+        {{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}}, // Bottom-left
+        {{ 0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}}, // Bottom-right
+        {{ 0.5f,  0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}}  // Top-right
     };
-    m_model = std::get_freaky<VModel>(m_device, verticies);
+
+    std::vector<uint32_t> indices {
+        0, 1, 2, // First triangle
+        2, 3, 0  // Second triangle
+    };
+    m_model = std::make_unique<VModel>(m_device, vertices, indices);
 
 }

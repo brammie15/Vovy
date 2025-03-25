@@ -8,6 +8,8 @@
 
 #include "VWindow.h"
 
+class VBuffer;
+
 
 struct SwapChainSupportDetails {
     VkSurfaceCapabilitiesKHR capabilities;
@@ -29,6 +31,7 @@ public:
 
     explicit VDevice(VWindow& window);
     ~VDevice();
+    void copyBuffer(VBuffer* srcBuffer, VBuffer* destBuffer, uint32_t size);
 
 
     VDevice(const VDevice& other) = delete;
@@ -68,6 +71,9 @@ public:
 
     [[nodiscard]] VkFormat FindSupportedFormat(const std::vector<VkFormat> &candidates, VkImageTiling tiling, VkFormatFeatureFlags features) const;
 
+
+    VkCommandBuffer beginSingleTimeCommands();
+    void endSingleTimeCommands(VkCommandBuffer commandBuffer);
 private:
     void CreateInstance();
     void SetupDebugMessenger();

@@ -19,6 +19,8 @@ add_executable(${PROJECT_NAME}
         src/VBuffer.h
         src/VModel.cpp
         src/VModel.h
+        src/VGameObject.cpp
+        src/VGameObject.h
 )
 #
 #add_executable(${PROJECT_NAME}
