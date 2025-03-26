@@ -12,6 +12,9 @@ public:
     void unmap();
 
     void copyTo(void* data, VkDeviceSize size);
+    [[nodiscard]] VkDescriptorBufferInfo descriptorInfo(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0) const;
+
+    void flush();
 
 
     [[nodiscard]] VkBuffer getBuffer() const { return m_buffer; }

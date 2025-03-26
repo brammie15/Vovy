@@ -10,6 +10,13 @@
 
 class VBuffer;
 
+struct VulkanDeviceDebugUtilsFuncTable {
+    VkDevice device;
+    PFN_vkSetDebugUtilsObjectNameEXT vkSetDebugUtilsObjectNameEXT;
+    PFN_vkCmdBeginDebugUtilsLabelEXT vkCmdBeginDebugUtilsLabelEXT;
+    PFN_vkCmdEndDebugUtilsLabelEXT vkCmdEndDebugUtilsLabelEXT;
+    PFN_vkCmdInsertDebugUtilsLabelEXT vkCmdInsertDebugUtilsLabelEXT;
+};
 
 struct SwapChainSupportDetails {
     VkSurfaceCapabilitiesKHR capabilities;

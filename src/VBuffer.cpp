@@ -17,6 +17,9 @@ VBuffer::VBuffer(VDevice& deviceRef, VkDeviceSize size, VkBufferUsageFlags usage
 }
 
 VBuffer::~VBuffer() {
+    if (m_data != nullptr) {
+        unmap();
+    }
     vmaDestroyBuffer(m_device.allocator(), m_buffer, m_allocation);
 }
 
@@ -34,4 +37,16 @@ void VBuffer::unmap() {
 void VBuffer::copyTo(void* data, VkDeviceSize size) {
     assert(m_data != nullptr && "Cannot copy to buffer if buffer is not mapped");
     memcpy(m_data, data, size);
+}
+
+VkDescriptorBufferInfo VBuffer::descriptorInfo(VkDeviceSize size, VkDeviceSize offset) const {
+    return VkDescriptorBufferInfo{
+        m_buffer,
+        offset,
+        size
+    };
+}
+
+void VBuffer::flush() {
+    vmaFlushAllocation(m_device.allocator(), m_allocation, 0, VK_WHOLE_SIZE);
 }

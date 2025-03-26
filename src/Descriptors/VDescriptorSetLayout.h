@@ -9,7 +9,7 @@ class VDescriptorSetLayout {
 public:
     class Builder {
     public:
-        Builder(VDevice& deviceRef): m_device{deviceRef} {}
+        explicit Builder(VDevice& deviceRef): m_device{deviceRef} {}
 
         Builder& addBinding(
             uint32_t binding,

@@ -56,19 +56,16 @@ void VModel::createVertexBuffer(const std::vector<Vertex>& vertices) {
         m_device, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY
     );
 
-    // Map staging buffer and copy vertex data
     stagingBuffer->map();
     stagingBuffer->copyTo((void*)vertices.data(), bufferSize);
     stagingBuffer->unmap();
 
-    // Create vertex buffer in device-local memory
     m_vertexBuffer = std::make_unique<VBuffer>(
         m_device, bufferSize,
         VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
         VMA_MEMORY_USAGE_GPU_ONLY
     );
 
-    // Copy data from staging buffer to vertex buffer
     m_device.copyBuffer(stagingBuffer.get(), m_vertexBuffer.get(), bufferSize);
 }
 
@@ -80,18 +77,15 @@ void VModel::createIndexBuffer(const std::vector<uint32_t>& indices) {
         m_device, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY
     );
 
-    // Map staging buffer and copy vertex data
     stagingBuffer->map();
     stagingBuffer->copyTo((void*)indices.data(), bufferSize);
     stagingBuffer->unmap();
 
-    // Create vertex buffer in device-local memory
     m_indexBuffer = std::make_unique<VBuffer>(
         m_device, bufferSize,
         VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
         VMA_MEMORY_USAGE_GPU_ONLY
     );
 
-    // Copy data from staging buffer to vertex buffer
     m_device.copyBuffer(stagingBuffer.get(), m_indexBuffer.get(), bufferSize);
 }

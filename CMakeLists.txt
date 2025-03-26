@@ -27,6 +27,11 @@ add_executable(${PROJECT_NAME}
         src/Descriptors/VDescriptorPool.h
         src/Descriptors/VDescriptorWriter.cpp
         src/Descriptors/VDescriptorWriter.h
+        src/VRenderPass.cpp
+        src/VRenderPass.h
+        src/VRenderSystem.cpp
+        src/VRenderSystem.h
+        src/FrameContext.h
 )
 #
 #add_executable(${PROJECT_NAME}

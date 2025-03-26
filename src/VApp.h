@@ -9,6 +9,7 @@
 #include "VSwapchain.h"
 #include "VWindow.h"
 #include "VGameObject.h"
+#include "VRenderPass.h"
 #include "Descriptors/VDescriptorPool.h"
 //
 //
@@ -44,29 +45,19 @@ public:
 
 private:
 
-    void createPipelineLayout();
-    void createPipeline();
-    void createCommandBuffers();
     void drawFrame();
 
-    void recreateSwapChain();
     void recordCommandBuffer(int imageIndex);
 
-    void freeCommandBuffers();
 
     void loadGameObjects();
-    void renderGameObjects(VkCommandBuffer commandbuffer);
 
     VWindow m_window{WIDTH, HEIGHT, "Hello Vulkan!"};
     VDevice m_device{m_window};
-    std::unique_ptr<VSwapchain> m_swapChain;
-    std::unique_ptr<VPipeline> m_pipeline;
-    VkPipelineLayout m_pipelineLayout;
-    std::vector<VkCommandBuffer> m_commandBuffers;
+    VRenderPass m_renderPass{m_window, m_device};
 
-
-    std::unique_ptr<VDescriptorPool> m_descriptorPool{};
     std::vector<VGameObject> m_gameObjects;
+    std::unique_ptr<VDescriptorPool> m_globalPool{};
 
 
 };

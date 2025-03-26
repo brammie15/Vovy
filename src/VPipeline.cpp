@@ -18,7 +18,7 @@ VPipeline::~VPipeline() {
 }
 
 void VPipeline::bind(VkCommandBuffer buffer) {
-    vkCmdBindPipeline(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline);
+  vkCmdBindPipeline(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline);
 }
 
 void VPipeline::DefaultPipelineConfigInfo(VPipelineConfigInfo& configInfo) {

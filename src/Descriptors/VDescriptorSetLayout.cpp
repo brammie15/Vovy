@@ -20,7 +20,7 @@ std::unique_ptr<VDescriptorSetLayout> VDescriptorSetLayout::Builder::build() {
 }
 
 VDescriptorSetLayout::VDescriptorSetLayout(VDevice& deviceRef,
-                                           std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings): m_device{deviceRef} {
+                                           std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings): m_device{deviceRef}, m_bindings{bindings} {
     std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings{};
     for (auto kv: bindings) {
         setLayoutBindings.push_back(kv.second);
