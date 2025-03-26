@@ -12,8 +12,13 @@ struct PushConstantData {
     alignas(16) glm::vec3 color;
 };
 
+struct GlobalUBO {
+    glm::mat4 view;
+    glm::mat4 proj;
+};
+
 VApp::VApp() {
-    loadModels();
+    loadGameObjects();
     createPipelineLayout();
     recreateSwapChain();
     createCommandBuffers();
@@ -141,6 +146,21 @@ void VApp::freeCommandBuffers() {
     m_commandBuffers.clear();
 }
 
+void VApp::renderGameObjects(VkCommandBuffer commandbuffer) {
+    m_pipeline->bind(commandbuffer);
+    for (auto& obj: m_gameObjects) {
+        PushConstantData push{};
+        push.offset = obj.transform.translation;
+        push.color = obj.color;
+        // push.transform = obj.transform.mat2();
+        push.transform = glm::mat2{1.0f};
+
+        vkCmdPushConstants(commandbuffer, m_pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstantData), &push);
+        obj.model->bind(commandbuffer);
+        obj.model->draw(commandbuffer);
+    }
+}
+
 void VApp::recordCommandBuffer(int imageIndex) {
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -177,17 +197,8 @@ void VApp::recordCommandBuffer(int imageIndex) {
     VkRect2D scissor{{0, 0}, m_swapChain->GetSwapChainExtent()};
     vkCmdSetViewport(m_commandBuffers[imageIndex], 0, 1, &viewport);
     vkCmdSetScissor(m_commandBuffers[imageIndex], 0, 1, &scissor);
-    m_pipeline->bind(m_commandBuffers[imageIndex]);
 
-    m_model->bind(m_commandBuffers[imageIndex]);
-
-    for (int j = 0; j < 4; ++j) {
-        PushConstantData push{};
-        push.offset = {0.0f + 0.1 * j, -0.4f + j * 0.25f};
-        push.color = {0.0f, 0.0f, 0.2f + 0.2f * j};
-        vkCmdPushConstants(m_commandBuffers[imageIndex], m_pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstantData), &push);
-        m_model->draw(m_commandBuffers[imageIndex]);
-    }
+    renderGameObjects(m_commandBuffers[imageIndex]);
 
     vkCmdEndRenderPass(m_commandBuffers[imageIndex]);
     if (vkEndCommandBuffer(m_commandBuffers[imageIndex]) != VK_SUCCESS) {
@@ -195,7 +206,7 @@ void VApp::recordCommandBuffer(int imageIndex) {
     }
 }
 
-void VApp::loadModels() {
+void VApp::loadGameObjects() {
     std::vector<VModel::Vertex> vertices {
         {{-0.5f,  0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}}, // Top-left
         {{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}}, // Bottom-left
@@ -207,6 +218,13 @@ void VApp::loadModels() {
         0, 1, 2, // First triangle
         2, 3, 0  // Second triangle
     };
-    m_model = std::make_unique<VModel>(m_device, vertices, indices);
+    auto m_model = std::make_shared<VModel>(m_device, vertices, indices);
+
+    auto test = VGameObject::createGameObject();
+    test.model = m_model;
+    test.color = {1.0f, 0.0f, 0.0f};
+    test.transform.translation.x = 0.2f;
+
+    m_gameObjects.push_back(std::move(test));
 
 }

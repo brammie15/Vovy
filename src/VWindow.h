@@ -16,7 +16,7 @@ public:
 
     void CreateSurface(VkInstance instance, VkSurfaceKHR* surface);
 
-    [[nodiscard]] bool wasWindowResized(){ return m_resized; }
+    [[nodiscard]] bool wasWindowResized() const { return m_resized; }
     void resetWindowResized(){ m_resized = false; }
 
     [[nodiscard]] VkExtent2D getExtent() const{ return {static_cast<uint32_t>(m_width), static_cast<uint32_t>(m_height)}; }
@@ -31,6 +31,5 @@ private:
     bool m_resized = false;
     std::string m_windowName;
 };
-
 
 #endif //FWINDOW_H

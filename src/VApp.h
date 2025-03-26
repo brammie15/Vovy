@@ -8,14 +8,16 @@
 #include "VPipeline.h"
 #include "VSwapchain.h"
 #include "VWindow.h"
+#include "VGameObject.h"
+#include "Descriptors/VDescriptorPool.h"
 //
 //
-// namespace std2 {
+// namespace std {
 //     template<typename T>
 //     using freaky_ptr = unique_ptr<T>;
 //
 //     template<typename T>
-//     using diddy_ptr = shared_ptr<T>;
+//     using thalia_ptr = shared_ptr<T>;
 //
 //     template <typename T, typename... Args>
 //     freaky_ptr<T> get_freaky(Args&&... args) {
@@ -52,7 +54,8 @@ private:
 
     void freeCommandBuffers();
 
-    void loadModels();
+    void loadGameObjects();
+    void renderGameObjects(VkCommandBuffer commandbuffer);
 
     VWindow m_window{WIDTH, HEIGHT, "Hello Vulkan!"};
     VDevice m_device{m_window};
@@ -61,7 +64,10 @@ private:
     VkPipelineLayout m_pipelineLayout;
     std::vector<VkCommandBuffer> m_commandBuffers;
 
-    std::unique_ptr<VModel> m_model;
+
+    std::unique_ptr<VDescriptorPool> m_descriptorPool{};
+    std::vector<VGameObject> m_gameObjects;
+
 
 };
 

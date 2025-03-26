@@ -21,6 +21,12 @@ add_executable(${PROJECT_NAME}
         src/VModel.h
         src/VGameObject.cpp
         src/VGameObject.h
+        src/Descriptors/VDescriptorSetLayout.cpp
+        src/Descriptors/VDescriptorSetLayout.h
+        src/Descriptors/VDescriptorPool.cpp
+        src/Descriptors/VDescriptorPool.h
+        src/Descriptors/VDescriptorWriter.cpp
+        src/Descriptors/VDescriptorWriter.h
 )
 #
 #add_executable(${PROJECT_NAME}
