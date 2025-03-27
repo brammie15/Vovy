@@ -18,6 +18,10 @@ macro(LinkGLFW TARGET ACCESS)
         set(GLFW_BUILD_DOCS         OFF CACHE BOOL "Build docs" FORCE)
         set(GLFW_INSTALL            OFF CACHE BOOL "Configure an install" FORCE)
 
+        set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+        set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+        set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+
         # This excludes glfw from being rebuilt when ALL_BUILD is built
         # it will only be built when a target is built that has a dependency on glfw
         add_subdirectory(${glfw_SOURCE_DIR} ${glfw_BINARY_DIR} EXCLUDE_FROM_ALL)

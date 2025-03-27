@@ -29,8 +29,7 @@ VApp::VApp() {
     loadGameObjects();
 }
 
-VApp::~VApp() {
-}
+VApp::~VApp() {}
 
 void VApp::run() {
     std::vector<std::unique_ptr<VBuffer>> uboBuffers(VSwapchain::MAX_FRAMES_IN_FLIGHT);
@@ -91,21 +90,23 @@ void VApp::run() {
 
 
 void VApp::loadGameObjects() {
-    std::vector<VModel::Vertex> vertices{
-        {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}}, // Top-left
-        {{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}}, // Bottom-left
-        {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}}, // Bottom-right
-        {{0.5f, 0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}} // Top-right
-    };
+    // std::vector<VModel::Vertex> vertices{
+    //     {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}}, // Top-left
+    //     {{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}}, // Bottom-left
+    //     {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}}, // Bottom-right
+    //     {{0.5f, 0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}} // Top-right
+    // };
+    //
+    // std::vector<uint32_t> indices{
+    //     0, 1, 2, // First triangle
+    //     2, 3, 0 // Second triangle
+    // };
 
-    std::vector<uint32_t> indices{
-        0, 1, 2, // First triangle
-        2, 3, 0 // Second triangle
-    };
-    auto m_model = std::make_shared<VModel>(m_device, vertices, indices);
+    // auto m_model = std::make_shared<VModel>(m_device, vertices, indices);
+    auto model = VModel::createModelFromFile(m_device, "resources/CAT.obj");
 
     auto test = VGameObject::createGameObject();
-    test.model = m_model;
+    test.model = std::move(model);
     test.color = {1.0f, 0.0f, 0.0f};
     test.transform.translation.x = 0.2f;
 

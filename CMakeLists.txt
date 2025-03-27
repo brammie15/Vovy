@@ -50,6 +50,9 @@ LinkGLM(${PROJECT_NAME} PUBLIC)
 include(cmake/LinkVMA.cmake)
 LinkVma(${PROJECT_NAME} PUBLIC)
 
+include(cmake/LinkTinyObjLoader.cmake)
+LinkTinyObjLoader(${PROJECT_NAME} PUBLIC)
+
 target_link_libraries(${PROJECT_NAME} PUBLIC Vulkan::Vulkan)
 
 
@@ -104,3 +107,12 @@ endforeach ()
 
 add_dependencies(${PROJECT_NAME} CompileShaders)
 
+set(RESOURCE_SRC_DIR "${PROJECT_SOURCE_DIR}/resources")
+set(RESOURCE_DST_DIR "${CMAKE_BINARY_DIR}/resources")
+
+add_custom_target(CopyResources ALL
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${RESOURCE_SRC_DIR} ${RESOURCE_DST_DIR}
+        COMMENT "Copying resources folder to build directory"
+)
+
+add_dependencies(${PROJECT_NAME} CopyResources)

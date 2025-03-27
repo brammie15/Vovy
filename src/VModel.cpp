@@ -2,6 +2,11 @@
 
 #include "VBuffer.h"
 
+#define TINYOBJLOADER_IMPLEMENTATION
+#include <unordered_map>
+
+#include "tiny_obj_loader.h"
+
 std::vector<VkVertexInputBindingDescription> VModel::Vertex::getBindingDescriptions() {
     std::vector<VkVertexInputBindingDescription> bindingDescriptions(1);
     bindingDescriptions[0].binding = 0;
@@ -15,9 +20,55 @@ std::vector<VkVertexInputAttributeDescription> VModel::Vertex::getAttributeDescr
 
     attributeDescriptions.push_back({0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position)});
     attributeDescriptions.push_back({1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color)});
+    attributeDescriptions.push_back({2, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, texCoord)});
 
     return attributeDescriptions;
 }
+
+void VModel::Builder::loadModel(const std::string& path) {
+    tinyobj::attrib_t attrib;
+    std::vector<tinyobj::shape_t> shapes;
+    std::vector<tinyobj::material_t> materials;
+    std::string warn, err;
+
+    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, path.c_str())) {
+        throw std::runtime_error(warn + err);
+    }
+
+    vertices.clear();
+    indices.clear();
+
+    for (const auto &shape : shapes) {
+        for (const auto &index : shape.mesh.indices) {
+            Vertex vertex{};
+
+            if (index.vertex_index >= 0) {
+                vertex.position = {
+                    attrib.vertices[3 * index.vertex_index + 0],
+                    attrib.vertices[3 * index.vertex_index + 1],
+                    attrib.vertices[3 * index.vertex_index + 2],
+                };
+
+                vertex.color = {
+                    attrib.colors[3 * index.vertex_index + 0],
+                    attrib.colors[3 * index.vertex_index + 1],
+                    attrib.colors[3 * index.vertex_index + 2],
+                };
+            }
+
+            if (index.texcoord_index >= 0) {
+                vertex.texCoord = {
+                    attrib.texcoords[2 * index.texcoord_index + 0],
+                    attrib.texcoords[2 * index.texcoord_index + 1],
+                };
+            }
+
+            indices.push_back(static_cast<uint32_t>(vertices.size()));
+            vertices.push_back(vertex);
+        }
+    }
+}
+
 
 VModel::VModel(VDevice& device, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices): m_device{device} {
     createVertexBuffer(vertices);
@@ -25,6 +76,9 @@ VModel::VModel(VDevice& device, const std::vector<Vertex>& vertices, const std::
         createIndexBuffer(indices);
         m_usingIndexBuffer = true;
     }
+}
+
+VModel::VModel(VDevice& device, const Builder& builder): VModel{device, builder.vertices, builder.indices} {
 }
 
 VModel::~VModel() = default;
@@ -45,6 +99,12 @@ void VModel::draw(VkCommandBuffer commandBuffer) const {
     } else {
         vkCmdDraw(commandBuffer, m_vertexCount, 1, 0, 0);
     }
+}
+
+std::unique_ptr<VModel> VModel::createModelFromFile(VDevice& device, const std::string& filepath) {
+    Builder builder{};
+    builder.loadModel(filepath);
+    return std::make_unique<VModel>(device, builder);
 }
 
 void VModel::createVertexBuffer(const std::vector<Vertex>& vertices) {

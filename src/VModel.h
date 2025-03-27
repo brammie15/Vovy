@@ -16,17 +16,28 @@ public:
     struct Vertex {
         glm::vec3 position{};
         glm::vec3 color{};
+        glm::vec2 texCoord{};
 
         static std::vector<VkVertexInputBindingDescription> getBindingDescriptions();
         static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions();
     };
 
+    struct Builder {
+        std::vector<Vertex> vertices{};
+        std::vector<uint32_t> indices{};
+
+        void loadModel(const std::string& path);
+    };
+
     VModel(VDevice& device, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices);
+    VModel(VDevice& device, const Builder& builder);
     ~VModel();
 
     void bind(VkCommandBuffer commandBuffer) const;
     void draw(VkCommandBuffer commandBuffer) const;
 
+    static std::unique_ptr<VModel> createModelFromFile(
+          VDevice &device, const std::string &filepath);
 private:
     void createVertexBuffer(const std::vector<Vertex> &vertices);
     void createIndexBuffer(const std::vector<uint32_t> &indices);
