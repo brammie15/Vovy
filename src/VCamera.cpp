@@ -34,7 +34,7 @@ void VCamera::Update(float deltaTime) {
     if (glfwGetKey(VWindow::gWindow, GLFW_KEY_E) == GLFW_PRESS) {
         m_position += m_up * deltaTime * MovementSpeed;
     }
-    if (glfwGetKey(VWindow::gWindow,GLFW_KEY_Q) == GLFW_PRESS) {
+    if (glfwGetKey(VWindow::gWindow, GLFW_KEY_Q) == GLFW_PRESS) {
         m_position -= m_up * deltaTime * MovementSpeed;
     }
 
@@ -53,16 +53,13 @@ void VCamera::Update(float deltaTime) {
         totalYaw += lookSpeed;
     }
 
-    // Clamp pitch to prevent camera flip
     totalPitch = glm::clamp(totalPitch, -glm::half_pi<float>(), glm::half_pi<float>());
 
-    // Create rotation matrix based on yaw and pitch
     glm::mat4 yawMatrix   = glm::rotate(glm::mat4(1.0f), -totalYaw, glm::vec3(0, 1, 0));
-    glm::mat4 pitchMatrix = glm::rotate(glm::mat4(1.0f), totalPitch, glm::vec3(1, 0, 0));
+    glm::mat4 pitchMatrix = glm::rotate(glm::mat4(1.0f), totalPitch, glm::vec3(0, 0, 1));
 
     glm::mat4 rotationMatrix = yawMatrix * pitchMatrix;
 
-    // Update camera vectors
     m_forward = glm::vec3(rotationMatrix * glm::vec4(1, 0, 0, 0));
     m_right   = glm::normalize(glm::cross(m_forward, glm::vec3(0, 1, 0)));
     m_up      = glm::normalize(glm::cross(m_right, m_forward));
@@ -72,21 +69,9 @@ void VCamera::Update(float deltaTime) {
 }
 
 void VCamera::CalculateViewMatrix() {
-    auto test = glm::lookAt(glm::vec3(2.f, 0, 0), glm::vec3(1.0f, 0.f, 0.f), glm::vec3(0.0f, 0.0f, 1.0f));
-    // std::cout << glm::to_string(test) << std::endl;
-
     m_viewMatrix = glm::lookAt(m_position, m_position + m_forward, m_up);
-    // m_viewMatrix = glm::lookAt(m_position, glm::vec3(1.0f, 0.f, 0.f), glm::vec3{0.f, 0.f, 1.f});
+    m_invMatrix = glm::inverse(m_viewMatrix);
 
-    // std::cout << std::endl;
-    //
-    // std::cout << "m_viewMatrix: " << glm::to_string(m_viewMatrix) << std::endl;
-    //
-    // std::cout << std::endl;
-
-    // __debugbreak();
-
-    // m_invMatrix = glm::inverse(m_viewMatrix);
 
     // m_right = glm::vec3(m_viewMatrix[0]);
     // m_up = glm::vec3(m_viewMatrix[1]);

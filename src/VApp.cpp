@@ -170,27 +170,4 @@ void VApp::loadGameObjects() {
 
     m_gameObjects.push_back(std::move(test2));
 
-    const std::vector<VModel::Vertex> vertices2 = {
-        {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-        {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-        {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-        {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
-
-        {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-        {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-        {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-        {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
-    };
-
-    const std::vector<uint32_t> indices2 = {
-        0, 1, 2, 2, 3, 0,
-        4, 5, 6, 6, 7, 4
-    };
-
-    auto test3 = VGameObject::createGameObject();
-    test3.model = std::make_shared<VModel>(m_device, vertices2, indices2);
-    test3.color = {0.0f, 0.0f, 1.0f};
-    test3.transform.translation = {0.0f, 0.0f, -1.0f};
-    test3.transform.scale = {1.0f, 1.0f, 1.0f};
-    m_gameObjects.push_back(std::move(test3));
 }

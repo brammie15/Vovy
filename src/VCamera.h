@@ -34,21 +34,20 @@ private:
     glm::vec3 m_right   {0, 0, 1};
 
 
-    float totalPitch = 0.0f;
-    float totalYaw = 0.0f;
+    float totalPitch{ 0.0f };
+    float totalYaw{ 0.0f };
 
-    glm::mat4 m_viewMatrix;
-    glm::mat4 m_invMatrix;
+    glm::mat4 m_viewMatrix{};
+    glm::mat4 m_invMatrix{};
 
-    glm::mat4 m_projectionMatrix;
+    glm::mat4 m_projectionMatrix{};
 
-    float m_aspectRatio;
-    float m_cameraSpeed;
-    float m_cameraSensitivity;
+    float m_aspectRatio{};
+    float m_cameraSpeed{};
+    float m_cameraSensitivity{};
 
     float m_zNear{0.001f};
     float m_zFar{100.0f};
-
 };
 
 
