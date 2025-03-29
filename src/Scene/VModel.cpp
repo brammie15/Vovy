@@ -1,6 +1,6 @@
 #include "VModel.h"
 
-#include "VBuffer.h"
+#include "Resources/VBuffer.h"
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <unordered_map>

@@ -1,6 +1,7 @@
 #include "VRenderPass.h"
 
 #include <array>
+#include <stdexcept>
 
 VRenderPass::VRenderPass(VWindow& windowRef, VDevice& deviceRef): m_device{deviceRef}, m_window{windowRef} {
     recreateSwapChain();

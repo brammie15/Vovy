@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <cstring>
 
-#include "VBuffer.h"
+#include "Resources/VBuffer.h"
 
 #define VMA_IMPLEMENTATION
 #include <vma/vk_mem_alloc.h>
@@ -320,6 +320,12 @@ void VDevice::PickPhysicalDevice() {
     }
 
     vkGetPhysicalDeviceProperties(m_physicalDevice, &properties);
+
+    if (properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
+        std::cout << "yay, discrete GPU" << std::endl;
+    } else if (properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU) {
+        std::cout << "booh, i hate integrated GPUs" << std::endl;
+    }
     std::cout << "physical device: " << properties.deviceName << std::endl;
 }
 
@@ -405,6 +411,12 @@ bool VDevice::IsDeviceGood(VkPhysicalDevice device) {
 
     VkPhysicalDeviceFeatures supportedFeatures;
     vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
+
+
+    VkPhysicalDeviceProperties properties;
+    vkGetPhysicalDeviceProperties(device, &properties);
+
+    bool isDiscreteGPU = properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
 
     return indices.isComplete() && extensionsSupported && swapChainAdequate &&
            supportedFeatures.samplerAnisotropy;

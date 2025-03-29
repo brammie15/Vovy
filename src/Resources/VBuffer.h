@@ -1,7 +1,7 @@
 #ifndef VBUFFER_H
 #define VBUFFER_H
 
-#include "VDevice.h"
+#include "Core/VDevice.h"
 
 class VBuffer {
 public:

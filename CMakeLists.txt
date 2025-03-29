@@ -3,39 +3,34 @@ project(Vovy)
 
 set(CMAKE_CXX_STANDARD 20)
 
+include_directories(BEFORE ${CMAKE_SOURCE_DIR}/src)
+
+set(SRC_ROOT ${CMAKE_SOURCE_DIR}/src)
+
 add_executable(${PROJECT_NAME}
-        src/VDevice.cpp
-        src/VDevice.h
-        src/VWindow.cpp
-        src/VWindow.h
-        src/VApp.cpp
-        src/VApp.h
-        src/main.cpp
-        src/VSwapchain.cpp
-        src/VSwapchain.h
-        src/VPipeline.cpp
-        src/VPipeline.h
-        src/VBuffer.cpp
-        src/VBuffer.h
-        src/VModel.cpp
-        src/VModel.h
-        src/VGameObject.cpp
-        src/VGameObject.h
-        src/Descriptors/VDescriptorSetLayout.cpp
-        src/Descriptors/VDescriptorSetLayout.h
-        src/Descriptors/VDescriptorPool.cpp
-        src/Descriptors/VDescriptorPool.h
-        src/Descriptors/VDescriptorWriter.cpp
-        src/Descriptors/VDescriptorWriter.h
-        src/VRenderPass.cpp
-        src/VRenderPass.h
-        src/VRenderSystem.cpp
-        src/VRenderSystem.h
-        src/FrameContext.h
-        src/VCamera.cpp
-        src/VCamera.h
-        src/VImage.cpp
-        src/VImage.h
+        ${SRC_ROOT}/main.cpp
+        ${SRC_ROOT}/VApp.h  ${SRC_ROOT}/VApp.cpp
+        ${SRC_ROOT}/Core/VDevice.h ${SRC_ROOT}/Core/VDevice.cpp
+        ${SRC_ROOT}/Core/VWindow.h ${SRC_ROOT}/Core/VWindow.cpp
+
+        ${SRC_ROOT}/Descriptors/VDescriptorPool.h ${SRC_ROOT}/Descriptors/VDescriptorPool.cpp
+        ${SRC_ROOT}/Descriptors/VDescriptorWriter.h ${SRC_ROOT}/Descriptors/VDescriptorWriter.cpp
+        ${SRC_ROOT}/Descriptors/VDescriptorSetLayout.h ${SRC_ROOT}/Descriptors/VDescriptorSetLayout.cpp
+
+        ${SRC_ROOT}/Rendering/VPipeline.h ${SRC_ROOT}/Rendering/VPipeline.cpp
+        ${SRC_ROOT}/Rendering/VRenderPass.h ${SRC_ROOT}/Rendering/VRenderPass.cpp
+        ${SRC_ROOT}/Rendering/VRenderSystem.h ${SRC_ROOT}/Rendering/VRenderSystem.cpp
+        ${SRC_ROOT}/Rendering/VSwapchain.h ${SRC_ROOT}/Rendering/VSwapchain.cpp
+
+        ${SRC_ROOT}/Resources/VBuffer.h ${SRC_ROOT}/Resources/VBuffer.cpp
+        ${SRC_ROOT}/Resources/VImage.h ${SRC_ROOT}/Resources/VImage.cpp
+
+        ${SRC_ROOT}/Scene/VModel.h ${SRC_ROOT}/Scene/VModel.cpp
+        ${SRC_ROOT}/Scene/VGameObject.h ${SRC_ROOT}/Scene/VGameObject.cpp
+
+        ${SRC_ROOT}/Utils/FrameContext.h
+        ${SRC_ROOT}/Utils/stb_image.h
+        ${SRC_ROOT}/Utils/VCamera.h ${SRC_ROOT}/Utils/VCamera.cpp
 )
 #
 #add_executable(${PROJECT_NAME}
@@ -53,6 +48,14 @@ LinkGLM(${PROJECT_NAME} PUBLIC)
 
 include(cmake/LinkVMA.cmake)
 LinkVma(${PROJECT_NAME} PUBLIC)
+
+include(cmake/LinkASSIMP.cmake)
+LinkASSIMP(${PROJECT_NAME} PUBLIC)
+
+## link to assimp.lib in /ext/assimp/assimp.lib
+#target_link_directories(${PROJECT_NAME} PUBLIC ${CMAKE_SOURCE_DIR}/external/assimp)
+#target_link_libraries(${PROJECT_NAME} PUBLIC assimp)
+
 
 include(cmake/LinkTinyObjLoader.cmake)
 LinkTinyObjLoader(${PROJECT_NAME} PUBLIC)
@@ -120,3 +123,7 @@ add_custom_target(CopyResources ALL
 )
 
 add_dependencies(${PROJECT_NAME} CopyResources)
+
+
+include(cmake/DownloadSponza.cmake)
+DownloadSponza("resources/sponza")

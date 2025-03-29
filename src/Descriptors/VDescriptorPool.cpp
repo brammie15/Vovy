@@ -1,5 +1,7 @@
 #include "VDescriptorPool.h"
 
+#include <stdexcept>
+
 VDescriptorPool::Builder& VDescriptorPool::Builder::addPoolSize(VkDescriptorType descriptorType, uint32_t count) {
     m_poolSizes.push_back({descriptorType, count});
     return *this;

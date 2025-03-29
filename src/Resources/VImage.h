@@ -1,7 +1,7 @@
 #ifndef VIMAGE_H
 #define VIMAGE_H
 
-#include "VDevice.h"
+#include "Core/VDevice.h"
 
 class VImage {
 public:

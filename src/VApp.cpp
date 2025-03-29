@@ -1,6 +1,6 @@
 #include "VApp.h"
 
-#include "VModel.h"
+#include "Scene/VModel.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -11,10 +11,10 @@
 #include <iostream>
 #include <glm/gtx/string_cast.hpp>
 
-#include "FrameContext.h"
-#include "VCamera.h"
-#include "VImage.h"
-#include "VRenderSystem.h"
+#include "Utils/FrameContext.h"
+#include "Utils/VCamera.h"
+#include "Resources/VImage.h"
+#include "Rendering/VRenderSystem.h"
 #include "Descriptors/VDescriptorSetLayout.h"
 #include "Descriptors/VDescriptorWriter.h"
 
@@ -35,7 +35,7 @@ VApp::VApp() {
     loadGameObjects();
 }
 
-VApp::~VApp() {}
+VApp::~VApp() = default;
 
 void VApp::run() {
 
@@ -102,7 +102,7 @@ void VApp::run() {
             GlobalUBO ubo{};
             // ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));            // ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 
-            ubo.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+            ubo.model = glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f)), time, glm::vec3{0, 1.f, 0});
             // ubo.view = glm::lookAt(glm::vec3(2.f, 0, 0), glm::vec3(1.0f, 0.f, 0.f), glm::vec3(0.0f, 0.0f, 1.0f));
 
             camera.CalculateViewMatrix();
@@ -123,7 +123,6 @@ void VApp::run() {
     }
     vkDeviceWaitIdle(m_device.device());
 }
-
 
 void VApp::loadGameObjects() {
     // std::vector<VModel::Vertex> vertices{

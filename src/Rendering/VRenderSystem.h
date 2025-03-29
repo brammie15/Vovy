@@ -1,8 +1,8 @@
 #ifndef VRENDERSYSTEM_H
 #define VRENDERSYSTEM_H
-#include "FrameContext.h"
-#include "VDevice.h"
-#include "VGameObject.h"
+#include "Utils/FrameContext.h"
+#include "Core/VDevice.h"
+#include "Scene/VGameObject.h"
 #include "VPipeline.h"
 
 struct PushConstantData {

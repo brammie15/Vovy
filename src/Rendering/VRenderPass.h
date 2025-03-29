@@ -3,9 +3,9 @@
 #include <cassert>
 #include <memory>
 
-#include "VDevice.h"
+#include "Core/VDevice.h"
 #include "VSwapchain.h"
-#include "VWindow.h"
+#include "Core/VWindow.h"
 
 
 class VRenderPass {

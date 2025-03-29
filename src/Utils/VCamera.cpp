@@ -6,7 +6,7 @@
 #include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtx/string_cast.hpp>
 
-#include "VWindow.h"
+#include "Core/VWindow.h"
 #include "GLFW/glfw3.h"
 
 

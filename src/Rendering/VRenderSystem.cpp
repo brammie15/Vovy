@@ -1,5 +1,7 @@
 #include "VRenderSystem.h"
 
+#include <stdexcept>
+
 VRenderSystem::VRenderSystem(VDevice& deviceRef, VkRenderPass renderPass, VkDescriptorSetLayout descriptorSetLayout): m_device{deviceRef} {
     createPipelineLayout(descriptorSetLayout);
     createPipeline(renderPass);

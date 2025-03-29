@@ -1,6 +1,7 @@
 #include "VDescriptorSetLayout.h"
 
 #include <cassert>
+#include <stdexcept>
 
 VDescriptorSetLayout::Builder& VDescriptorSetLayout::Builder::addBinding(uint32_t binding, VkDescriptorType type,
                                                                          VkShaderStageFlags stageFlags,

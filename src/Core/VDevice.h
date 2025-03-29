@@ -4,7 +4,6 @@
 #include <vma/vk_mem_alloc.h>
 
 #include <vector>
-#include <stdexcept>
 
 #include "VWindow.h"
 

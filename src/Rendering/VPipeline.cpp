@@ -4,7 +4,7 @@
 #include <fstream>
 #include <iostream>
 
-#include "VModel.h"
+#include "Scene/VModel.h"
 
 VPipeline::VPipeline(VDevice& device, const std::string& vertPath, const std::string& fragPath,
                      const VPipelineConfigInfo& configInfo): m_device(device) {

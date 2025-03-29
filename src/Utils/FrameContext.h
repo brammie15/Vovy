@@ -1,14 +1,14 @@
 #ifndef FRAMECONTEXT_H
 #define FRAMECONTEXT_H
 
-#include "VDevice.h"
+#include "Core/VDevice.h"
 
 struct FrameContext {
     int frameIndex;
     float frameTime;
     VkCommandBuffer commandBuffer;
     VkDescriptorSet globalDescriptor;
-    // LveCamera &camera;
+    // VCamera &camera;
 };
 
 #endif //FRAMECONTEXT_H

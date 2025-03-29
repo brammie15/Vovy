@@ -1,7 +1,7 @@
 #ifndef VDESCRIPTORS_H
 #define VDESCRIPTORS_H
 
-#include "../VDevice.h"
+#include "Core/VDevice.h"
 #include <memory>
 #include <unordered_map>
 

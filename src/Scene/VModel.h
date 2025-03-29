@@ -8,8 +8,8 @@
 #include <memory>
 #include <glm/glm.hpp>
 
-#include "VDevice.h"
-#include "VBuffer.h"
+#include "Core/VDevice.h"
+#include "Resources/VBuffer.h"
 
 class VModel {
 public:

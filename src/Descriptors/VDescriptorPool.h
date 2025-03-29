@@ -2,8 +2,7 @@
 #define VDESCRIPTORPOOL_H
 #include <memory>
 
-#include "../VDevice.h"
-
+#include "Core/VDevice.h"
 
 class VDescriptorPool {
 public:

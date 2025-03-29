@@ -3,13 +3,12 @@
 
 #include <memory>
 
-#include "VDevice.h"
-#include "VModel.h"
-#include "VPipeline.h"
-#include "VSwapchain.h"
-#include "VWindow.h"
-#include "VGameObject.h"
-#include "VRenderPass.h"
+#include "Core/VDevice.h"
+#include "Scene/VModel.h"
+#include "Rendering/VPipeline.h"
+#include "Core/VWindow.h"
+#include "Scene/VGameObject.h"
+#include "Rendering/VRenderPass.h"
 #include "Descriptors/VDescriptorPool.h"
 //
 //
@@ -45,11 +44,6 @@ public:
 
 private:
 
-    void drawFrame();
-
-    void recordCommandBuffer(int imageIndex);
-
-
     void loadGameObjects();
 
     VWindow m_window{WIDTH, HEIGHT, "Hello Vulkan!"};
@@ -58,10 +52,6 @@ private:
 
     std::vector<VGameObject> m_gameObjects;
     std::unique_ptr<VDescriptorPool> m_globalPool{};
-
-
 };
-
-
 
 #endif //VAPP_H
