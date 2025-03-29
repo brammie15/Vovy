@@ -32,6 +32,10 @@ add_executable(${PROJECT_NAME}
         src/VRenderSystem.cpp
         src/VRenderSystem.h
         src/FrameContext.h
+        src/VCamera.cpp
+        src/VCamera.h
+        src/VImage.cpp
+        src/VImage.h
 )
 #
 #add_executable(${PROJECT_NAME}

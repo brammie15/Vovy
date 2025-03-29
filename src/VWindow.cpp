@@ -2,23 +2,25 @@
 
 #include <stdexcept>
 
+GLFWwindow* VWindow::gWindow = nullptr;
+
 VWindow::VWindow(uint32_t width, uint32_t height, const std::string& windowName): m_width(width), m_height(height),
                                                                                        m_windowName(windowName) {
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
-    m_window = glfwCreateWindow(m_width, m_height,m_windowName.c_str(), nullptr, nullptr);
-    glfwSetWindowUserPointer(m_window, this);
-    glfwSetFramebufferSizeCallback(m_window, framebufferResizeCallback);
+    gWindow = glfwCreateWindow(m_width, m_height,m_windowName.c_str(), nullptr, nullptr);
+    glfwSetWindowUserPointer(gWindow, this);
+    glfwSetFramebufferSizeCallback(gWindow, framebufferResizeCallback);
 
-    if (!m_window) {
+    if (!gWindow) {
         throw std::runtime_error("Cannot make window!");
     }
 }
 
 VWindow::~VWindow() {
-    glfwDestroyWindow(m_window);
+    glfwDestroyWindow(gWindow);
     glfwTerminate();
 }
 
@@ -27,7 +29,7 @@ void VWindow::CreateSurface(VkInstance instance, VkSurfaceKHR* surface) {
         throw std::runtime_error("Shit's fucked");
     }
 
-    if (glfwCreateWindowSurface(instance, m_window, nullptr, surface) != VK_SUCCESS) {
+    if (glfwCreateWindowSurface(instance, gWindow, nullptr, surface) != VK_SUCCESS) {
         throw std::runtime_error("failed to create window surface!");
     }
 }

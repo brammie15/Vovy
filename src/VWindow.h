@@ -12,7 +12,7 @@ public:
 
     ~VWindow();
 
-    [[nodiscard]] bool ShouldClose() const { return glfwWindowShouldClose(m_window); }
+    [[nodiscard]] bool ShouldClose() const { return glfwWindowShouldClose(gWindow); }
 
     void CreateSurface(VkInstance instance, VkSurfaceKHR* surface);
 
@@ -21,9 +21,9 @@ public:
 
     [[nodiscard]] VkExtent2D getExtent() const{ return {static_cast<uint32_t>(m_width), static_cast<uint32_t>(m_height)}; }
 
+    static GLFWwindow* gWindow;
 private:
     static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
-    GLFWwindow* m_window{nullptr};
 
     uint32_t m_width;
     uint32_t m_height;
