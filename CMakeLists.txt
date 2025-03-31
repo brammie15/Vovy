@@ -25,8 +25,10 @@ add_executable(${PROJECT_NAME}
         ${SRC_ROOT}/Resources/VBuffer.h ${SRC_ROOT}/Resources/VBuffer.cpp
         ${SRC_ROOT}/Resources/VImage.h ${SRC_ROOT}/Resources/VImage.cpp
 
+        ${SRC_ROOT}/Scene/VMesh.h ${SRC_ROOT}/Scene/VMesh.cpp
         ${SRC_ROOT}/Scene/VModel.h ${SRC_ROOT}/Scene/VModel.cpp
         ${SRC_ROOT}/Scene/VGameObject.h ${SRC_ROOT}/Scene/VGameObject.cpp
+        ${SRC_ROOT}/Scene/Transform.h ${SRC_ROOT}/Scene/Transform.cpp
 
         ${SRC_ROOT}/Utils/FrameContext.h
         ${SRC_ROOT}/Utils/stb_image.h
@@ -52,13 +54,8 @@ LinkVma(${PROJECT_NAME} PUBLIC)
 include(cmake/LinkASSIMP.cmake)
 LinkASSIMP(${PROJECT_NAME} PUBLIC)
 
-## link to assimp.lib in /ext/assimp/assimp.lib
-#target_link_directories(${PROJECT_NAME} PUBLIC ${CMAKE_SOURCE_DIR}/external/assimp)
-#target_link_libraries(${PROJECT_NAME} PUBLIC assimp)
-
-
-include(cmake/LinkTinyObjLoader.cmake)
-LinkTinyObjLoader(${PROJECT_NAME} PUBLIC)
+#include(cmake/LinkTinyObjLoader.cmake)
+#LinkTinyObjLoader(${PROJECT_NAME} PUBLIC)
 
 target_link_libraries(${PROJECT_NAME} PUBLIC Vulkan::Vulkan)
 

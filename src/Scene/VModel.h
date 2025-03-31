@@ -3,53 +3,29 @@
 
 #include <vector>
 
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <memory>
-#include <glm/glm.hpp>
-
-#include "Core/VDevice.h"
-#include "Resources/VBuffer.h"
+#include "assimp/scene.h"
+#include "Descriptors/VDescriptorPool.h"
+#include "Scene/VMesh.h"
 
 class VModel {
 public:
-    struct Vertex {
-        glm::vec3 position{};
-        glm::vec3 color{};
-        glm::vec2 texCoord{};
-
-        static std::vector<VkVertexInputBindingDescription> getBindingDescriptions();
-        static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions();
-    };
-
-    struct Builder {
-        std::vector<Vertex> vertices{};
-        std::vector<uint32_t> indices{};
-
-        void loadModel(const std::string& path);
-    };
-
-    VModel(VDevice& device, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices);
-    VModel(VDevice& device, const Builder& builder);
-    ~VModel();
-
-    void bind(VkCommandBuffer commandBuffer) const;
-    void draw(VkCommandBuffer commandBuffer) const;
-
-    static std::unique_ptr<VModel> createModelFromFile(
-          VDevice &device, const std::string &filepath);
+    explicit VModel(VDevice& deviceRef, const std::string& path);
+    VModel(VDevice& deviceRef, const std::vector<VMesh::Builder>& builders);
+    void draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout) const;
 private:
-    void createVertexBuffer(const std::vector<Vertex> &vertices);
-    void createIndexBuffer(const std::vector<uint32_t> &indices);
+    void loadModel(std::string path);
+    void processNode(aiNode* node, const aiScene* scene, glm::mat4 parentTransform = glm::mat4(1.0f));
+    VMesh::Builder processMesh(aiMesh* mesh, const aiScene* scene);
 
-    VDevice &m_device;
-    uint32_t m_vertexCount;
-    std::unique_ptr<VBuffer> m_vertexBuffer;
+    void generateMeshes();
 
-    bool m_usingIndexBuffer{ false };
-    uint32_t m_indexCount;
-    std::unique_ptr<VBuffer> m_indexBuffer;
+    std::string m_directory{};
+    VDevice& m_device;
+    std::vector<std::unique_ptr<VMesh>> m_meshes;
+
+    std::vector<VMesh::Builder> m_builders;
+    std::unique_ptr<VDescriptorPool> m_descriptorPool;
+    std::unique_ptr<VDescriptorSetLayout> m_descriptorSetLayout;
 };
-
 
 #endif //VMODEL_H

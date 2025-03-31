@@ -1,151 +1,154 @@
 #include "VModel.h"
 
-#include "Resources/VBuffer.h"
+#include <iostream>
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+#include <glm/gtc/type_ptr.hpp>
 
-#define TINYOBJLOADER_IMPLEMENTATION
-#include <unordered_map>
+#include "Rendering/VRenderSystem.h"
 
-#include "tiny_obj_loader.h"
-
-std::vector<VkVertexInputBindingDescription> VModel::Vertex::getBindingDescriptions() {
-    std::vector<VkVertexInputBindingDescription> bindingDescriptions(1);
-    bindingDescriptions[0].binding = 0;
-    bindingDescriptions[0].stride = sizeof(Vertex);
-    bindingDescriptions[0].inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-    return bindingDescriptions;
+VModel::VModel(VDevice& deviceRef, const std::string& path): m_device{deviceRef} {
+    loadModel(path);
+    generateMeshes();
 }
 
-std::vector<VkVertexInputAttributeDescription> VModel::Vertex::getAttributeDescriptions() {
-    std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
-
-    attributeDescriptions.push_back({0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position)});
-    attributeDescriptions.push_back({1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color)});
-    attributeDescriptions.push_back({2, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, texCoord)});
-
-    return attributeDescriptions;
+VModel::VModel(VDevice& deviceRef, const std::vector<VMesh::Builder>& builders): m_device{deviceRef}, m_builders{builders} {
+    generateMeshes();
 }
 
-void VModel::Builder::loadModel(const std::string& path) {
-    tinyobj::attrib_t attrib;
-    std::vector<tinyobj::shape_t> shapes;
-    std::vector<tinyobj::material_t> materials;
-    std::string warn, err;
+void VModel::draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout) const {
+    for (const auto& mesh : m_meshes) {
 
-    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, path.c_str())) {
-        throw std::runtime_error(warn + err);
+        PushConstantData push{};
+        push.modelMatrix = mesh->getTransform().GetWorldMatrix();
+
+        vkCmdPushConstants(
+            commandBuffer,
+            pipelineLayout,
+            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+            0,
+            sizeof(PushConstantData),
+            &push
+        );
+
+        mesh->bind(commandBuffer, pipelineLayout);
+        mesh->draw(commandBuffer);
+    }
+}
+
+void VModel::loadModel(std::string path) {
+    Assimp::Importer import;
+    const aiScene *scene = import.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
+
+    if(!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
+    {
+        std::cout << "ERROR::ASSIMP::" << import.GetErrorString() << std::endl;
+        return;
+    }
+    m_directory = path.substr(0, path.find_last_of('/'));
+
+    processNode(scene->mRootNode, scene);
+}
+
+static glm::mat4 convertMatrix(const aiMatrix4x4& m) {
+    return glm::transpose(glm::make_mat4(&m.a1));
+}
+
+void VModel::processNode(aiNode* node, const aiScene* scene, glm::mat4 parentTransform) {
+    // Compute the current node's transform
+    glm::mat4 nodeTransform = convertMatrix(node->mTransformation);
+    glm::mat4 worldTransform = parentTransform * nodeTransform;
+
+    // Process meshes for this nodes
+    for (unsigned int i = 0; i < node->mNumMeshes; i++) {
+        aiMesh *mesh = scene->mMeshes[node->mMeshes[i]];
+        VMesh::Builder builder = processMesh(mesh, scene);
+        builder.transform = worldTransform; // Store the transform in the builder
+        m_builders.emplace_back(std::move(builder));
     }
 
-    vertices.clear();
-    indices.clear();
+    // Recursively process child nodes
+    for (unsigned int i = 0; i < node->mNumChildren; i++) {
+        processNode(node->mChildren[i], scene, worldTransform);
+    }
+}
 
-    for (const auto &shape : shapes) {
-        for (const auto &index : shape.mesh.indices) {
-            Vertex vertex{};
+VMesh::Builder VModel::processMesh(aiMesh* mesh, const aiScene* scene) {
+    std::vector<VMesh::Vertex> vertices;
+    std::vector<uint32_t> indices;
+    std::string texturePath{ "" };
 
-            if (index.vertex_index >= 0) {
-                vertex.position = {
-                    attrib.vertices[3 * index.vertex_index + 0],
-                    attrib.vertices[3 * index.vertex_index + 1],
-                    attrib.vertices[3 * index.vertex_index + 2],
-                };
-
-                vertex.color = {
-                    attrib.colors[3 * index.vertex_index + 0],
-                    attrib.colors[3 * index.vertex_index + 1],
-                    attrib.colors[3 * index.vertex_index + 2],
-                };
-            }
-
-            if (index.texcoord_index >= 0) {
-                vertex.texCoord = {
-                    attrib.texcoords[2 * index.texcoord_index + 0],
-                    attrib.texcoords[2 * index.texcoord_index + 1],
-                };
-            }
-
-            indices.push_back(static_cast<uint32_t>(vertices.size()));
-            vertices.push_back(vertex);
+    // Retrieve material if available
+    if (scene->mNumMaterials > 0 && mesh->mMaterialIndex >= 0) {
+        aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+        aiString path;
+        if (material->GetTexture(aiTextureType_DIFFUSE, 0, &path) == AI_SUCCESS) {
+            texturePath = path.C_Str();
         }
     }
-}
 
-
-VModel::VModel(VDevice& device, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices): m_device{device} {
-    createVertexBuffer(vertices);
-    if (!indices.empty()) {
-        createIndexBuffer(indices);
-        m_usingIndexBuffer = true;
+    for (unsigned int i = 0; i < mesh->mNumVertices; i++) {
+        VMesh::Vertex vertex{};
+        vertex.position = {
+            mesh->mVertices[i].x,
+            mesh->mVertices[i].y,
+            mesh->mVertices[i].z
+        };
+        if (mesh->HasVertexColors(0)) {
+            vertex.color = {
+                mesh->mColors[0][i].r,
+                mesh->mColors[0][i].g,
+                mesh->mColors[0][i].b
+            };
+        } else {
+            vertex.color = {1.0f, 1.0f, 1.0f}; // Default color
+        }
+        if (mesh->HasTextureCoords(0)) {
+            vertex.texCoord = {
+                mesh->mTextureCoords[0][i].x,
+                mesh->mTextureCoords[0][i].y
+            };
+        }
+        vertices.push_back(vertex);
     }
-}
 
-VModel::VModel(VDevice& device, const Builder& builder): VModel{device, builder.vertices, builder.indices} {
-}
-
-VModel::~VModel() = default;
-
-void VModel::bind(VkCommandBuffer commandBuffer) const {
-    VkBuffer buffers[] = {m_vertexBuffer->getBuffer()};
-    VkDeviceSize offsets[] = {0};
-    vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
-
-    if (m_usingIndexBuffer) {
-        vkCmdBindIndexBuffer(commandBuffer, m_indexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
+    for(unsigned int i = 0; i < mesh->mNumFaces; i++)
+    {
+        aiFace face = mesh->mFaces[i];
+        // retrieve all indices of the face and store them in the indices vector
+        for(unsigned int j = 0; j < face.mNumIndices; j++)
+            indices.push_back(face.mIndices[j]);
     }
+    VMesh::Builder builder{};
+    builder.vertices = std::move(vertices);
+    builder.indices = std::move(indices);
+    builder.texturePath = texturePath;
+    builder.modelPath = m_directory + "/";
+    return builder;
 }
 
-void VModel::draw(VkCommandBuffer commandBuffer) const {
-    if (m_usingIndexBuffer) {
-        vkCmdDrawIndexed(commandBuffer, m_indexCount, 1, 0, 0, 0);
-    } else {
-        vkCmdDraw(commandBuffer, m_vertexCount, 1, 0, 0);
+void VModel::generateMeshes() {
+    m_descriptorPool = VDescriptorPool::Builder(m_device)
+        .setMaxSets(static_cast<uint32_t>(m_builders.size()))
+        .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(m_builders.size()))
+        .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(m_builders.size()))
+        .build();
+
+    m_descriptorSetLayout = VDescriptorSetLayout::Builder(m_device)
+        .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+        .build();
+
+    //Stupid stupid fix
+    
+	for (auto& builder : m_builders) {
+		builder.descriptorSetLayout = m_descriptorSetLayout.get();
+		builder.descriptorPool = m_descriptorPool.get();
+	}
+
+    for (const auto& builder : m_builders) {
+        std::unique_ptr<VMesh> mesh = std::make_unique<VMesh>(m_device, builder);
+        mesh->getTransform().SetWorldMatrix(builder.transform); // Apply transform
+        m_meshes.push_back(std::move(mesh));
     }
-}
-
-std::unique_ptr<VModel> VModel::createModelFromFile(VDevice& device, const std::string& filepath) {
-    Builder builder{};
-    builder.loadModel(filepath);
-    return std::make_unique<VModel>(device, builder);
-}
-
-void VModel::createVertexBuffer(const std::vector<Vertex>& vertices) {
-    m_vertexCount = static_cast<uint32_t>(vertices.size());
-    VkDeviceSize bufferSize = sizeof(vertices[0]) * m_vertexCount;
-
-    // Create staging buffer (CPU-accessible)
-    std::unique_ptr<VBuffer> stagingBuffer = std::make_unique<VBuffer>(
-        m_device, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY
-    );
-
-    stagingBuffer->map();
-    stagingBuffer->copyTo((void*)vertices.data(), bufferSize);
-    stagingBuffer->unmap();
-
-    m_vertexBuffer = std::make_unique<VBuffer>(
-        m_device, bufferSize,
-        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-        VMA_MEMORY_USAGE_GPU_ONLY
-    );
-
-    m_device.copyBuffer(stagingBuffer.get(), m_vertexBuffer.get(), bufferSize);
-}
-
-void VModel::createIndexBuffer(const std::vector<uint32_t>& indices) {
-    m_indexCount = static_cast<uint32_t>(indices.size());
-    VkDeviceSize bufferSize = sizeof(indices[0]) * m_indexCount;
-
-    std::unique_ptr<VBuffer> stagingBuffer = std::make_unique<VBuffer>(
-        m_device, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY
-    );
-
-    stagingBuffer->map();
-    stagingBuffer->copyTo((void*)indices.data(), bufferSize);
-    stagingBuffer->unmap();
-
-    m_indexBuffer = std::make_unique<VBuffer>(
-        m_device, bufferSize,
-        VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-        VMA_MEMORY_USAGE_GPU_ONLY
-    );
-
-    m_device.copyBuffer(stagingBuffer.get(), m_indexBuffer.get(), bufferSize);
 }

@@ -4,7 +4,7 @@
 #include <memory>
 
 #include "Core/VDevice.h"
-#include "Scene/VModel.h"
+#include "Scene/VMesh.h"
 #include "Rendering/VPipeline.h"
 #include "Core/VWindow.h"
 #include "Scene/VGameObject.h"
@@ -50,7 +50,7 @@ private:
     VDevice m_device{m_window};
     VRenderPass m_renderPass{m_window, m_device};
 
-    std::vector<VGameObject> m_gameObjects;
+    std::vector<std::unique_ptr<VGameObject>> m_gameObjects;
     std::unique_ptr<VDescriptorPool> m_globalPool{};
 };
 

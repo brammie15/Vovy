@@ -2,24 +2,27 @@
 #define VGAMEOBJECT_H
 #include <cstdint>
 
-#include "VModel.h"
+#include "VMesh.h"
 #include <memory>
 
-struct Transform {
-    glm::vec3 translation{1.f};
-    glm::vec3 scale{1.f};
-    glm::mat2 mat2() {
-        return glm::mat2(translation, scale);
-    }
-};
+#include "Transform.h"
+#include "VModel.h"
+
+// struct Transform {
+//     glm::vec3 translation{1.f};
+//     glm::vec3 scale{1.f};
+//     glm::mat2 mat2() {
+//         return glm::mat2(translation, scale);
+//     }
+// };
 
 class VGameObject {
 public:
 
     //TODO: ask if dirty or not
-    static VGameObject createGameObject() {
+    static std::unique_ptr<VGameObject> createGameObject() {
         static uint32_t id = 0;
-        return VGameObject(id++);
+        return std::make_unique<VGameObject>(id++);
     }
 
     VGameObject(const VGameObject&) = delete;
@@ -33,8 +36,8 @@ public:
     glm::vec3 color{};
 
     Transform transform{};
-private:
     explicit VGameObject(uint32_t id): m_id(id) {}
+private:
     uint32_t m_id;
 };
 

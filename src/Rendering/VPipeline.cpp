@@ -4,7 +4,7 @@
 #include <fstream>
 #include <iostream>
 
-#include "Scene/VModel.h"
+#include "Scene/VMesh.h"
 
 VPipeline::VPipeline(VDevice& device, const std::string& vertPath, const std::string& fragPath,
                      const VPipelineConfigInfo& configInfo): m_device(device) {
@@ -141,8 +141,8 @@ void VPipeline::CreateGraphicsPipeline(const std::string& vertPath, const std::s
 
 
     //TODO: Fix this
-    const auto bindingDescriptions = VModel::Vertex::getBindingDescriptions();
-    const auto attributeDescriptions = VModel::Vertex::getAttributeDescriptions();
+    const auto bindingDescriptions = VMesh::Vertex::getBindingDescriptions();
+    const auto attributeDescriptions = VMesh::Vertex::getAttributeDescriptions();
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;

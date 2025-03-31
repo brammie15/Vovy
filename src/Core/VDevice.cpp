@@ -419,7 +419,7 @@ bool VDevice::IsDeviceGood(VkPhysicalDevice device) {
     bool isDiscreteGPU = properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
 
     return indices.isComplete() && extensionsSupported && swapChainAdequate &&
-           supportedFeatures.samplerAnisotropy;
+           supportedFeatures.samplerAnisotropy && isDiscreteGPU;
 }
 
 bool VDevice::CheckValidationLayerSupport() const {

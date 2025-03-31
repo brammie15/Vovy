@@ -6,19 +6,17 @@
 #include "VPipeline.h"
 
 struct PushConstantData {
-    glm::mat2 transform{1.f};
-    glm::vec2 offset;
-    alignas(16) glm::vec3 color;
+    glm::mat4 modelMatrix{1.f};
 };
 
 class VRenderSystem {
 public:
-    VRenderSystem(VDevice& deviceRef, VkRenderPass renderPass, VkDescriptorSetLayout descriptorSetLayout);
+    VRenderSystem(VDevice& deviceRef, VkRenderPass renderPass, const std::vector<VkDescriptorSetLayout> descriptorSetLayout);
     ~VRenderSystem();
 
-    void renderGameObjects(FrameContext& frameContext, std::vector<VGameObject>& gameObjects);
+    void renderGameObjects(FrameContext& frameContext, std::vector<std::unique_ptr<VGameObject>>& gameObjects);
 private:
-    void createPipelineLayout(VkDescriptorSetLayout globalSetLayout);
+    void createPipelineLayout(const std::vector<VkDescriptorSetLayout> descriptorSetLayout);
     void createPipeline(VkRenderPass renderPass);
 
     VDevice& m_device;

@@ -4,3 +4,6 @@ cmake-*
 compiled_shaders
 
 resources/sponza
+
+out
+.vs

@@ -4,6 +4,7 @@
 
 
 #define STB_IMAGE_IMPLEMENTATION
+#include <iostream>
 #include <stdexcept>
 
 #include "Utils/stb_image.h"
@@ -23,7 +24,8 @@ VImage::VImage(VDevice& device, const std::string& filename, VkFormat format, Vk
     int texWidth, texHeight, texChannels;
     stbi_uc* pixels = stbi_load(filename.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
     if (!pixels) {
-        throw std::runtime_error("Failed to load texture image!");
+        std::cerr << "Failed to load texture image!" << std::endl;
+        pixels = stbi_load("resources/cat.jpg", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
     }
 
     VkDeviceSize imageSize = texWidth * texHeight * 4;

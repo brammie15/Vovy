@@ -1,6 +1,6 @@
 #include "VApp.h"
 
-#include "Scene/VModel.h"
+#include "Scene/VMesh.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -53,16 +53,18 @@ void VApp::run() {
 
     auto globalSetLayout = VDescriptorSetLayout::Builder(m_device)
         .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)
-        .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+        // .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+        .build();
+
+    auto modelSetLayout = VDescriptorSetLayout::Builder(m_device)
+        .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .build();
 
     std::vector<VkDescriptorSet> globalDescriptorSets(VSwapchain::MAX_FRAMES_IN_FLIGHT);
     for (int i = 0; i < globalDescriptorSets.size(); i++) {
-        auto imageInfo = textureImage.descriptorInfo();
         auto bufferInfo = uboBuffers[i]->descriptorInfo();
         auto success = VDescriptorWriter(*globalSetLayout, *m_globalPool)
             .writeBuffer(0, &bufferInfo)
-            .writeImage(1, &imageInfo)
             .build(globalDescriptorSets[i]);
 
         if (!success) {
@@ -71,7 +73,11 @@ void VApp::run() {
     }
 
 
-    VRenderSystem renderSystem{m_device, m_renderPass.GetSwapChainRenderPass(), globalSetLayout->getDescriptorSetLayout()};
+    VRenderSystem renderSystem{
+        m_device,
+        m_renderPass.GetSwapChainRenderPass(),
+        {globalSetLayout->getDescriptorSetLayout(),modelSetLayout->getDescriptorSetLayout()}
+    };
     float time = 0.0f;
 
     VCamera camera{{-2.0f, 1.0f, 0}, {0.0f, 1.0f, 0.0f}};
@@ -102,7 +108,7 @@ void VApp::run() {
             GlobalUBO ubo{};
             // ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));            // ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 
-            ubo.model = glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f)), time, glm::vec3{0, 1.f, 0});
+            ubo.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
             // ubo.view = glm::lookAt(glm::vec3(2.f, 0, 0), glm::vec3(1.0f, 0.f, 0.f), glm::vec3(0.0f, 0.0f, 1.0f));
 
             camera.CalculateViewMatrix();
@@ -125,31 +131,20 @@ void VApp::run() {
 }
 
 void VApp::loadGameObjects() {
-    // std::vector<VModel::Vertex> vertices{
-    //     {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}}, // Top-left
-    //     {{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}}, // Bottom-left
-    //     {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}}, // Bottom-right
-    //     {{0.5f, 0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}} // Top-right
-    // };
-    //
-    // std::vector<uint32_t> indices{
-    //     0, 1, 2, // First triangle
-    //     2, 3, 0 // Second triangle
-    // };
+    // auto model = std::make_shared<VModel>(m_device, "resources/sponza/NewSponza_Main_glTF_003.gltf");
+    // auto model = std::make_shared<VModel>(m_device, "resources/sponza/NewSponza_Main_Yup_003.fbx");
+    // auto model = std::unique_ptr<VModel>(m_device, "resources/cat.obj");
 
-    // auto m_model = std::make_shared<VModel>(m_device, vertices, indices);
-    auto model = VModel::createModelFromFile(m_device, "resources/cat.obj");
+    auto model = std::make_shared<VModel>(m_device, "resources/monkey.obj");
 
     auto test = VGameObject::createGameObject();
-    test.model = std::move(model);
-    test.color = {1.0f, 0.0f, 0.0f};
-    // test.transform.translation.x
-
+    test->model = std::move(model);
+    test->color = {1.0f, 0.0f, 0.0f};
+    //
     m_gameObjects.push_back(std::move(test));
 
-
     //Make a plane 1x1 wide
-    std::vector<VModel::Vertex> vertices{
+    std::vector<VMesh::Vertex> vertices{
         {{-0.5f, 0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}}, // Top-left
         {{-0.5f, 0.0f, 0.5f}, {0.0f, 0.0f, 1.0f}}, // Bottom-left
         {{0.5f, 0.0f, 0.5f}, {0.0f, 1.0f, 0.0f}}, // Bottom-right
@@ -162,11 +157,15 @@ void VApp::loadGameObjects() {
     };
 
     auto test2 = VGameObject::createGameObject();
-    test2.model = std::make_shared<VModel>(m_device, vertices, indices);
-    test2.color = {0.0f, 1.0f, 0.0f};
-    test2.transform.translation = {0.0f, 0.0f, 0.0f};
-    test2.transform.scale = {1.0f, 1.0f, 1.0f};
+
+
+    std::vector<VMesh::Builder> builders;
+    auto model1 = VMesh::Builder{vertices, indices};
+    builders.push_back(std::move(model1));
+    test2->model = std::make_shared<VModel>(m_device, builders);
+    test2->color = {0.0f, 1.0f, 0.0f};
+    // test2.transform.translation = {0.0f, 0.0f, 0.0f};
+    // test2.transform.scale = {1.0f, 1.0f, 1.0f};
 
     m_gameObjects.push_back(std::move(test2));
-
 }
