@@ -10,6 +10,8 @@
 #define VMA_IMPLEMENTATION
 #include <vma/vk_mem_alloc.h>
 
+#include "Utils/ResourceManager.h"
+
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
     VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
     VkDebugUtilsMessageTypeFlagsEXT messageType,
@@ -58,6 +60,10 @@ VDevice::VDevice(VWindow& window): m_window(window) {
 }
 
 VDevice::~VDevice() {
+    //TODO: ask if this can be made better
+    ResourceManager::GetInstance().clear();
+
+
     vmaDestroyAllocator(m_allocator); //Thanks thalia <3
     vkDestroyCommandPool(m_device, m_commandPool, nullptr);
     vkDestroyDevice(m_device, nullptr);

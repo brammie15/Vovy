@@ -1,5 +1,6 @@
 #include "VModel.h"
 
+#include <execution>
 #include <iostream>
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
@@ -37,6 +38,18 @@ void VModel::draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout
     }
 }
 
+bool MeshHasOpacityMap(const aiScene* scene, const aiMesh* mesh) {
+    if (!scene || !mesh || mesh->mMaterialIndex < 0) {
+        return false; // Invalid scene or mesh
+    }
+
+    // Get the material associated with the mesh
+    aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+
+    // Check if the material has an opacity texture
+    return material->GetTextureCount(aiTextureType_OPACITY) > 0;
+}
+
 void VModel::loadModel(std::string path) {
     Assimp::Importer import;
     const aiScene *scene = import.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
@@ -48,7 +61,9 @@ void VModel::loadModel(std::string path) {
     }
     m_directory = path.substr(0, path.find_last_of('/'));
 
+    // PrintMaterials(scene);
     processNode(scene->mRootNode, scene);
+
 }
 
 static glm::mat4 convertMatrix(const aiMatrix4x4& m) {
@@ -74,10 +89,17 @@ void VModel::processNode(aiNode* node, const aiScene* scene, glm::mat4 parentTra
     }
 }
 
+
+
 VMesh::Builder VModel::processMesh(aiMesh* mesh, const aiScene* scene) {
     std::vector<VMesh::Vertex> vertices;
     std::vector<uint32_t> indices;
     std::string texturePath{ "" };
+
+    //TODO: Fuck transparency
+    if (std::string(mesh->mName.C_Str()).find("decals") != std::string::npos) {
+        return {};
+    }
 
     // Retrieve material if available
     if (scene->mNumMaterials > 0 && mesh->mMaterialIndex >= 0) {
@@ -110,6 +132,14 @@ VMesh::Builder VModel::processMesh(aiMesh* mesh, const aiScene* scene) {
                 mesh->mTextureCoords[0][i].y
             };
         }
+        if (mesh->HasNormals()) {
+            vertex.normal = {
+                mesh->mNormals[i].x,
+                mesh->mNormals[i].y,
+                mesh->mNormals[i].z
+            };
+        }
+
         vertices.push_back(vertex);
     }
 
@@ -129,6 +159,11 @@ VMesh::Builder VModel::processMesh(aiMesh* mesh, const aiScene* scene) {
 }
 
 void VModel::generateMeshes() {
+    //TODO: Fix this
+    m_builders.erase(std::remove_if(m_builders.begin(), m_builders.end(),
+        [](const VMesh::Builder& builder) { return builder.vertices.empty(); }), m_builders.end());
+
+
     m_descriptorPool = VDescriptorPool::Builder(m_device)
         .setMaxSets(static_cast<uint32_t>(m_builders.size()))
         .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(m_builders.size()))
@@ -151,4 +186,10 @@ void VModel::generateMeshes() {
         mesh->getTransform().SetWorldMatrix(builder.transform); // Apply transform
         m_meshes.push_back(std::move(mesh));
     }
+
+    // std::for_each(std::execution::par_unseq, m_builders.begin(), m_builders.end(), [this](VMesh::Builder& builder) {
+    //     std::unique_ptr<VMesh> mesh = std::make_unique<VMesh>(m_device, builder);
+    //     mesh->getTransform().SetWorldMatrix(builder.transform); // Apply transform
+    //     m_meshes.push_back(std::move(mesh));
+    // });
 }

@@ -33,6 +33,8 @@ add_executable(${PROJECT_NAME}
         ${SRC_ROOT}/Utils/FrameContext.h
         ${SRC_ROOT}/Utils/stb_image.h
         ${SRC_ROOT}/Utils/VCamera.h ${SRC_ROOT}/Utils/VCamera.cpp
+        ${SRC_ROOT}/Utils/ResourceManager.h ${SRC_ROOT}/Utils/ResourceManager.cpp
+        ${SRC_ROOT}/Utils/Singleton.h
 )
 #
 #add_executable(${PROJECT_NAME}
@@ -93,13 +95,10 @@ foreach (GLSL ${GLSL_SOURCE_FILES})
     list(APPEND SPIRV_BINARY_FILES ${SPIRV})
 endforeach ()
 
-# Create a target for compiling shaders
 add_custom_target(CompileShaders DEPENDS ${SPIRV_BINARY_FILES})
 
-# Ensure the output shader directory exists
 file(MAKE_DIRECTORY ${OUTPUT_SHADER_DIR})
 
-# Copy compiled shaders to the output directory
 foreach (SPV ${SPIRV_BINARY_FILES})
     get_filename_component(FILE_NAME ${SPV} NAME)
     add_custom_command(
@@ -111,16 +110,22 @@ endforeach ()
 
 add_dependencies(${PROJECT_NAME} CompileShaders)
 
+
 set(RESOURCE_SRC_DIR "${PROJECT_SOURCE_DIR}/resources")
 set(RESOURCE_DST_DIR "${CMAKE_BINARY_DIR}/resources")
 
+#add_custom_target(CopyResources ALL
+#        COMMAND ${CMAKE_COMMAND} -E make_directory ${RESOURCE_DST_DIR}
+#        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${RESOURCE_SRC_DIR}/* ${RESOURCE_DST_DIR}/
+#        COMMENT "Copying resources folder to build directory"
+#)
 add_custom_target(CopyResources ALL
-        COMMAND ${CMAKE_COMMAND} -E copy_directory ${RESOURCE_SRC_DIR} ${RESOURCE_DST_DIR}
+        COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different  ${RESOURCE_SRC_DIR} ${RESOURCE_DST_DIR}
         COMMENT "Copying resources folder to build directory"
 )
-
 add_dependencies(${PROJECT_NAME} CopyResources)
 
 
+
 include(cmake/DownloadSponza.cmake)
-DownloadSponza("resources/sponza")
+DownloadSponza(${CMAKE_BINARY_DIR}/resources/sponza)

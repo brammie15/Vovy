@@ -8,7 +8,7 @@ VBuffer::VBuffer(VDevice& deviceRef, VkDeviceSize size, VkBufferUsageFlags usage
     allocInfo.usage = memoryUsage;
 
     if (mappable) {
-        allocInfo.requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+        allocInfo.requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
     } else {
         allocInfo.requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
     }
@@ -35,8 +35,9 @@ void VBuffer::unmap() {
 }
 
 void VBuffer::copyTo(void* data, VkDeviceSize size) {
-    assert(m_data != nullptr && "Cannot copy to buffer if buffer is not mapped");
-    memcpy(m_data, data, size);
+    // assert(m_data != nullptr && "Cannot copy to buffer if buffer is not mapped");
+    // memcpy(m_data, data, size);
+    vmaCopyMemoryToAllocation(m_device.allocator(), data, m_allocation, 0, size);
 }
 
 VkDescriptorBufferInfo VBuffer::descriptorInfo(VkDeviceSize size, VkDeviceSize offset) const {

@@ -19,13 +19,13 @@ VImage::VImage(VDevice& device, uint32_t width, uint32_t height, VkFormat format
 }
 
 VImage::VImage(VDevice& device, const std::string& filename, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage)
-    : m_device(device), m_image(VK_NULL_HANDLE), m_allocation(VK_NULL_HANDLE), m_imageView(VK_NULL_HANDLE) {
+    : m_device(device), m_image(VK_NULL_HANDLE), m_allocation(VK_NULL_HANDLE), m_imageView(VK_NULL_HANDLE), m_filename{filename} {
 
     int texWidth, texHeight, texChannels;
     stbi_uc* pixels = stbi_load(filename.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
     if (!pixels) {
         std::cerr << "Failed to load texture image!" << std::endl;
-        pixels = stbi_load("resources/cat.jpg", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+        pixels = stbi_load("resources/TextureNotFound.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
     }
 
     VkDeviceSize imageSize = texWidth * texHeight * 4;
@@ -33,9 +33,9 @@ VImage::VImage(VDevice& device, const std::string& filename, VkFormat format, Vk
     // Create a staging buffer
     VBuffer stagingBuffer(device, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
     //TODO: should prob actually use the VMA auto mapper, o well :p
-    stagingBuffer.map();
+    // stagingBuffer.map();
     stagingBuffer.copyTo(pixels, imageSize);
-    stagingBuffer.unmap();
+    // stagingBuffer.unmap();
 
     stbi_image_free(pixels);
 

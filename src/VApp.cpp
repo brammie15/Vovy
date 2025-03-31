@@ -17,10 +17,10 @@
 #include "Rendering/VRenderSystem.h"
 #include "Descriptors/VDescriptorSetLayout.h"
 #include "Descriptors/VDescriptorWriter.h"
+#include "Utils/ResourceManager.h"
 
 
 struct GlobalUBO {
-    glm::mat4 model;
     glm::mat4 view;
     glm::mat4 proj;
 };
@@ -33,13 +33,12 @@ VApp::VApp() {
           .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VSwapchain::MAX_FRAMES_IN_FLIGHT)
           .build();
     loadGameObjects();
+
 }
 
 VApp::~VApp() = default;
 
 void VApp::run() {
-
-    VImage textureImage{m_device, "resources/cat.jpg", VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_SAMPLED_BIT, VMA_MEMORY_USAGE_GPU_ONLY};
 
     std::vector<std::unique_ptr<VBuffer>> uboBuffers(VSwapchain::MAX_FRAMES_IN_FLIGHT);
     for (int i = 0; i < uboBuffers.size(); i++) {
@@ -87,6 +86,10 @@ void VApp::run() {
     while (!m_window.ShouldClose()) {
         glfwPollEvents();
 
+        if (glfwGetKey(VWindow::gWindow, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+            glfwSetWindowShouldClose(VWindow::gWindow, GLFW_TRUE);
+        }
+
         auto newTime = std::chrono::high_resolution_clock::now();
         float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
         currentTime = newTime;
@@ -108,9 +111,6 @@ void VApp::run() {
             GlobalUBO ubo{};
             // ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));            // ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 
-            ubo.model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-            // ubo.view = glm::lookAt(glm::vec3(2.f, 0, 0), glm::vec3(1.0f, 0.f, 0.f), glm::vec3(0.0f, 0.0f, 1.0f));
-
             camera.CalculateViewMatrix();
             ubo.view = camera.GetViewMatrix();
 
@@ -131,41 +131,50 @@ void VApp::run() {
 }
 
 void VApp::loadGameObjects() {
-    // auto model = std::make_shared<VModel>(m_device, "resources/sponza/NewSponza_Main_glTF_003.gltf");
-    // auto model = std::make_shared<VModel>(m_device, "resources/sponza/NewSponza_Main_Yup_003.fbx");
-    // auto model = std::unique_ptr<VModel>(m_device, "resources/cat.obj");
 
-    auto model = std::make_shared<VModel>(m_device, "resources/monkey.obj");
+    const auto mainSponzaModel = std::make_shared<VModel>(m_device, "resources/sponza/NewSponza_Main_glTF_003.gltf");
+    // auto mainSponzaModel = std::make_shared<VModel>(m_device, "resources/sponza/NewSponza_Main_Yup_003.fbx");
 
-    auto test = VGameObject::createGameObject();
-    test->model = std::move(model);
-    test->color = {1.0f, 0.0f, 0.0f};
+    // auto mainSponzaModel = std::make_shared<VModel>(m_device, "resources/MonkeyTest.fbx");
+    // auto mainSponzaModel = std::make_shared<VModel>(m_device, "resources/MonkeyTest.obj");
+
+    auto sponzaScene = VGameObject::createGameObject();
+    sponzaScene->model = std::move(mainSponzaModel);
+
+    m_gameObjects.push_back(std::move(sponzaScene));
+
+    auto curtainsSponzaModel = std::make_shared<VModel>(m_device, "resources/pkg_a_curtains/NewSponza_Curtains_glTF.gltf");
+
+    auto curtainsSponza = VGameObject::createGameObject();
+    curtainsSponza->model = std::move(curtainsSponzaModel);
+
+    m_gameObjects.push_back(std::move(curtainsSponza));
+
+
     //
-    m_gameObjects.push_back(std::move(test));
-
-    //Make a plane 1x1 wide
-    std::vector<VMesh::Vertex> vertices{
-        {{-0.5f, 0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}}, // Top-left
-        {{-0.5f, 0.0f, 0.5f}, {0.0f, 0.0f, 1.0f}}, // Bottom-left
-        {{0.5f, 0.0f, 0.5f}, {0.0f, 1.0f, 0.0f}}, // Bottom-right
-        {{0.5f, 0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}} // Top-right
-    };
-
-    std::vector<uint32_t> indices{
-        0, 1, 2, // First triangle
-        2, 3, 0 // Second triangle
-    };
-
-    auto test2 = VGameObject::createGameObject();
-
-
-    std::vector<VMesh::Builder> builders;
-    auto model1 = VMesh::Builder{vertices, indices};
-    builders.push_back(std::move(model1));
-    test2->model = std::make_shared<VModel>(m_device, builders);
-    test2->color = {0.0f, 1.0f, 0.0f};
-    // test2.transform.translation = {0.0f, 0.0f, 0.0f};
-    // test2.transform.scale = {1.0f, 1.0f, 1.0f};
-
-    m_gameObjects.push_back(std::move(test2));
+    // //Make a plane 1x1 wide
+    // std::vector<VMesh::Vertex> vertices{
+    //     {{-0.5f, 0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}}, // Top-left
+    //     {{-0.5f, 0.0f, 0.5f}, {0.0f, 0.0f, 1.0f}}, // Bottom-left
+    //     {{0.5f, 0.0f, 0.5f}, {0.0f, 1.0f, 0.0f}}, // Bottom-right
+    //     {{0.5f, 0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}} // Top-right
+    // };
+    //
+    // std::vector<uint32_t> indices{
+    //     0, 1, 2, // First triangle
+    //     2, 3, 0 // Second triangle
+    // };
+    //
+    // auto test2 = VGameObject::createGameObject();
+    //
+    //
+    // std::vector<VMesh::Builder> builders;
+    // auto model1 = VMesh::Builder{vertices, indices};
+    // builders.push_back(std::move(model1));
+    // test2->model = std::make_shared<VModel>(m_device, builders);
+    // test2->color = {0.0f, 1.0f, 0.0f};
+    // // test2.transform.translation = {0.0f, 0.0f, 0.0f};
+    // // test2.transform.scale = {1.0f, 1.0f, 1.0f};
+    //
+    // m_gameObjects.push_back(std::move(test2));
 }

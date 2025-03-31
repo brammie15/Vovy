@@ -4,6 +4,7 @@ cmake-*
 compiled_shaders
 
 resources/sponza
+resources/pkg_a_curtains
 
 out
 .vs

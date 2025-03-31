@@ -4,6 +4,8 @@
 #include <string>
 
 #define GLFW_INCLUDE_VULKAN
+#include <glm/vec2.hpp>
+
 #include "GLFW/glfw3.h"
 
 class VWindow {
@@ -22,11 +24,22 @@ public:
     [[nodiscard]] VkExtent2D getExtent() const{ return {static_cast<uint32_t>(m_width), static_cast<uint32_t>(m_height)}; }
 
     static GLFWwindow* gWindow;
+
+    auto getMousePosition() const -> glm::vec2;
+
+    glm::vec2 getMouseDelta();
+
+    [[nodiscard]] uint32_t getWidth() const { return m_width; }
+    [[nodiscard]] uint32_t getHeight() const { return m_height; }
 private:
     static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
 
     uint32_t m_width;
     uint32_t m_height;
+
+    glm::vec2 m_lastMousePos;
+    glm::vec2 m_currentMousePos;
+
 
     bool m_resized = false;
     std::string m_windowName;

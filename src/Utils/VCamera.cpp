@@ -14,7 +14,16 @@ VCamera::VCamera(const glm::vec3& position, const glm::vec3& up): m_position{pos
 }
 
 void VCamera::Update(float deltaTime) {
-    float MovementSpeed = 1.0f;
+    const auto MyWindow = static_cast<VWindow*>(glfwGetWindowUserPointer(VWindow::gWindow));
+    glm::vec2 deltaMousePos = MyWindow->getMouseDelta();
+
+    float sensitivity = 0.002f;
+    // totalYaw -= deltaMousePos.x * sensitivity;
+    // totalPitch += deltaMousePos.y * sensitivity;
+
+    totalPitch = glm::clamp(totalPitch, -glm::half_pi<float>() + 0.01f, glm::half_pi<float>() - 0.01f);
+
+    float MovementSpeed = 2.0f;
     if (glfwGetKey(VWindow::gWindow, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
         MovementSpeed *= 2.0f;
     }
@@ -52,7 +61,6 @@ void VCamera::Update(float deltaTime) {
     if (glfwGetKey(VWindow::gWindow, GLFW_KEY_RIGHT) == GLFW_PRESS) {
         totalYaw += lookSpeed;
     }
-
     totalPitch = glm::clamp(totalPitch, -glm::half_pi<float>(), glm::half_pi<float>());
 
     glm::mat4 yawMatrix   = glm::rotate(glm::mat4(1.0f), -totalYaw, glm::vec3(0, 1, 0));

@@ -14,6 +14,8 @@ public:
     [[nodiscard]] VmaAllocation getAllocation() const { return m_allocation; }
     VkDescriptorImageInfo descriptorInfo();
 
+    [[nodiscard]] const std::string& getFilename() const { return m_filename; }
+
 private:
     void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage);
     void createImageView(VkFormat format);
@@ -24,6 +26,8 @@ private:
     VmaAllocation m_allocation;
     VkImageView m_imageView;
     VkSampler m_sampler;
+
+    std::string m_filename; //For checking duplicates
 };
 
 #endif //VIMAGE_H

@@ -13,6 +13,7 @@
 #include <glm/ext/matrix_transform.hpp>
 
 #include "Descriptors/VDescriptorWriter.h"
+#include "Utils/ResourceManager.h"
 
 std::vector<VkVertexInputBindingDescription> VMesh::Vertex::getBindingDescriptions() {
     std::vector<VkVertexInputBindingDescription> bindingDescriptions(1);
@@ -28,62 +29,10 @@ std::vector<VkVertexInputAttributeDescription> VMesh::Vertex::getAttributeDescri
     attributeDescriptions.push_back({0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, position)});
     attributeDescriptions.push_back({1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color)});
     attributeDescriptions.push_back({2, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, texCoord)});
+    attributeDescriptions.push_back({3, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal)});
 
     return attributeDescriptions;
 }
-
-void VMesh::Builder::loadModel(const std::string& path) {
-    Assimp::Importer importer;
-    const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_JoinIdenticalVertices | aiProcess_GenNormals | aiProcess_CalcTangentSpace);
-
-    if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
-        throw std::runtime_error("Assimp error: " + std::string(importer.GetErrorString()));
-    }
-
-    vertices.clear();
-    indices.clear();
-
-    for (unsigned int i = 0; i < 1; i++) {
-        aiMesh* mesh = scene->mMeshes[i];
-
-        for (unsigned int j = 0; j < mesh->mNumVertices; j++) {
-            Vertex vertex{};
-
-            vertex.position = {
-                mesh->mVertices[j].x,
-                mesh->mVertices[j].y,
-                mesh->mVertices[j].z
-            };
-
-            if (mesh->HasVertexColors(0)) {
-                vertex.color = {
-                    mesh->mColors[0][j].r,
-                    mesh->mColors[0][j].g,
-                    mesh->mColors[0][j].b
-                };
-            } else {
-                vertex.color = {1.0f, 1.0f, 1.0f}; // Default color
-            }
-
-            if (mesh->HasTextureCoords(0)) {
-                vertex.texCoord = {
-                    mesh->mTextureCoords[0][j].x,
-                    mesh->mTextureCoords[0][j].y
-                };
-            }
-
-            vertices.push_back(vertex);
-        }
-
-        for (unsigned int j = 0; j < mesh->mNumFaces; j++) {
-            aiFace face = mesh->mFaces[j];
-            for (unsigned int k = 0; k < face.mNumIndices; k++) {
-                indices.push_back(face.mIndices[k]);
-            }
-        }
-    }
-}
-
 
 VMesh::VMesh(VDevice& device, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices): m_device{device} {
     createVertexBuffer(vertices);
@@ -142,8 +91,8 @@ void VMesh::draw(VkCommandBuffer commandBuffer) const {
 
 std::unique_ptr<VMesh> VMesh::createModelFromFile(VDevice& device, const std::string& filepath) {
     Builder builder{};
-    builder.loadModel(filepath);
-    return std::make_unique<VMesh>(device, builder);
+    throw std::runtime_error("Not implemented yet");
+    // return std::make_unique<VMesh>(device, builder);
 }
 
 void VMesh::createVertexBuffer(const std::vector<Vertex>& vertices) {
@@ -190,11 +139,13 @@ void VMesh::createIndexBuffer(const std::vector<uint32_t>& indices) {
 }
 
 void VMesh::loadTexture(const std::string& path, VDescriptorSetLayout* descriptorSetLayout, VDescriptorPool* descriptorPool) {
-    m_textureImage = std::make_unique<VImage>(
-        m_device, path, VK_FORMAT_R8G8B8A8_SRGB,
-        VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-        VMA_MEMORY_USAGE_GPU_ONLY
-    );
+
+    // m_textureImage = std::make_unique<VImage>(
+    //     m_device, path, VK_FORMAT_R8G8B8A8_SRGB,
+    //     VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+    //     VMA_MEMORY_USAGE_GPU_ONLY
+    // );
+    m_textureImage = ResourceManager::GetInstance().loadImage(m_device,path, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
     auto imageInfo = m_textureImage->descriptorInfo();
     VDescriptorWriter(*descriptorSetLayout, *descriptorPool)
             .writeImage(0, &imageInfo)
