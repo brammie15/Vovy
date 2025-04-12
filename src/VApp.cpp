@@ -132,23 +132,23 @@ void VApp::run() {
 
 void VApp::loadGameObjects() {
 
-    const auto mainSponzaModel = std::make_shared<VModel>(m_device, "resources/sponza/NewSponza_Main_glTF_003.gltf");
+    // const auto mainSponzaModel = std::make_shared<VModel>(m_device, "resources/sponza/NewSponza_Main_glTF_003.gltf");
     // auto mainSponzaModel = std::make_shared<VModel>(m_device, "resources/sponza/NewSponza_Main_Yup_003.fbx");
 
     // auto mainSponzaModel = std::make_shared<VModel>(m_device, "resources/MonkeyTest.fbx");
-    // auto mainSponzaModel = std::make_shared<VModel>(m_device, "resources/MonkeyTest.obj");
+    auto mainSponzaModel = std::make_shared<VModel>(m_device, "resources/MonkeyTest.obj");
 
     auto sponzaScene = VGameObject::createGameObject();
     sponzaScene->model = std::move(mainSponzaModel);
 
     m_gameObjects.push_back(std::move(sponzaScene));
 
-    auto curtainsSponzaModel = std::make_shared<VModel>(m_device, "resources/pkg_a_curtains/NewSponza_Curtains_glTF.gltf");
+    // auto curtainsSponzaModel = std::make_shared<VModel>(m_device, "resources/pkg_a_curtains/NewSponza_Curtains_glTF.gltf");
 
-    auto curtainsSponza = VGameObject::createGameObject();
-    curtainsSponza->model = std::move(curtainsSponzaModel);
+    // auto curtainsSponza = VGameObject::createGameObject();
+    // curtainsSponza->model = std::move(curtainsSponzaModel);
 
-    m_gameObjects.push_back(std::move(curtainsSponza));
+    // m_gameObjects.push_back(std::move(curtainsSponza));
 
 
     //

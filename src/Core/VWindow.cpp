@@ -1,5 +1,6 @@
 #include "VWindow.h"
 
+#include <fstream>
 #include <iostream>
 #include <stdexcept>
 
@@ -11,7 +12,7 @@ VWindow::VWindow(uint32_t width, uint32_t height, const std::string& windowName)
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
-    gWindow = glfwCreateWindow(m_width, m_height,m_windowName.c_str(), nullptr, nullptr);
+    gWindow = glfwCreateWindow(static_cast<int>(m_width), static_cast<int>(m_height),m_windowName.c_str(), nullptr, nullptr);
     glfwSetWindowUserPointer(gWindow, this);
     glfwSetFramebufferSizeCallback(gWindow, framebufferResizeCallback);
     glfwSetCursorPosCallback(gWindow, [](GLFWwindow* window, double x, double y) {
@@ -24,6 +25,14 @@ VWindow::VWindow(uint32_t width, uint32_t height, const std::string& windowName)
 
     if (!gWindow) {
         throw std::runtime_error("Cannot make window!");
+    }
+
+    LoadGamepadMappins("resources/gamecontrollerdb.txt");
+
+    if (glfwJoystickPresent(GLFW_JOYSTICK_1)) {
+        std::cout << "Joystick detected: " << glfwGetJoystickName(GLFW_JOYSTICK_1) << std::endl;
+    } else {
+        std::cerr << "No joystick detected!" << std::endl;
     }
 }
 
@@ -60,4 +69,23 @@ void VWindow::framebufferResizeCallback(GLFWwindow* window, int width, int heigh
     MyWindow->m_resized = true;
     MyWindow->m_width = width;
     MyWindow->m_height = height;
+}
+
+void VWindow::LoadGamepadMappins(const std::string& filename) {
+    std::ifstream file(filename);
+    if (!file) {
+        std::cerr << "Failed to open file: " << filename << std::endl;
+        return;
+    }
+
+    std::string line;
+    while (std::getline(file, line)) {
+        if (line.empty() || line[0] == '#') {
+            continue;
+        }
+
+        if (glfwUpdateGamepadMappings(line.c_str()) == GLFW_FALSE) {
+            std::cerr << "Failed to load gamepad mapping: " << line << std::endl;
+        }
+    }
 }

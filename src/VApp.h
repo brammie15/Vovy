@@ -29,8 +29,8 @@
 
 class VApp {
 public:
-    static constexpr uint32_t WIDTH = 800;
-    static constexpr uint32_t HEIGHT = 600;
+    static constexpr uint32_t WIDTH = 1200;
+    static constexpr uint32_t HEIGHT = 1000;
 
     VApp();
     ~VApp();

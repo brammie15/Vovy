@@ -33,6 +33,7 @@ public:
     [[nodiscard]] uint32_t getHeight() const { return m_height; }
 private:
     static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
+    void LoadGamepadMappins(const std::string& filename);
 
     uint32_t m_width;
     uint32_t m_height;

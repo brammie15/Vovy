@@ -4,6 +4,8 @@ layout(location = 0) out vec4 outColor;
 
 layout(location = 0) in vec2 inTexCoord;
 layout(location = 1) in vec3 inNormal;
+layout(location = 2) in vec3 FragPos;
+
 
 layout(set = 0, binding = 0) uniform GlobalUbo {
     mat4 view;
@@ -17,8 +19,6 @@ layout(push_constant) uniform PushConstants {
 } push;
 
 void main() {
-//    outColor = vec4(push.color, 1.0f);
-//    outColor = texture(texSampler, vec2(inTexCoord.x, inTexCoord.y));
     vec3 ambient = vec3(0.2f, 0.2f, 0.2f);
     vec3 lightDir = normalize(vec3(1.0f, -1.0f, -1.0f));
 

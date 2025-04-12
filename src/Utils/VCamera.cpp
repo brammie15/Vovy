@@ -15,12 +15,8 @@ VCamera::VCamera(const glm::vec3& position, const glm::vec3& up): m_position{pos
 
 void VCamera::Update(float deltaTime) {
     const auto MyWindow = static_cast<VWindow*>(glfwGetWindowUserPointer(VWindow::gWindow));
-    glm::vec2 deltaMousePos = MyWindow->getMouseDelta();
 
-    float sensitivity = 0.002f;
-    // totalYaw -= deltaMousePos.x * sensitivity;
-    // totalPitch += deltaMousePos.y * sensitivity;
-
+#pragma region Mouse Movement
     totalPitch = glm::clamp(totalPitch, -glm::half_pi<float>() + 0.01f, glm::half_pi<float>() - 0.01f);
 
     float MovementSpeed = 2.0f;
@@ -61,16 +57,56 @@ void VCamera::Update(float deltaTime) {
     if (glfwGetKey(VWindow::gWindow, GLFW_KEY_RIGHT) == GLFW_PRESS) {
         totalYaw += lookSpeed;
     }
+
     totalPitch = glm::clamp(totalPitch, -glm::half_pi<float>(), glm::half_pi<float>());
 
-    glm::mat4 yawMatrix   = glm::rotate(glm::mat4(1.0f), -totalYaw, glm::vec3(0, 1, 0));
-    glm::mat4 pitchMatrix = glm::rotate(glm::mat4(1.0f), totalPitch, glm::vec3(0, 0, 1));
+    const glm::mat4 yawMatrix   = glm::rotate(glm::mat4(1.0f), -totalYaw, glm::vec3(0, 1, 0));
+    const glm::mat4 pitchMatrix = glm::rotate(glm::mat4(1.0f), totalPitch, glm::vec3(0, 0, 1));
 
-    glm::mat4 rotationMatrix = yawMatrix * pitchMatrix;
+    const glm::mat4 rotationMatrix = yawMatrix * pitchMatrix;
 
     m_forward = glm::vec3(rotationMatrix * glm::vec4(1, 0, 0, 0));
     m_right   = glm::normalize(glm::cross(m_forward, glm::vec3(0, 1, 0)));
     m_up      = glm::normalize(glm::cross(m_right, m_forward));
+#pragma endregion
+
+#pragma region Controller Movement
+
+    if (glfwJoystickIsGamepad(GLFW_JOYSTICK_1)) {
+        GLFWgamepadstate state;
+        if (glfwJoystickIsGamepad(GLFW_JOYSTICK_1) && glfwGetGamepadState(GLFW_JOYSTICK_1, &state)) {
+            const float moveSpeed = MovementSpeed * deltaTime;
+            const float rotSpeed = 1.5f * deltaTime;
+
+
+            //TODO: god knows what this is
+            auto Deadzone = [](float value, float threshold = 0.1f) {
+                if (fabs(value) < threshold)
+                    return 0.0f;
+                const float sign = (value > 0) ? 1.0f : -1.0f;
+                return sign * (fabs(value) - threshold) / (1.0f - threshold);
+            };
+
+            const float lx = Deadzone(state.axes[GLFW_GAMEPAD_AXIS_LEFT_X]);
+            const float ly = Deadzone(state.axes[GLFW_GAMEPAD_AXIS_LEFT_Y]);
+            const float rx = Deadzone(state.axes[GLFW_GAMEPAD_AXIS_RIGHT_X]);
+            const float ry = Deadzone(state.axes[GLFW_GAMEPAD_AXIS_RIGHT_Y]);
+
+            m_position += m_forward * (-ly * moveSpeed);
+            m_position += m_right   * (lx * moveSpeed);
+
+            const float lTrigger = (state.axes[GLFW_GAMEPAD_AXIS_LEFT_TRIGGER] + 1.0f) / 2.0f;
+            const float rTrigger = (state.axes[GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER] + 1.0f) / 2.0f;
+            const float vertical = (rTrigger - lTrigger);
+            m_position += m_up * vertical * moveSpeed;
+
+            totalYaw   += rx * rotSpeed;
+            totalPitch -= ry * rotSpeed;
+        }
+    }
+#pragma endregion
+
+
 
     CalculateProjectionMatrix();
     CalculateViewMatrix();
@@ -79,7 +115,6 @@ void VCamera::Update(float deltaTime) {
 void VCamera::CalculateViewMatrix() {
     m_viewMatrix = glm::lookAt(m_position, m_position + m_forward, m_up);
     m_invMatrix = glm::inverse(m_viewMatrix);
-
 
     // m_right = glm::vec3(m_viewMatrix[0]);
     // m_up = glm::vec3(m_viewMatrix[1]);
