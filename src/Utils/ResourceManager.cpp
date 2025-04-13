@@ -1,4 +1,5 @@
 #include "ResourceManager.h"
+#include "Utils/Timer.h"
 
 VImage* ResourceManager::loadImage(VDevice& deviceRef, const std::string& filename, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage) {
     auto it = m_images.find(filename);
@@ -11,12 +12,11 @@ VImage* ResourceManager::loadImage(VDevice& deviceRef, const std::string& filena
     auto image = std::make_unique<VImage>(deviceRef, filename, format, usage, memoryUsage);
     VImage* imagePtr = image.get();
     m_images[filename] = std::move(image);
-    return imagePtr;
+    return m_images[filename].get();
 }
 
 void ResourceManager::clear() {
     m_images.clear();
 }
 
-ResourceManager::~ResourceManager() {
-}
+ResourceManager::~ResourceManager() = default;

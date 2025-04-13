@@ -3,6 +3,7 @@
 #include "Resources/VBuffer.h"
 
 #define TINYOBJLOADER_IMPLEMENTATION
+#include <chrono>
 #include <iostream>
 #include <stdexcept>
 #include <unordered_map>
@@ -139,13 +140,9 @@ void VMesh::createIndexBuffer(const std::vector<uint32_t>& indices) {
 }
 
 void VMesh::loadTexture(const std::string& path, VDescriptorSetLayout* descriptorSetLayout, VDescriptorPool* descriptorPool) {
-
-    // m_textureImage = std::make_unique<VImage>(
-    //     m_device, path, VK_FORMAT_R8G8B8A8_SRGB,
-    //     VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-    //     VMA_MEMORY_USAGE_GPU_ONLY
-    // );
     m_textureImage = ResourceManager::GetInstance().loadImage(m_device,path, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
+
+
     auto imageInfo = m_textureImage->descriptorInfo();
     VDescriptorWriter(*descriptorSetLayout, *descriptorPool)
             .writeImage(0, &imageInfo)

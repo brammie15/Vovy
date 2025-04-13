@@ -21,7 +21,7 @@ VWindow::VWindow(uint32_t width, uint32_t height, const std::string& windowName)
         MyWindow->m_currentMousePos.y = static_cast<uint32_t>(y);
     });
 
-    glfwSetInputMode(gWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    // glfwSetInputMode(gWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     if (!gWindow) {
         throw std::runtime_error("Cannot make window!");

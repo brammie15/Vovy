@@ -66,6 +66,8 @@ public:
         VmaAllocation& allocation
     );
 
+    VkFormatProperties GetFormatProperties(VkFormat format) const;
+
     VkPhysicalDeviceProperties properties;
 
     uint32_t FindMemoryType(uint32_t typeFilter, VkFlags properties);
@@ -81,7 +83,7 @@ public:
     VkCommandBuffer beginSingleTimeCommands();
     void endSingleTimeCommands(VkCommandBuffer commandBuffer);
 
-    void TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
+    void TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels);
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
 
 private:

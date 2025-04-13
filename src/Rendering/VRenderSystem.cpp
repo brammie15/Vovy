@@ -2,7 +2,7 @@
 
 #include <stdexcept>
 
-VRenderSystem::VRenderSystem(VDevice& deviceRef, VkRenderPass renderPass,  const std::vector<VkDescriptorSetLayout> descriptorSetLayout): m_device{deviceRef} {
+VRenderSystem::VRenderSystem(VDevice& deviceRef, VkRenderPass renderPass,  const std::vector<VkDescriptorSetLayout>& descriptorSetLayout): m_device{deviceRef} {
     createPipelineLayout(descriptorSetLayout);
     createPipeline(renderPass);
 }
@@ -11,7 +11,7 @@ VRenderSystem::~VRenderSystem() {
     vkDestroyPipelineLayout(m_device.device(), m_pipelineLayout, nullptr);
 }
 
-void VRenderSystem::renderGameObjects(FrameContext& frameContext, std::vector<std::unique_ptr<VGameObject>>& gameObjects) {
+void VRenderSystem::renderGameObjects(const FrameContext& frameContext, const std::vector<std::unique_ptr<VGameObject>>& gameObjects) {
     m_pipeline->bind(frameContext.commandBuffer);
     // auto projectionView = frameContext.camera.getProjection() * frameInfo.camera.getView();
 
@@ -46,13 +46,11 @@ void VRenderSystem::renderGameObjects(FrameContext& frameContext, std::vector<st
 
 }
 
-void VRenderSystem::createPipelineLayout(const std::vector<VkDescriptorSetLayout> descriptorSetLayout) {
+void VRenderSystem::createPipelineLayout(const std::vector<VkDescriptorSetLayout>& descriptorSetLayouts) {
     VkPushConstantRange pushConstantRange{};
     pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
     pushConstantRange.offset = 0;
     pushConstantRange.size = sizeof(PushConstantData);
-
-    std::vector<VkDescriptorSetLayout> descriptorSetLayouts{descriptorSetLayout};
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;

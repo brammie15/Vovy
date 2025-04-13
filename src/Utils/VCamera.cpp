@@ -44,7 +44,7 @@ void VCamera::Update(float deltaTime) {
     }
 
     // Looking around with arrow keys
-    float lookSpeed = 2.0f * glm::radians(1.f);
+    float lookSpeed = 1.0f * glm::radians(1.f);
     if (glfwGetKey(VWindow::gWindow, GLFW_KEY_UP) == GLFW_PRESS) {
         totalPitch += lookSpeed;
     }
@@ -75,7 +75,7 @@ void VCamera::Update(float deltaTime) {
     if (glfwJoystickIsGamepad(GLFW_JOYSTICK_1)) {
         GLFWgamepadstate state;
         if (glfwJoystickIsGamepad(GLFW_JOYSTICK_1) && glfwGetGamepadState(GLFW_JOYSTICK_1, &state)) {
-            const float moveSpeed = MovementSpeed * deltaTime;
+            float moveSpeed = MovementSpeed * deltaTime;
             const float rotSpeed = 1.5f * deltaTime;
 
 
@@ -86,6 +86,12 @@ void VCamera::Update(float deltaTime) {
                 const float sign = (value > 0) ? 1.0f : -1.0f;
                 return sign * (fabs(value) - threshold) / (1.0f - threshold);
             };
+
+            //LT is x2 speed
+            bool isLTPressed = state.buttons[GLFW_GAMEPAD_BUTTON_LEFT_BUMPER] == GLFW_PRESS;
+            if (isLTPressed) {
+                moveSpeed *= 3.0f;
+            }
 
             const float lx = Deadzone(state.axes[GLFW_GAMEPAD_AXIS_LEFT_X]);
             const float ly = Deadzone(state.axes[GLFW_GAMEPAD_AXIS_LEFT_Y]);
@@ -105,8 +111,6 @@ void VCamera::Update(float deltaTime) {
         }
     }
 #pragma endregion
-
-
 
     CalculateProjectionMatrix();
     CalculateViewMatrix();

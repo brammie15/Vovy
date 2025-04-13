@@ -17,15 +17,18 @@ public:
     [[nodiscard]] const std::string& getFilename() const { return m_filename; }
 
 private:
-    void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage);
+    void createImage(uint32_t width, uint32_t height, uint32_t miplevels, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage);
     void createImageView(VkFormat format);
     void createSampler(VkFilter filter, VkSamplerAddressMode addressMode);
+    void generateMipmaps(VkFormat format, uint32_t width, uint32_t height);
 
     VDevice& m_device;
     VkImage m_image;
     VmaAllocation m_allocation;
     VkImageView m_imageView;
     VkSampler m_sampler;
+
+    uint32_t m_mipLevels;
 
     std::string m_filename; //For checking duplicates
 };

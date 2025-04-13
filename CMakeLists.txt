@@ -127,5 +127,5 @@ add_dependencies(${PROJECT_NAME} CopyResources)
 
 
 
-include(cmake/DownloadSponza.cmake)
-DownloadSponza(${CMAKE_BINARY_DIR}/resources/sponza)
+#include(cmake/DownloadSponza.cmake)
+#DownloadSponza(${CMAKE_BINARY_DIR}/resources/sponza)

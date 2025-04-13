@@ -11,18 +11,18 @@ struct PushConstantData {
 
 class VRenderSystem {
 public:
-    VRenderSystem(VDevice& deviceRef, VkRenderPass renderPass, const std::vector<VkDescriptorSetLayout> descriptorSetLayout);
+    VRenderSystem(VDevice& deviceRef, VkRenderPass renderPass, const std::vector<VkDescriptorSetLayout>& descriptorSetLayout);
     ~VRenderSystem();
 
-    void renderGameObjects(FrameContext& frameContext, std::vector<std::unique_ptr<VGameObject>>& gameObjects);
+    void renderGameObjects(const FrameContext& frameContext, const std::vector<std::unique_ptr<VGameObject>>& gameObjects);
 private:
-    void createPipelineLayout(const std::vector<VkDescriptorSetLayout> descriptorSetLayout);
+    void createPipelineLayout(const std::vector<VkDescriptorSetLayout>& descriptorSetLayouts);
     void createPipeline(VkRenderPass renderPass);
 
     VDevice& m_device;
 
     std::unique_ptr<VPipeline> m_pipeline;
-    VkPipelineLayout m_pipelineLayout;
+    VkPipelineLayout m_pipelineLayout{};
 };
 
 #endif //VRENDERSYSTEM_H

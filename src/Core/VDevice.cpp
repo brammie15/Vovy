@@ -107,6 +107,12 @@ void VDevice::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usageFlags, Vma
     }
 }
 
+VkFormatProperties VDevice::GetFormatProperties(VkFormat format) const {
+    VkFormatProperties formatProperties;
+    vkGetPhysicalDeviceFormatProperties(m_physicalDevice, format, &formatProperties);
+    return formatProperties;
+}
+
 uint32_t VDevice::FindMemoryType(uint32_t typeFilter, VkFlags properties) {
     VkPhysicalDeviceMemoryProperties memProperties;
     vkGetPhysicalDeviceMemoryProperties(m_physicalDevice, &memProperties);
@@ -190,7 +196,7 @@ void VDevice::endSingleTimeCommands(VkCommandBuffer commandBuffer) {
     vkFreeCommandBuffers(m_device, m_commandPool, 1, &commandBuffer);
 }
 
-void VDevice::TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) {
+void VDevice::TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels) {
     VkCommandBuffer commandBuffer = beginSingleTimeCommands();
     VkImageMemoryBarrier barrier{};
     barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -201,7 +207,7 @@ void VDevice::TransitionImageLayout(VkImage image, VkFormat format, VkImageLayou
     barrier.image = image;
     barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     barrier.subresourceRange.baseMipLevel = 0;
-    barrier.subresourceRange.levelCount = 1;
+    barrier.subresourceRange.levelCount = mipLevels;
     barrier.subresourceRange.baseArrayLayer = 0;
     barrier.subresourceRange.layerCount = 1;
     barrier.srcAccessMask = 0;
