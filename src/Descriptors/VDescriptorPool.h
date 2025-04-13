@@ -31,6 +31,9 @@ public:
     VDescriptorPool(const VDescriptorPool&) = delete;
     VDescriptorPool &operator=(const VDescriptorPool&) = delete;
 
+    [[nodiscard]] VkDescriptorPool getDescriptorPool() const { return m_descriptorPool; }
+    [[nodiscard]] VDevice& getDevice() const { return m_device; }
+
     bool allocateDescriptor(VkDescriptorSetLayout descriptorSetLayout, VkDescriptorSet &descriptor) const;
     void freeDescriptors(std::vector<VkDescriptorSet> &descriptors) const;
     void resetPool();

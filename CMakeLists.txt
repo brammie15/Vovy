@@ -21,6 +21,7 @@ add_executable(${PROJECT_NAME}
         ${SRC_ROOT}/Rendering/VRenderPass.h ${SRC_ROOT}/Rendering/VRenderPass.cpp
         ${SRC_ROOT}/Rendering/VRenderSystem.h ${SRC_ROOT}/Rendering/VRenderSystem.cpp
         ${SRC_ROOT}/Rendering/VSwapchain.h ${SRC_ROOT}/Rendering/VSwapchain.cpp
+        ${SRC_ROOT}/Rendering/ImguiRenderSystem.h ${SRC_ROOT}/Rendering/ImGuiRenderSystem.cpp
 
         ${SRC_ROOT}/Resources/VBuffer.h ${SRC_ROOT}/Resources/VBuffer.cpp
         ${SRC_ROOT}/Resources/VImage.h ${SRC_ROOT}/Resources/VImage.cpp
@@ -56,10 +57,15 @@ LinkVma(${PROJECT_NAME} PUBLIC)
 include(cmake/LinkASSIMP.cmake)
 LinkASSIMP(${PROJECT_NAME} PUBLIC)
 
+include(cmake/LinkImgui.cmake)
+LinkImGui(${PROJECT_NAME} PRIVATE)
+target_link_libraries(imgui PRIVATE Vulkan::Vulkan glfw)
+
 #include(cmake/LinkTinyObjLoader.cmake)
 #LinkTinyObjLoader(${PROJECT_NAME} PUBLIC)
 
 target_link_libraries(${PROJECT_NAME} PUBLIC Vulkan::Vulkan)
+
 
 
 find_program(GLSL_VALIDATOR glslangValidator HINTS /usr/bin /usr/local/bin $ENV{VULKAN_SDK}/Bin/ $ENV{VULKAN_SDK}/Bin32/)

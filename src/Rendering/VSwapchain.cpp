@@ -56,6 +56,10 @@ VkFormat VSwapchain::findDepthFormat() {
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 }
 
+float VSwapchain::ExtentAspectRatio() const {
+    return static_cast<float>(m_swapChainExtent.width) / static_cast<float>(m_swapChainExtent.height);
+}
+
 VkResult VSwapchain::acquireNextImage(uint32_t* imageIndex) {
     vkWaitForFences(
         m_device.device(),
@@ -75,7 +79,7 @@ VkResult VSwapchain::acquireNextImage(uint32_t* imageIndex) {
     return result;
 }
 
-VkResult VSwapchain::   submitCommandBuffers(const VkCommandBuffer* buffers, uint32_t* imageIndex) {
+VkResult VSwapchain::submitCommandBuffers(const VkCommandBuffer* buffers, uint32_t* imageIndex) {
     if (m_imagesInFlight[*imageIndex] != VK_NULL_HANDLE) {
         // Wait until the image is no longer in use
         vkWaitForFences(m_device.device(), 1, &m_imagesInFlight[*imageIndex], VK_TRUE, UINT64_MAX);
@@ -224,6 +228,12 @@ void VSwapchain::createRenderPass() {
     subpass.pColorAttachments = &colorAttachmentRef;
     subpass.pDepthStencilAttachment = &depthAttachmentRef;
 
+    VkSubpassDescription imguiSubpass{};
+    imguiSubpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    imguiSubpass.colorAttachmentCount = 1;
+    imguiSubpass.pColorAttachments = &colorAttachmentRef;  // same attachment as first
+    imguiSubpass.pDepthStencilAttachment = nullptr;        // ImGui doesn't need depth
+
     VkSubpassDependency dependency = {};
     dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
     dependency.srcAccessMask = 0;
@@ -234,15 +244,27 @@ void VSwapchain::createRenderPass() {
                               VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
     dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
+    VkSubpassDependency imguiSubpassDependency{};
+    imguiSubpassDependency.srcSubpass = 0;
+    imguiSubpassDependency.dstSubpass = 1;
+    imguiSubpassDependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    imguiSubpassDependency.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    imguiSubpassDependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    imguiSubpassDependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+    std::array<VkSubpassDescription, 2> subpasses = {subpass, imguiSubpass};
+    std::array<VkSubpassDependency, 2> dependencies = {dependency, imguiSubpassDependency};
+
+
     std::array<VkAttachmentDescription, 2> attachments = {colorAttachment, depthAttachment};
     VkRenderPassCreateInfo renderPassInfo = {};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
     renderPassInfo.attachmentCount = static_cast<uint32_t>(attachments.size());
     renderPassInfo.pAttachments = attachments.data();
-    renderPassInfo.subpassCount = 1;
-    renderPassInfo.pSubpasses = &subpass;
-    renderPassInfo.dependencyCount = 1;
-    renderPassInfo.pDependencies = &dependency;
+    renderPassInfo.subpassCount = static_cast<uint32_t>(subpasses.size());
+    renderPassInfo.pSubpasses = subpasses.data();
+    renderPassInfo.dependencyCount = static_cast<uint32_t>(dependencies.size());
+    renderPassInfo.pDependencies = dependencies.data();
 
     if (vkCreateRenderPass(m_device.device(), &renderPassInfo, nullptr, &m_renderPass) != VK_SUCCESS) {
         throw std::runtime_error("failed to create render pass!");

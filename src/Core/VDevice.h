@@ -47,11 +47,13 @@ public:
 
     [[nodiscard]] VkCommandPool getCommandPool() const { return m_commandPool; }
     [[nodiscard]] VkDevice device() const { return m_device; }
+    [[nodiscard]] VkPhysicalDevice getPhyscialDevice() const { return m_physicalDevice; }
     [[nodiscard]] VkSurfaceKHR surface() const { return m_surface; }
     [[nodiscard]] VkQueue graphicsQueue() const { return m_graphicsQueue; }
     [[nodiscard]] VkQueue presentQueue() const { return m_presentQueue; }
     [[nodiscard]] SwapChainSupportDetails getSwapChainSupport() const {return querySwapChainSupport(m_physicalDevice); }
     [[nodiscard]] VmaAllocator allocator() const { return m_allocator; }
+    [[nodiscard]] VkInstance getInstance() const { return m_instance; }
 
     [[nodiscard]] VkPhysicalDeviceProperties getProperties() const { return properties; }
     QueueFamilyIndices FindPhysicalQueueFamilies() { return FindQueueFamilies(m_physicalDevice); }

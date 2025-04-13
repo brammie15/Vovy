@@ -26,9 +26,7 @@ public:
     [[nodiscard]] VkFormat GetSwapChainImageFormat() const { return m_swapChainImageFormat; }
     [[nodiscard]] uint32_t GetWidth() const { return m_swapChainExtent.width; }
     [[nodiscard]] uint32_t GetHeight() const { return m_swapChainExtent.height; }
-    [[nodiscard]] float ExtentAspectRatio() {
-        return static_cast<float>(m_swapChainExtent.width) / static_cast<float>(m_swapChainExtent.height);
-    }
+    [[nodiscard]] float ExtentAspectRatio() const;
 
     [[nodiscard]] VkRenderPass GetRenderPass() const { return m_renderPass; }
 
