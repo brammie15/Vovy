@@ -36,6 +36,8 @@ add_executable(${PROJECT_NAME}
         ${SRC_ROOT}/Utils/VCamera.h ${SRC_ROOT}/Utils/VCamera.cpp
         ${SRC_ROOT}/Utils/ResourceManager.h ${SRC_ROOT}/Utils/ResourceManager.cpp
         ${SRC_ROOT}/Utils/Singleton.h
+        ${SRC_ROOT}/Utils/Timer.h ${SRC_ROOT}/Utils/Timer.cpp
+        ${SRC_ROOT}/Utils/DeltaTime.h ${SRC_ROOT}/Utils/DeltaTime.cpp
 )
 #
 #add_executable(${PROJECT_NAME}

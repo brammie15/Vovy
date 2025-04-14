@@ -23,6 +23,7 @@ public:
     }
 
 private:
+    void setupDockspace();
     void initImgui(VkRenderPass renderPass, int width, int height);
 
     VDevice& m_device;

@@ -41,6 +41,7 @@ public:
     VApp& operator=(VApp&& other) noexcept = delete;
 
     void run();
+    void imGui();
 
 private:
 

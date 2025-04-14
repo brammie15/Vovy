@@ -16,6 +16,7 @@
 #include "Descriptors/VDescriptorSetLayout.h"
 #include "Descriptors/VDescriptorWriter.h"
 #include "Rendering/ImguiRenderSystem.h"
+#include "Utils/DeltaTime.h"
 
 
 struct GlobalUBO {
@@ -85,20 +86,13 @@ void VApp::run() {
     VCamera camera{{-2.0f, 1.0f, 0}, {0.0f, 1.0f, 0.0f}};
 
 
-    const int targetFPS = 60;
-    const std::chrono::duration<float> targetFrameDuration(1.0f / targetFPS);
-
-    auto currentTime = std::chrono::high_resolution_clock::now();
     while (!m_window.ShouldClose()) {
-        auto frameStartTime = std::chrono::high_resolution_clock::now();
+        DeltaTime::GetInstance().Update();
         glfwPollEvents();
 
         m_imguiRenderSystem.beginFrame();
 
-        // Build your GUI
-        ImGui::Begin("Hello, Vulkan!");
-        ImGui::Text("This is ImGui with Vulkan!");
-        ImGui::End();
+        this->imGui();
 
         m_imguiRenderSystem.endFrame();
 
@@ -107,13 +101,8 @@ void VApp::run() {
             glfwSetWindowShouldClose(VWindow::gWindow, GLFW_TRUE);
         }
 
-        auto newTime = std::chrono::high_resolution_clock::now();
-        float frameTime = std::chrono::duration<float, std::chrono::seconds::period>(newTime - currentTime).count();
-        currentTime = newTime;
-
-        time += frameTime;
-
-        camera.Update(frameTime);
+        //TODO: remove
+        camera.Update(DeltaTime::GetInstance().GetDeltaTime());
 
         camera.setAspectRatio(m_renderPass.GetAspectRatio());
         camera.CalculateProjectionMatrix();
@@ -123,7 +112,7 @@ void VApp::run() {
 
         if (auto commandBuffer = m_renderPass.BeginFrame()) {
             int frameIndex = m_renderPass.GetFrameIndex();
-            FrameContext frameInfo{frameIndex, frameTime, commandBuffer, globalDescriptorSets[frameIndex]};
+            FrameContext frameInfo{frameIndex, static_cast<float>(DeltaTime::GetInstance().GetDeltaTime()), commandBuffer, globalDescriptorSets[frameIndex]};
 
             GlobalUBO ubo{};
 
@@ -146,19 +135,46 @@ void VApp::run() {
         }
 
         // FPS limiter
-        auto frameEndTime = std::chrono::high_resolution_clock::now();
-        auto elapsed = frameEndTime - frameStartTime;
-
-        if (elapsed < targetFrameDuration) {
-            std::this_thread::sleep_for(targetFrameDuration - elapsed);
+        auto sleepTime = DeltaTime::GetInstance().SleepDuration();
+        if (sleepTime > std::chrono::nanoseconds(0)) {
+            std::this_thread::sleep_for(sleepTime);
         }
     }
     vkDeviceWaitIdle(m_device.device());
 }
 
+void VApp::imGui() {
+    ImGui::Begin("Stats");
+    ImGui::Text("FPS: %.1f", 1.0f / DeltaTime::GetInstance().GetDeltaTime());
+    ImGui::Text("Frame Time: %.3f ms", DeltaTime::GetInstance().GetDeltaTime() * 1000.0f);
+    ImGui::Text("Window Size: %d x %d", m_window.getWidth(), m_window.getHeight());
+    ImGui::End();
+
+    ImGui::Begin("Object 1 Transform");
+    glm::vec3 translation = m_gameObjects[1]->transform.GetLocalPosition();
+    glm::quat rotation = m_gameObjects[1]->transform.GetLocalRotation();
+    glm::vec3 scale = m_gameObjects[1]->transform.GetLocalScale();
+
+    if (ImGui::DragFloat3("Translation", &translation[0], 0.1f)) {
+        m_gameObjects[1]->transform.SetLocalPosition(translation);
+    }
+
+    if (ImGui::DragFloat3("Rotation", &rotation.x, 0.1f)) {
+        m_gameObjects[1]->transform.SetLocalRotation(rotation);
+    }
+
+    if (ImGui::DragFloat3("Scale", &scale.x, 0.1f)) {
+        m_gameObjects[1]->transform.SetLocalScale(scale);
+    }
+
+    ImGui::End();
+}
+
 void VApp::loadGameObjects() {
+    auto sponzaScene = VGameObject::createGameObject();
+
     // const auto mainSponzaModel = std::make_shared<VModel>(m_device, "resources/sponza/NewSponza_Main_glTF_003.gltf");
-    const auto mainSponzaModel = std::make_shared<VModel>(m_device, "resources/sponza/sponza.obj");
+    const auto mainSponzaModel = std::make_shared<VModel>(m_device, "resources/sponza/sponza.obj", sponzaScene.get());
 
     // auto mainSponzaModel = std::make_shared<VModel>(m_device, "resources/sponza/NewSponza_Main_Yup_003.fbx");
 
@@ -166,43 +182,19 @@ void VApp::loadGameObjects() {
     // auto mainSponzaModel = std::make_shared<VModel>(m_device, "resources/MonkeyTest.obj");
     // auto mainSponzaModel = std::make_shared<VModel>(m_device, "resources/viking_room.obj");
 
-    auto sponzaScene = VGameObject::createGameObject();
     sponzaScene->model = std::move(mainSponzaModel);
 
     m_gameObjects.push_back(std::move(sponzaScene));
 
-    // auto curtainsSponzaModel = std::make_shared<VModel>(m_device, "resources/pkg_a_curtains/NewSponza_Curtains_glTF.gltf");
+    auto testObject = VGameObject::createGameObject();
+    const auto testModel = std::make_shared<VModel>(m_device, "resources/cat.obj", testObject.get());
+    testObject->model = std::move(testModel);
+    testObject->transform.SetLocalPosition({0.0f, 0.0f, 0.0f});
 
+    m_gameObjects.push_back(std::move(testObject));
+
+    // auto curtainsSponzaModel = std::make_shared<VModel>(m_device, "resources/pkg_a_curtains/NewSponza_Curtains_glTF.gltf");
     // auto curtainsSponza = VGameObject::createGameObject();
     // curtainsSponza->model = std::move(curtainsSponzaModel);
-
     // m_gameObjects.push_back(std::move(curtainsSponza));
-
-
-    //
-    // //Make a plane 1x1 wide
-    // std::vector<VMesh::Vertex> vertices{
-    //     {{-0.5f, 0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}}, // Top-left
-    //     {{-0.5f, 0.0f, 0.5f}, {0.0f, 0.0f, 1.0f}}, // Bottom-left
-    //     {{0.5f, 0.0f, 0.5f}, {0.0f, 1.0f, 0.0f}}, // Bottom-right
-    //     {{0.5f, 0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}} // Top-right
-    // };
-    //
-    // std::vector<uint32_t> indices{
-    //     0, 1, 2, // First triangle
-    //     2, 3, 0 // Second triangle
-    // };
-    //
-    // auto test2 = VGameObject::createGameObject();
-    //
-    //
-    // std::vector<VMesh::Builder> builders;
-    // auto model1 = VMesh::Builder{vertices, indices};
-    // builders.push_back(std::move(model1));
-    // test2->model = std::make_shared<VModel>(m_device, builders);
-    // test2->color = {0.0f, 1.0f, 0.0f};
-    // // test2.transform.translation = {0.0f, 0.0f, 0.0f};
-    // // test2.transform.scale = {1.0f, 1.0f, 1.0f};
-    //
-    // m_gameObjects.push_back(std::move(test2));
 }

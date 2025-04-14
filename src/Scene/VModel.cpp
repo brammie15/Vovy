@@ -9,9 +9,9 @@
 
 #include "Rendering/VRenderSystem.h"
 
-VModel::VModel(VDevice& deviceRef, const std::string& path): m_device{deviceRef} {
+VModel::VModel(VDevice& deviceRef, const std::string& path, VGameObject* parent): m_device{deviceRef} {
     loadModel(path);
-    generateMeshes();
+    generateMeshes(parent);
 }
 
 VModel::VModel(VDevice& deviceRef, const std::vector<VMesh::Builder>& builders): m_device{deviceRef}, m_builders{builders} {
@@ -158,7 +158,7 @@ VMesh::Builder VModel::processMesh(aiMesh* mesh, const aiScene* scene) {
     return builder;
 }
 
-void VModel::generateMeshes() {
+void VModel::generateMeshes(VGameObject* parent) {
     //TODO: Fix this
     m_builders.erase(std::remove_if(m_builders.begin(), m_builders.end(),
         [](const VMesh::Builder& builder) { return builder.vertices.empty(); }), m_builders.end());
@@ -175,15 +175,21 @@ void VModel::generateMeshes() {
         .build();
 
     //Stupid stupid fix
-    
-	for (auto& builder : m_builders) {
-		builder.descriptorSetLayout = m_descriptorSetLayout.get();
-		builder.descriptorPool = m_descriptorPool.get();
-	}
+
+    for (auto& builder : m_builders) {
+        builder.descriptorSetLayout = m_descriptorSetLayout.get();
+        builder.descriptorPool = m_descriptorPool.get();
+    }
 
     for (const auto& builder : m_builders) {
         std::unique_ptr<VMesh> mesh = std::make_unique<VMesh>(m_device, builder);
         mesh->getTransform().SetWorldMatrix(builder.transform); // Apply transform
+        if (parent) {
+            mesh->getTransform().SetParent(&parent->transform, true);
+        }
+        else {
+            mesh->getTransform().SetParent(nullptr, true);
+        }
         m_meshes.push_back(std::move(mesh));
     }
 

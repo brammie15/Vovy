@@ -8,14 +8,6 @@
 #include "Transform.h"
 #include "VModel.h"
 
-// struct Transform {
-//     glm::vec3 translation{1.f};
-//     glm::vec3 scale{1.f};
-//     glm::mat2 mat2() {
-//         return glm::mat2(translation, scale);
-//     }
-// };
-
 class VGameObject {
 public:
 
