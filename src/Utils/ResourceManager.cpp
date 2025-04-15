@@ -1,4 +1,7 @@
 #include "ResourceManager.h"
+
+#include <iostream>
+
 #include "Utils/Timer.h"
 
 VImage* ResourceManager::loadImage(VDevice& deviceRef, const std::string& filename, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage) {

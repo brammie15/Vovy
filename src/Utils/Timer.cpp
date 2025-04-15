@@ -1,5 +1,9 @@
 #include "Timer.h"
 
+#include <iostream>
+
+#include "Chalk.h"
+
 void Timer::stop() {
     if (!m_running) return;
     const auto end = std::chrono::high_resolution_clock::now();

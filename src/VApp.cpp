@@ -239,21 +239,39 @@ void VApp::imGui() {
 
 
     ImGui::Begin("Bezier Segments");
-    ImGui::Text("Bezier Segments: %d", m_currentScene->getBezierCurves()[0].nodes.size());
-    if (ImGui::Button("add Node")) {
-        const glm::vec3 prevNodePosition = m_currentScene->getBezierCurves()[0].nodes.back().position;
-        m_currentScene->getBezierCurves()[0].nodes.emplace_back(prevNodePosition + glm::vec3(0.0f, 1.0f, 0.0f));
-        m_currentScene->getBezierCurves()[0].nodes.emplace_back(prevNodePosition + glm::vec3(0.0f, 2.0f, 0.0f));
+
+    auto& curves = m_currentScene->getBezierCurves();
+    if (ImGui::Button("Add Curve")) {
+        curves.emplace_back(); // Add an empty curve
     }
-    if (!m_currentScene->getBezierCurves().empty()) {
-        for (int i = 0; i < m_currentScene->getBezierCurves()[0].nodes.size(); i++) {
-            std::string label = "Control Point " + std::to_string(i);
-            if (ImGui::BeginCombo(label.c_str(), "Control Point")) {
-                ImGui::DragFloat3("Position", &m_currentScene->getBezierCurves()[0].nodes[i].position.x, 0.1f);
-                ImGui::EndCombo();
+
+    for (size_t curveIndex = 0; curveIndex < curves.size(); ++curveIndex) {
+        std::string curveLabel = "Curve " + std::to_string(curveIndex);
+        if (ImGui::TreeNode(curveLabel.c_str())) {
+            auto& curve = curves[curveIndex];
+
+            ImGui::Text("Nodes: %zu", curve.nodes.size());
+
+            std::string addNodeLabel = "Add Node##" + std::to_string(curveIndex);
+            if (ImGui::Button(addNodeLabel.c_str())) {
+                glm::vec3 newPos(0.0f, 0.0f, 0.0f);
+                if (!curve.nodes.empty()) {
+                    newPos = curve.nodes.back().position + glm::vec3(0.0f, 1.0f, 0.0f);
+                }
+                curve.nodes.emplace_back(newPos);
             }
+            for (size_t nodeIndex = 0; nodeIndex < curve.nodes.size(); ++nodeIndex) {
+                std::string nodeLabel = "Node " + std::to_string(nodeIndex);
+                if (ImGui::TreeNode(nodeLabel.c_str())) {
+                    ImGui::DragFloat3("Position", &curve.nodes[nodeIndex].position.x, 0.1f);
+                    ImGui::TreePop();
+                }
+            }
+
+            ImGui::TreePop();
         }
     }
+
     ImGui::End();
 
     ImGui::Begin("Scenes");

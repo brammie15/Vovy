@@ -88,6 +88,10 @@ void LineRenderSystem::renderBezier(const FrameContext& context, std::vector<Bez
     std::vector<VMesh::Vertex> vertexData;
 
     for (auto& curve: curves) {
+        if (curve.nodes.empty()) {
+            continue;
+        }
+
         for (int i = 0; i < curve.resolution; ++i) {
             float t = static_cast<float>(i) / (curve.resolution - 1);
             glm::vec3 point = deCasteljau(curve.nodes, t);
@@ -98,6 +102,10 @@ void LineRenderSystem::renderBezier(const FrameContext& context, std::vector<Bez
         for (auto& node: curve.nodes) {
             vertexData.push_back({node.position, glm::vec3(0.0f, 0.0f, 1.0f)}); // Blue color for control points
         }
+    }
+
+    if (vertexData.empty()) {
+        return;
     }
 
     VkDeviceSize requiredSize = sizeof(VMesh::Vertex) * vertexData.size();
