@@ -20,8 +20,8 @@ VWindow::VWindow(uint32_t width, uint32_t height, const std::string& windowName)
     // glfwSetKeyCallback(gWindow, keyCallback);
     glfwSetCursorPosCallback(gWindow, [](GLFWwindow* window, double x, double y) {
         const auto MyWindow = static_cast<VWindow*>(glfwGetWindowUserPointer(window));
-        MyWindow->m_currentMousePos.x = static_cast<uint32_t>(x);
-        MyWindow->m_currentMousePos.y = static_cast<uint32_t>(y);
+        MyWindow->m_currentMousePos.x = static_cast<float>(x);
+        MyWindow->m_currentMousePos.y = static_cast<float>(y);
     });
 
     glfwMaximizeWindow(gWindow);
@@ -37,7 +37,7 @@ VWindow::VWindow(uint32_t width, uint32_t height, const std::string& windowName)
         throw std::runtime_error("Cannot make window!");
     }
 
-    LoadGamepadMappins("resources/gamecontrollerdb.txt");
+    LoadGamepadMappings("resources/gamecontrollerdb.txt");
 
     if (glfwJoystickPresent(GLFW_JOYSTICK_1)) {
         std::cout << "Joystick detected: " << glfwGetJoystickName(GLFW_JOYSTICK_1) << std::endl;
@@ -81,7 +81,7 @@ glm::vec2 VWindow::getMousePosition() const {
 
 glm::vec2 VWindow::getMouseDelta() {
     m_currentMousePos = getMousePosition();
-    glm::vec2 delta = m_currentMousePos - m_lastMousePos;
+    const glm::vec2 delta = m_currentMousePos - m_lastMousePos;
     m_lastMousePos = m_currentMousePos;
     return delta;
 }
@@ -92,17 +92,17 @@ void VWindow::PollInput() {
 }
 
 bool VWindow::isKeyDown(int key) const {
-    int state = glfwGetKey(gWindow, key);
+    const int state = glfwGetKey(gWindow, key);
     return state == GLFW_PRESS;
 }
 
 bool VWindow::isKeyUp(int key) const {
-    int state = glfwGetKey(gWindow, key);
+    const int state = glfwGetKey(gWindow, key);
     return state == GLFW_RELEASE;
 }
 
 bool VWindow::isKeyPressed(int key) {
-    int state = glfwGetKey(gWindow, key);
+    const int state = glfwGetKey(gWindow, key);
 
     bool wasPressed = m_currentKeys[key];
 
@@ -117,14 +117,14 @@ bool VWindow::isKeyPressed(int key) {
 }
 
 void VWindow::framebufferResizeCallback(GLFWwindow* window, int width, int height) {
-    auto MyWindow = static_cast<VWindow*>(glfwGetWindowUserPointer(window));
+    const auto MyWindow = static_cast<VWindow*>(glfwGetWindowUserPointer(window));
     MyWindow->m_resized = true;
     MyWindow->m_width = width;
     MyWindow->m_height = height;
 }
 
 void VWindow::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-    auto MyWindow = static_cast<VWindow*>(glfwGetWindowUserPointer(window));
+    const auto MyWindow = static_cast<VWindow*>(glfwGetWindowUserPointer(window));
     if (action == GLFW_PRESS) {
         MyWindow->m_currentKeys[key] = true;
     } else if (action == GLFW_RELEASE) {
@@ -132,7 +132,7 @@ void VWindow::keyCallback(GLFWwindow* window, int key, int scancode, int action,
     }
 }
 
-void VWindow::LoadGamepadMappins(const std::string& filename) {
+void VWindow::LoadGamepadMappings(const std::string& filename) {
     std::ifstream file(filename);
     if (!file) {
         std::cerr << "Failed to open file: " << filename << std::endl;

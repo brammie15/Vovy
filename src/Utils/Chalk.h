@@ -1,6 +1,6 @@
 #ifndef CHALK_H
 #define CHALK_H
-#include <iostream>
+
 #include <string>
 
 class Chalk {

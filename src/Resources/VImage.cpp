@@ -77,7 +77,7 @@ VImage::~VImage() {
     }
 }
 
-VkDescriptorImageInfo VImage::descriptorInfo() {
+VkDescriptorImageInfo VImage::descriptorInfo() const {
     VkDescriptorImageInfo imageInfo{};
     imageInfo.sampler = m_sampler;
     imageInfo.imageView = m_imageView;
@@ -155,7 +155,7 @@ void VImage::createSampler(VkFilter filter, VkSamplerAddressMode addressMode) {
     }
 }
 
-void VImage::generateMipmaps(VkFormat format, uint32_t width, uint32_t height) {
+void VImage::generateMipmaps(VkFormat format, uint32_t width, uint32_t height) const {
     VkFormatProperties properties = m_device.GetFormatProperties(format);
 
     if (!(properties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT)) {

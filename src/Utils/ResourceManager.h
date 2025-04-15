@@ -1,14 +1,13 @@
 #ifndef RESOURCEMANAGER_H
 #define RESOURCEMANAGER_H
 
-#include <iostream>
 #include <memory>
 #include <unordered_map>
 
 #include "Singleton.h"
 #include "Resources/VImage.h"
 
-class ResourceManager: public Singleton<ResourceManager> {
+class ResourceManager final: public Singleton<ResourceManager> {
 public:
 
     VImage* loadImage(VDevice& deviceRef, const std::string& filename, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage);
@@ -20,7 +19,7 @@ private:
 
     ResourceManager() = default;
 
-    ~ResourceManager();
+    ~ResourceManager() override;
     friend class Singleton<ResourceManager>;
 };
 

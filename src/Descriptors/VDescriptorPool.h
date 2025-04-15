@@ -8,7 +8,7 @@ class VDescriptorPool {
 public:
     class Builder {
     public:
-        Builder(VDevice& deviceRef) : m_device{deviceRef} {}
+        explicit Builder(VDevice& deviceRef) : m_device{deviceRef} {}
 
         Builder& addPoolSize(VkDescriptorType descriptorType, uint32_t count);
         Builder& setPoolFlags(VkDescriptorPoolCreateFlags flags);
@@ -35,12 +35,12 @@ public:
     [[nodiscard]] VDevice& getDevice() const { return m_device; }
 
     bool allocateDescriptor(VkDescriptorSetLayout descriptorSetLayout, VkDescriptorSet &descriptor) const;
-    void freeDescriptors(std::vector<VkDescriptorSet> &descriptors) const;
-    void resetPool();
+    void freeDescriptors(const std::vector<VkDescriptorSet> &descriptors) const;
+    void resetPool() const;
 
 private:
     VDevice& m_device;
-    VkDescriptorPool m_descriptorPool;
+    VkDescriptorPool m_descriptorPool{};
 
     friend class VDescriptorWriter;
 };

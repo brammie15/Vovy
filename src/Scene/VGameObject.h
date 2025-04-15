@@ -2,7 +2,6 @@
 #define VGAMEOBJECT_H
 #include <cstdint>
 
-#include "VMesh.h"
 #include <memory>
 
 #include "Transform.h"

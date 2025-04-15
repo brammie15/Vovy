@@ -5,8 +5,7 @@
 
 #include "Singleton.h"
 
-
-class DeltaTime: public Singleton<DeltaTime> {
+class DeltaTime final: public Singleton<DeltaTime> {
 public:
     DeltaTime(const DeltaTime& other) = delete;
     DeltaTime(DeltaTime&& other) = delete;

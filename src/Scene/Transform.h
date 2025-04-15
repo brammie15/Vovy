@@ -10,7 +10,7 @@ public:
     explicit Transform() = default;
     ~Transform();
 
-    Transform(const glm::vec3 position);
+    explicit Transform(glm::vec3 position);
 
     void SetWorldMatrix(const glm::mat4& mat);
 

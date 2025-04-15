@@ -34,7 +34,7 @@ public:
     VPipeline& operator=(const VPipeline& other) = delete;
     VPipeline& operator=(VPipeline&& other) noexcept = delete;
 
-    void bind(VkCommandBuffer buffer);
+    void bind(VkCommandBuffer buffer) const;
     static void DefaultPipelineConfigInfo(VPipelineConfigInfo& configInfo);
 
 private:
@@ -42,7 +42,7 @@ private:
 
     void CreateGraphicsPipeline(const std::string& vertPath, const std::string& fragPath, const VPipelineConfigInfo& configInfo);
 
-    void CreateShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule);
+    void CreateShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule) const;
 
     VDevice& m_device;
 

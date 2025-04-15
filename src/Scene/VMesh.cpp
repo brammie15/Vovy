@@ -6,12 +6,8 @@
 #include <chrono>
 #include <iostream>
 #include <stdexcept>
-#include <unordered_map>
 
-#include <assimp/Importer.hpp>
 #include <assimp/scene.h>
-#include <assimp/postprocess.h>
-#include <glm/ext/matrix_transform.hpp>
 
 #include "Descriptors/VDescriptorWriter.h"
 #include "Utils/ResourceManager.h"
@@ -101,7 +97,7 @@ void VMesh::createVertexBuffer(const std::vector<Vertex>& vertices) {
     VkDeviceSize bufferSize = sizeof(vertices[0]) * m_vertexCount;
 
     // Create staging buffer (CPU-accessible)
-    std::unique_ptr<VBuffer> stagingBuffer = std::make_unique<VBuffer>(
+    auto stagingBuffer = std::make_unique<VBuffer>(
         m_device, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY
     );
 
@@ -122,7 +118,7 @@ void VMesh::createIndexBuffer(const std::vector<uint32_t>& indices) {
     m_indexCount = static_cast<uint32_t>(indices.size());
     VkDeviceSize bufferSize = sizeof(indices[0]) * m_indexCount;
 
-    std::unique_ptr<VBuffer> stagingBuffer = std::make_unique<VBuffer>(
+    auto stagingBuffer = std::make_unique<VBuffer>(
         m_device, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY
     );
 

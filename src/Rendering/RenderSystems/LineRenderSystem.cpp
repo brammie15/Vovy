@@ -20,7 +20,7 @@ LineRenderSystem::~LineRenderSystem() {
     vkDestroyPipelineLayout(m_device.device(), m_pipelineLayout, nullptr);
 }
 
-void LineRenderSystem::renderLines(FrameContext context, const std::vector<LineSegment>& segments) {
+void LineRenderSystem::renderLines(const FrameContext& context, const std::vector<LineSegment>& segments) {
     std::vector<VMesh::Vertex> vertexData;
     vertexData.reserve(segments.size() * 2);
 
@@ -80,8 +80,8 @@ void LineRenderSystem::renderLines(FrameContext context, const std::vector<LineS
     vkCmdDraw(context.commandBuffer, static_cast<uint32_t>(vertexData.size()), 1, 0, 0);
 }
 
-void LineRenderSystem::renderBezier(FrameContext context, std::vector<BezierCurve>& curves) {
-    if (curves.size() == 0) {
+void LineRenderSystem::renderBezier(const FrameContext& context, std::vector<BezierCurve>& curves) {
+    if (curves.empty()) {
         return;
     }
 
@@ -166,7 +166,7 @@ glm::vec3 LineRenderSystem::deCasteljau(std::vector<BezierNode>& nodes, float t)
     return points[0];
 }
 
-std::vector<glm::vec3> LineRenderSystem::getControlPoints(std::vector<BezierNode>& nodes) {
+std::vector<glm::vec3> LineRenderSystem::getControlPoints(const std::vector<BezierNode>& nodes) {
     std::vector<glm::vec3> controlPoints;
     for (auto& node: nodes) {
         controlPoints.push_back(node.position);

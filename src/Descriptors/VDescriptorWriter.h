@@ -9,11 +9,11 @@ class VDescriptorWriter {
 public:
     VDescriptorWriter(VDescriptorSetLayout &setLayout, VDescriptorPool &pool);
 
-    VDescriptorWriter& writeBuffer(uint32_t binding, VkDescriptorBufferInfo* bufferInfo);
-    VDescriptorWriter& writeImage(uint32_t binding, VkDescriptorImageInfo* imageInfo);
+    VDescriptorWriter& writeBuffer(uint32_t binding, const VkDescriptorBufferInfo* bufferInfo);
+    VDescriptorWriter& writeImage(uint32_t binding, const VkDescriptorImageInfo* imageInfo);
 
     bool build(VkDescriptorSet &set);
-    void overwrite(VkDescriptorSet &set);
+    void overwrite(const VkDescriptorSet &set);
 
 private:
     VDescriptorSetLayout& m_setLayout;

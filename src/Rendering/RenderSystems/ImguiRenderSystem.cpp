@@ -189,7 +189,7 @@ void ImguiRenderSystem::initImgui(VkRenderPass renderPass, int width, int height
     ImGui_ImplVulkan_InitInfo init_info = {};
 
     init_info.Instance = m_device.getInstance();
-    init_info.PhysicalDevice = m_device.getPhyscialDevice();
+    init_info.PhysicalDevice = m_device.getPhysicalDevice();
     init_info.Device = m_device.device();
     init_info.QueueFamily = m_device.FindPhysicalQueueFamilies().graphicsFamily;
     init_info.Queue = m_device.graphicsQueue();

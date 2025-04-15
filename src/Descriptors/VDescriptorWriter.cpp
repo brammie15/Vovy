@@ -4,7 +4,7 @@
 
 VDescriptorWriter::VDescriptorWriter(VDescriptorSetLayout& setLayout, VDescriptorPool& pool): m_setLayout{setLayout}, m_pool{pool} {}
 
-VDescriptorWriter& VDescriptorWriter::writeBuffer(uint32_t binding, VkDescriptorBufferInfo* bufferInfo) {
+VDescriptorWriter& VDescriptorWriter::writeBuffer(uint32_t binding, const VkDescriptorBufferInfo* bufferInfo) {
     assert(m_setLayout.m_bindings.count(binding) == 1 && "Layout does not contain specified binding");
 
     auto &bindingDescription = m_setLayout.m_bindings[binding];
@@ -24,7 +24,7 @@ VDescriptorWriter& VDescriptorWriter::writeBuffer(uint32_t binding, VkDescriptor
     return *this;
 }
 
-VDescriptorWriter& VDescriptorWriter::writeImage(uint32_t binding, VkDescriptorImageInfo* imageInfo) {
+VDescriptorWriter& VDescriptorWriter::writeImage(uint32_t binding, const VkDescriptorImageInfo* imageInfo) {
     assert(m_setLayout.m_bindings.count(binding) == 1 && "Layout does not contain specified binding");
 
     auto &bindingDescription = m_setLayout.m_bindings[binding];
@@ -45,15 +45,15 @@ VDescriptorWriter& VDescriptorWriter::writeImage(uint32_t binding, VkDescriptorI
 }
 
 bool VDescriptorWriter::build(VkDescriptorSet& set) {
-    bool succes = m_pool.allocateDescriptor(m_setLayout.getDescriptorSetLayout(), set);
-    if (!succes) {
+    const bool success = m_pool.allocateDescriptor(m_setLayout.getDescriptorSetLayout(), set);
+    if (!success) {
         return false;
     }
     overwrite(set);
     return true;
 }
 
-void VDescriptorWriter::overwrite(VkDescriptorSet& set) {
+void VDescriptorWriter::overwrite(const VkDescriptorSet& set) {
     for (auto& write: m_writes) {
         write.dstSet = set;
     }

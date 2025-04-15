@@ -11,10 +11,10 @@ public:
     VkResult map(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0);
     void unmap();
 
-    void copyTo(void* data, VkDeviceSize size);
+    void copyTo(const void* data, VkDeviceSize size) const;
     [[nodiscard]] VkDescriptorBufferInfo descriptorInfo(VkDeviceSize size = VK_WHOLE_SIZE, VkDeviceSize offset = 0) const;
 
-    void flush();
+    void flush() const;
 
 
     [[nodiscard]] VkBuffer getBuffer() const { return m_buffer; }

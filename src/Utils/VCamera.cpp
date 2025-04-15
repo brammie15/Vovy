@@ -1,9 +1,9 @@
 #include "VCamera.h"
 
 #include <iostream>
+#include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <glm/gtc/matrix_inverse.hpp>
 #include <glm/gtx/string_cast.hpp>
 
 #include "Core/VWindow.h"
@@ -44,7 +44,7 @@ void VCamera::Update(float deltaTime) {
     }
 
     // Looking around with arrow keys
-    float lookSpeed = 1.0f * glm::radians(1.f);
+    const float lookSpeed = 1.0f * glm::radians(1.f);
     if (glfwGetKey(VWindow::gWindow, GLFW_KEY_UP) == GLFW_PRESS) {
         totalPitch += lookSpeed;
     }
@@ -85,8 +85,8 @@ void VCamera::Update(float deltaTime) {
             firstMouse = false;
         }
 
-        float xOffset = static_cast<float>(mouseX - lastMouseX);
-        float yOffset = static_cast<float>(lastMouseY - mouseY); // Reversed: y goes from bottom to top
+        auto xOffset = static_cast<float>(mouseX - lastMouseX);
+        auto yOffset = static_cast<float>(lastMouseY - mouseY); // Reversed: y goes from bottom to top
 
         lastMouseX = mouseX;
         lastMouseY = mouseY;
@@ -113,7 +113,7 @@ void VCamera::Update(float deltaTime) {
 
 
             //TODO: god knows what this is
-            auto Deadzone = [] (float value, float threshold = 0.1f) {
+            auto deadzone = [] (float value, float threshold = 0.1f) {
                 if (fabs(value) < threshold)
                     return 0.0f;
                 const float sign = (value > 0) ? 1.0f : -1.0f;
@@ -126,10 +126,10 @@ void VCamera::Update(float deltaTime) {
                 moveSpeed *= 3.0f;
             }
 
-            const float lx = Deadzone(state.axes[GLFW_GAMEPAD_AXIS_LEFT_X]);
-            const float ly = Deadzone(state.axes[GLFW_GAMEPAD_AXIS_LEFT_Y]);
-            const float rx = Deadzone(state.axes[GLFW_GAMEPAD_AXIS_RIGHT_X]);
-            const float ry = Deadzone(state.axes[GLFW_GAMEPAD_AXIS_RIGHT_Y]);
+            const float lx = deadzone(state.axes[GLFW_GAMEPAD_AXIS_LEFT_X]);
+            const float ly = deadzone(state.axes[GLFW_GAMEPAD_AXIS_LEFT_Y]);
+            const float rx = deadzone(state.axes[GLFW_GAMEPAD_AXIS_RIGHT_X]);
+            const float ry = deadzone(state.axes[GLFW_GAMEPAD_AXIS_RIGHT_Y]);
 
             m_position += m_forward * (-ly * moveSpeed);
             m_position += m_right * (lx * moveSpeed);

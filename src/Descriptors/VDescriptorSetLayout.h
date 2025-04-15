@@ -1,9 +1,9 @@
 #ifndef VDESCRIPTORS_H
 #define VDESCRIPTORS_H
 
-#include "Core/VDevice.h"
 #include <memory>
 #include <unordered_map>
+#include "Core/VDevice.h"
 
 class VDescriptorSetLayout {
 public:
@@ -25,16 +25,16 @@ public:
         std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> m_bindings{};
     };
 
-    VDescriptorSetLayout(VDevice& deviceRef, std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings);
+    VDescriptorSetLayout(VDevice& deviceRef, const std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding>& bindings);
     ~VDescriptorSetLayout();
     VDescriptorSetLayout(const VDescriptorSetLayout &) = delete;
     VDescriptorSetLayout &operator=(const VDescriptorSetLayout &) = delete;
 
-    VkDescriptorSetLayout getDescriptorSetLayout() const { return m_descriptorSetLayout; }
+    [[nodiscard]] VkDescriptorSetLayout getDescriptorSetLayout() const { return m_descriptorSetLayout; }
 
 private:
     VDevice& m_device;
-    VkDescriptorSetLayout m_descriptorSetLayout;
+    VkDescriptorSetLayout m_descriptorSetLayout{};
     std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> m_bindings;
 
     friend class VDescriptorWriter;

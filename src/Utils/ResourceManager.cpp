@@ -10,7 +10,6 @@ VImage* ResourceManager::loadImage(VDevice& deviceRef, const std::string& filena
 
     std::cout << "Image not yet loaded, Loading: " << filename << std::endl;
     auto image = std::make_unique<VImage>(deviceRef, filename, format, usage, memoryUsage);
-    VImage* imagePtr = image.get();
     m_images[filename] = std::move(image);
     return m_images[filename].get();
 }

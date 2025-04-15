@@ -1,8 +1,5 @@
 #include "VBuffer.h"
 
-#include <cassert>
-#include <cstring>
-
 VBuffer::VBuffer(VDevice& deviceRef, VkDeviceSize size, VkBufferUsageFlags usageFlags, VmaMemoryUsage memoryUsage, bool mappable): m_device{deviceRef} {
     VmaAllocationCreateInfo allocInfo{};
     allocInfo.usage = memoryUsage;
@@ -34,7 +31,7 @@ void VBuffer::unmap() {
     }
 }
 
-void VBuffer::copyTo(void* data, VkDeviceSize size) {
+void VBuffer::copyTo(const void* data, VkDeviceSize size) const {
     // assert(m_data != nullptr && "Cannot copy to buffer if buffer is not mapped");
     // memcpy(m_data, data, size);
     vmaCopyMemoryToAllocation(m_device.allocator(), data, m_allocation, 0, size);
@@ -48,6 +45,6 @@ VkDescriptorBufferInfo VBuffer::descriptorInfo(VkDeviceSize size, VkDeviceSize o
     };
 }
 
-void VBuffer::flush() {
+void VBuffer::flush() const {
     vmaFlushAllocation(m_device.allocator(), m_allocation, 0, VK_WHOLE_SIZE);
 }

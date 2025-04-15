@@ -19,7 +19,7 @@ VPipeline::~VPipeline() {
     vkDestroyPipeline(m_device.device(), m_graphicsPipeline, nullptr);
 }
 
-void VPipeline::bind(VkCommandBuffer buffer) {
+void VPipeline::bind(VkCommandBuffer buffer) const {
     vkCmdBindPipeline(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline);
 }
 
@@ -186,7 +186,7 @@ void VPipeline::CreateGraphicsPipeline(const std::string& vertPath, const std::s
     }
 }
 
-void VPipeline::CreateShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule) {
+void VPipeline::CreateShaderModule(const std::vector<char>& code, VkShaderModule* shaderModule) const {
     VkShaderModuleCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
     createInfo.codeSize = code.size();

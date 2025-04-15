@@ -1,6 +1,8 @@
 #include "VScene.h"
 
-VScene::VScene(const std::string& name, std::function<void(VScene*)> loadFunction): m_name(name), m_loadFunction(std::move(loadFunction)) {}
+#include <utility>
+
+VScene::VScene(std::string name, std::function<void(VScene*)> loadFunction): m_name(std::move(name)), m_loadFunction(std::move(loadFunction)) {}
 
 void VScene::addGameObject(std::unique_ptr<VGameObject> gameObject) {
     m_gameObjects.push_back(std::move(gameObject));

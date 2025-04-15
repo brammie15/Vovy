@@ -12,10 +12,10 @@ public:
     void CalculateViewMatrix();
     void CalculateProjectionMatrix();
 
-    glm::mat4 GetViewMatrix() const { return m_viewMatrix; }
-    glm::mat4 GetProjectionMatrix() const { return m_projectionMatrix; }
+    [[nodiscard]] glm::mat4 GetViewMatrix() const { return m_viewMatrix; }
+    [[nodiscard]] glm::mat4 GetProjectionMatrix() const { return m_projectionMatrix; }
 
-    glm::mat4 GetViewProjectionMatrix() const { return m_projectionMatrix * m_viewMatrix; }
+    [[nodiscard]] glm::mat4 GetViewProjectionMatrix() const { return m_projectionMatrix * m_viewMatrix; }
 
     void setAspectRatio(float aspectRatio) { m_aspectRatio = aspectRatio; }
     glm::vec3 m_position{2.f, 0, 0 };

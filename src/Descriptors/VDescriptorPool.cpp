@@ -51,7 +51,7 @@ bool VDescriptorPool::allocateDescriptor(VkDescriptorSetLayout descriptorSetLayo
     return vkAllocateDescriptorSets(m_device.device(), &allocInfo, &descriptor) == VK_SUCCESS;
 }
 
-void VDescriptorPool::freeDescriptors(std::vector<VkDescriptorSet>& descriptors) const {
+void VDescriptorPool::freeDescriptors(const std::vector<VkDescriptorSet>& descriptors) const {
     vkFreeDescriptorSets(
         m_device.device(),
         m_descriptorPool,
@@ -60,6 +60,6 @@ void VDescriptorPool::freeDescriptors(std::vector<VkDescriptorSet>& descriptors)
     );
 }
 
-void VDescriptorPool::resetPool() {
+void VDescriptorPool::resetPool() const {
     vkResetDescriptorPool(m_device.device(), m_descriptorPool, 0);
 }

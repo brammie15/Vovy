@@ -1,9 +1,9 @@
 #include "VDevice.h"
 
+#include <cstring>
 #include <iostream>
 #include <set>
 #include <stdexcept>
-#include <cstring>
 
 #include "Resources/VBuffer.h"
 
@@ -27,9 +27,9 @@ VkResult CreateDebugUtilsMessengerEXT(
     const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
     const VkAllocationCallbacks* pAllocator,
     VkDebugUtilsMessengerEXT* pDebugMessenger) {
-    auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
+    auto func = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(
         instance,
-        "vkCreateDebugUtilsMessengerEXT");
+        "vkCreateDebugUtilsMessengerEXT"));
     if (func != nullptr) {
         return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
     } else {
@@ -41,9 +41,9 @@ void DestroyDebugUtilsMessengerEXT(
     VkInstance instance,
     VkDebugUtilsMessengerEXT debugMessenger,
     const VkAllocationCallbacks* pAllocator) {
-    auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
+    auto func = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(
         instance,
-        "vkDestroyDebugUtilsMessengerEXT");
+        "vkDestroyDebugUtilsMessengerEXT"));
     if (func != nullptr) {
         func(instance, debugMessenger, pAllocator);
     }
@@ -76,7 +76,7 @@ VDevice::~VDevice() {
     vkDestroyInstance(m_instance, nullptr);
 }
 
-//TODO: ask if this could be inproved to not pass pointers but something else
+//TODO: ask if this could be improved to not pass pointers but something else
 void VDevice::copyBuffer(VBuffer* srcBuffer, VBuffer* destBuffer, uint32_t size) {
     VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 
@@ -89,7 +89,7 @@ void VDevice::copyBuffer(VBuffer* srcBuffer, VBuffer* destBuffer, uint32_t size)
 
 
 void VDevice::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usageFlags, VmaMemoryUsage memoryUsage, bool mappable,
-                           VkBuffer& buffer, VmaAllocation& allocation) {
+                           VkBuffer& buffer, VmaAllocation& allocation) const {
     VkBufferCreateInfo bufferInfo{};
     bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     bufferInfo.usage = usageFlags;
@@ -98,7 +98,10 @@ void VDevice::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usageFlags, Vma
 
     VmaAllocationCreateInfo allocationInfo{};
     allocationInfo.usage = memoryUsage;
-    allocationInfo.requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+
+    if (mappable) {
+        allocationInfo.requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+    }
 
     VmaAllocationInfo allocInfo{};
     if (vmaCreateBuffer(m_allocator, &bufferInfo, &allocationInfo, &buffer, &allocation, &allocInfo) != VK_SUCCESS) {
@@ -112,7 +115,7 @@ VkFormatProperties VDevice::GetFormatProperties(VkFormat format) const {
     return formatProperties;
 }
 
-uint32_t VDevice::FindMemoryType(uint32_t typeFilter, VkFlags properties) {
+uint32_t VDevice::FindMemoryType(uint32_t typeFilter, VkFlags properties) const {
     VkPhysicalDeviceMemoryProperties memProperties;
     vkGetPhysicalDeviceMemoryProperties(m_physicalDevice, &memProperties);
     for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
@@ -181,7 +184,7 @@ VkCommandBuffer VDevice::beginSingleTimeCommands() {
     return commandBuffer;
 }
 
-void VDevice::endSingleTimeCommands(VkCommandBuffer commandBuffer) {
+void VDevice::endSingleTimeCommands(VkCommandBuffer commandBuffer) const {
     vkEndCommandBuffer(commandBuffer);
 
     VkSubmitInfo submitInfo{};
@@ -471,10 +474,9 @@ void VDevice::PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEX
 }
 
 //Thanks GLFW docs
-std::vector<const char*> VDevice::GetRequiredExtensions() {
+std::vector<const char*> VDevice::GetRequiredExtensions() const {
     uint32_t glfwExtensionCount = 0;
-    const char** glfwExtensions;
-    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+    const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
     std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
@@ -516,7 +518,7 @@ QueueFamilyIndices VDevice::FindQueueFamilies(VkPhysicalDevice device) {
     return indices;
 }
 
-bool VDevice::CheckDeviceExtensionSupport(VkPhysicalDevice device) {
+bool VDevice::CheckDeviceExtensionSupport(VkPhysicalDevice device) const {
     uint32_t extensionCount;
     vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
 

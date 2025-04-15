@@ -3,7 +3,7 @@
 #include <array>
 #include <stdexcept>
 
-VRenderPass::VRenderPass(VWindow& windowRef, VDevice& deviceRef): m_device{deviceRef}, m_window{windowRef} {
+VRenderPass::VRenderPass(VWindow& windowRef, VDevice& deviceRef): m_window{windowRef}, m_device{deviceRef} {
     recreateSwapChain();
     createCommandBuffers();
 }
@@ -57,7 +57,7 @@ void VRenderPass::endFrame() {
     m_currentFrameIndex = (m_currentFrameIndex + 1) % VSwapchain::MAX_FRAMES_IN_FLIGHT;
 }
 
-void VRenderPass::beginSwapChainRenderPass(VkCommandBuffer commandBuffer) {
+void VRenderPass::beginSwapChainRenderPass(VkCommandBuffer commandBuffer) const {
     assert(m_isFrameStarted && "Can't call beginSwapChainRenderPass if frame is not in progress");
     assert(
         commandBuffer == GetCurrentCommandBuffer() &&
@@ -66,7 +66,7 @@ void VRenderPass::beginSwapChainRenderPass(VkCommandBuffer commandBuffer) {
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderPassInfo.renderPass = m_swapChain->GetRenderPass();
-    renderPassInfo.framebuffer = m_swapChain->GetFrameBuffer(m_currentImageIndex);
+    renderPassInfo.framebuffer = m_swapChain->GetFrameBuffer(static_cast<int>(m_currentImageIndex));
 
     renderPassInfo.renderArea.offset = {0, 0};
     renderPassInfo.renderArea.extent = m_swapChain->GetSwapChainExtent();
@@ -91,7 +91,7 @@ void VRenderPass::beginSwapChainRenderPass(VkCommandBuffer commandBuffer) {
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 }
 
-void VRenderPass::endSwapChainRenderPass(VkCommandBuffer commandBuffer) {
+void VRenderPass::endSwapChainRenderPass(VkCommandBuffer commandBuffer) const {
     assert(m_isFrameStarted && "Can't call endSwapChainRenderPass if frame is not in progress");
     assert(
         commandBuffer == GetCurrentCommandBuffer() &&

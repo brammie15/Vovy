@@ -13,14 +13,14 @@ public:
     VSwapchain(VDevice& deviceRef, VkExtent2D windowExtent, std::shared_ptr<VSwapchain> previous);
 
     ~VSwapchain();
-    [[nodiscard]] VkFramebuffer GetFrameBuffer(int index) {
+    [[nodiscard]] VkFramebuffer GetFrameBuffer(int index) const {
         return m_swapChainFramebuffers[index];
     }
 
     VSwapchain(const VSwapchain &) = delete;
     void operator=(const VSwapchain &) = delete;
 
-    VkFormat findDepthFormat();
+    VkFormat findDepthFormat() const;
     [[nodiscard]] VkExtent2D GetSwapChainExtent() const { return m_swapChainExtent; }
     [[nodiscard]] size_t imageCount() const { return m_swapChainImages.size(); }
     [[nodiscard]] VkFormat GetSwapChainImageFormat() const { return m_swapChainImageFormat; }
@@ -31,7 +31,7 @@ public:
     [[nodiscard]] VkRenderPass GetRenderPass() const { return m_renderPass; }
 
     VkResult acquireNextImage(uint32_t *imageIndex);
-    VkResult submitCommandBuffers(const VkCommandBuffer *buffers, uint32_t *imageIndex);
+    VkResult submitCommandBuffers(const VkCommandBuffer *buffers, const uint32_t *imageIndex);
 
 private:
     void init();
@@ -48,10 +48,10 @@ private:
 
     VDevice& m_device;
     VkExtent2D m_windowExtent;
-    VkExtent2D m_swapChainExtent;
+    VkExtent2D m_swapChainExtent{};
 
-    VkSwapchainKHR m_swapchain;
-    VkRenderPass m_renderPass;
+    VkSwapchainKHR m_swapchain{};
+    VkRenderPass m_renderPass{};
 
     VkFormat m_swapChainImageFormat;
     VkFormat m_swapChainDepthFormat;

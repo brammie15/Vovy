@@ -34,16 +34,16 @@ public:
     glm::vec2 getMouseDelta();
 
     void PollInput();
-    bool isKeyDown(int key) const;
-    bool isKeyUp(int key) const;
-    bool isKeyPressed(int key);
+    [[nodiscard]] bool isKeyDown(int key) const;
+    [[nodiscard]] bool isKeyUp(int key) const;
+    [[nodiscard]] bool isKeyPressed(int key);
 
     [[nodiscard]] uint32_t getWidth() const { return m_width; }
     [[nodiscard]] uint32_t getHeight() const { return m_height; }
 private:
     static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
     static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
-    void LoadGamepadMappins(const std::string& filename);
+    void LoadGamepadMappings(const std::string& filename);
 
     uint32_t m_width;
     uint32_t m_height;

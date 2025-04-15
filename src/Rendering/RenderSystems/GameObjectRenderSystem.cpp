@@ -11,7 +11,7 @@ GameObjectRenderSystem::~GameObjectRenderSystem() {
     vkDestroyPipelineLayout(m_device.device(), m_pipelineLayout, nullptr);
 }
 
-void GameObjectRenderSystem::renderGameObjects(const FrameContext& frameContext, const std::vector<std::unique_ptr<VGameObject>>& gameObjects) {
+void GameObjectRenderSystem::renderGameObjects(const FrameContext& frameContext, const std::vector<std::unique_ptr<VGameObject>>& gameObjects) const {
     m_pipeline->bind(frameContext.commandBuffer);
 
     vkCmdBindDescriptorSets(

@@ -4,27 +4,23 @@
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_FORCE_ALIGNED_GENTYPES
-#include <glm/glm.hpp>
 #include <chrono>
-#include <math.h>
+#include <glm/glm.hpp>
 
-#define _USE_MATH_DEFINES
 #include <functional>
-#include <iostream>
-#include <math.h>
 #include <thread>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/string_cast.hpp>
 
-#include "Utils/FrameContext.h"
-#include "Utils/VCamera.h"
-#include "Rendering/RenderSystems/GameObjectRenderSystem.h"
 #include "Descriptors/VDescriptorSetLayout.h"
 #include "Descriptors/VDescriptorWriter.h"
+#include "Rendering/RenderSystems/GameObjectRenderSystem.h"
 #include "Rendering/RenderSystems/ImguiRenderSystem.h"
 #include "Rendering/RenderSystems/LineRenderSystem.h"
-#include "Utils/DeltaTime.h"
 #include "Scene/VMesh.h"
+#include "Utils/DeltaTime.h"
+#include "Utils/FrameContext.h"
+#include "Utils/VCamera.h"
 
 struct GlobalUBO {
     glm::mat4 view;
@@ -47,7 +43,7 @@ VApp::VApp() {
     m_currentScene = m_sigmaVanniScene.get();
     m_currentScene->sceneLoad();
 
-    std::vector<BezierNode> controlPoints = {
+    const std::vector<BezierNode> controlPoints = {
         BezierNode{glm::vec3(0.0f, 0.0f, 0.0f)},
         BezierNode{glm::vec3(1.0f, 2.0f, 0.0f)},
         BezierNode{glm::vec3(2.0f, -1.0f, 0.0f)},
@@ -123,15 +119,15 @@ void VApp::run() {
         imguiRenderSystem.beginFrame();
 
         this->imGui();
-        if (m_currentScene->getGameObjects().size() > 0 && m_selectedTransform) {
+        if (!m_currentScene->getGameObjects().empty() && m_selectedTransform) {
             imguiRenderSystem.drawGizmos(&camera, m_selectedTransform, "Maintransform");
         }
 
         auto& curves = m_currentScene->getBezierCurves();
-        for (int i = 0; i < curves.size(); i++) {
-            for (int j = 0; j < curves[i].nodes.size(); j++) {
+        for (auto & curve : curves) {
+            for (int j = 0; j < curve.nodes.size(); j++) {
                 std::string id = "BezierNode" + std::to_string(j);
-                imguiRenderSystem.drawGizmos(&camera, curves[i].nodes[j].position, id);
+                imguiRenderSystem.drawGizmos(&camera, curve.nodes[j].position, id);
             }
         }
 
@@ -146,7 +142,7 @@ void VApp::run() {
         }
 
         if (m_window.isKeyPressed(GLFW_KEY_P)) {
-            if (m_currentScene->getLineSegments().size() == 0) {
+            if (m_currentScene->getLineSegments().empty()) {
                 m_currentScene->addLineSegment(LineSegment{
                     {0.0f, 0.0f, 0.0f},
                     {1.0f, 1.0f, 1.0f},
@@ -164,7 +160,7 @@ void VApp::run() {
         }
 
         //TODO: remove
-        camera.Update(DeltaTime::GetInstance().GetDeltaTime());
+        camera.Update(static_cast<float>(DeltaTime::GetInstance().GetDeltaTime()));
 
         camera.CalculateProjectionMatrix();
         camera.CalculateViewMatrix();
@@ -243,13 +239,13 @@ void VApp::imGui() {
 
 
     ImGui::Begin("Bezier Segments");
-    if (m_currentScene->getBezierCurves().size() > 0) {
-        ImGui::Text("Bezier Segments: %d", m_currentScene->getBezierCurves()[0].nodes.size());
-        if (ImGui::Button("add Node")) {
-            glm::vec3 prevNodePosition = m_currentScene->getBezierCurves()[0].nodes.back().position;
-            m_currentScene->getBezierCurves()[0].nodes.push_back(BezierNode{prevNodePosition + glm::vec3(0.0f, 1.0f, 0.0f)});
-            m_currentScene->getBezierCurves()[0].nodes.push_back(BezierNode{prevNodePosition + glm::vec3(0.0f, 2.0f, 0.0f)});
-        }
+    ImGui::Text("Bezier Segments: %d", m_currentScene->getBezierCurves()[0].nodes.size());
+    if (ImGui::Button("add Node")) {
+        const glm::vec3 prevNodePosition = m_currentScene->getBezierCurves()[0].nodes.back().position;
+        m_currentScene->getBezierCurves()[0].nodes.emplace_back(prevNodePosition + glm::vec3(0.0f, 1.0f, 0.0f));
+        m_currentScene->getBezierCurves()[0].nodes.emplace_back(prevNodePosition + glm::vec3(0.0f, 2.0f, 0.0f));
+    }
+    if (!m_currentScene->getBezierCurves().empty()) {
         for (int i = 0; i < m_currentScene->getBezierCurves()[0].nodes.size(); i++) {
             std::string label = "Control Point " + std::to_string(i);
             if (ImGui::BeginCombo(label.c_str(), "Control Point")) {
@@ -280,11 +276,11 @@ void VApp::imGui() {
     }
     ImGui::End();
 
-    auto& objects = m_currentScene->getGameObjects();
+    const auto& objects = m_currentScene->getGameObjects();
     int id{ 0 };
     std::function<void(Transform*)> RenderObject = [&](Transform* object) {
         ImGui::PushID(++id);
-        bool treeOpen = ImGui::TreeNodeEx(std::to_string(++id).c_str(), ImGuiTreeNodeFlags_AllowOverlap);
+        const bool treeOpen = ImGui::TreeNodeEx(std::to_string(++id).c_str(), ImGuiTreeNodeFlags_AllowOverlap);
 
         ImGui::SameLine();
         if (ImGui::SmallButton("Select")) {
@@ -293,7 +289,7 @@ void VApp::imGui() {
 
         if (treeOpen) {
             ImGui::SeparatorText("Children");
-            for (auto child : object->GetChildren()) {
+            for (const auto child : object->GetChildren()) {
                 //TODO: check if i can do with VGameobjects because with just transform i don't
                 //Know exactly what the owner is
                 RenderObject(child);

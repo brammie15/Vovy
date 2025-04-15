@@ -18,9 +18,9 @@ struct VulkanDeviceDebugUtilsFuncTable {
 };
 
 struct SwapChainSupportDetails {
-    VkSurfaceCapabilitiesKHR capabilities;
-    std::vector<VkSurfaceFormatKHR> formats;
-    std::vector<VkPresentModeKHR> presentModes;
+    VkSurfaceCapabilitiesKHR capabilities{};
+    std::vector<VkSurfaceFormatKHR> formats{};
+    std::vector<VkPresentModeKHR> presentModes{};
 };
 
 struct QueueFamilyIndices {
@@ -28,7 +28,7 @@ struct QueueFamilyIndices {
     uint32_t presentFamily{};
     bool graphicsFamilyHasValue = false;
     bool presentFamilyHasValue = false;
-    bool isComplete() const { return graphicsFamilyHasValue && presentFamilyHasValue; }
+    [[nodiscard]] bool isComplete() const { return graphicsFamilyHasValue && presentFamilyHasValue; }
 };
 
 class VDevice final {
@@ -47,7 +47,7 @@ public:
 
     [[nodiscard]] VkCommandPool getCommandPool() const { return m_commandPool; }
     [[nodiscard]] VkDevice device() const { return m_device; }
-    [[nodiscard]] VkPhysicalDevice getPhyscialDevice() const { return m_physicalDevice; }
+    [[nodiscard]] VkPhysicalDevice getPhysicalDevice() const { return m_physicalDevice; }
     [[nodiscard]] VkSurfaceKHR surface() const { return m_surface; }
     [[nodiscard]] VkQueue graphicsQueue() const { return m_graphicsQueue; }
     [[nodiscard]] VkQueue presentQueue() const { return m_presentQueue; }
@@ -66,13 +66,13 @@ public:
 
         VkBuffer& buffer,
         VmaAllocation& allocation
-    );
+    ) const;
 
-    VkFormatProperties GetFormatProperties(VkFormat format) const;
+    [[nodiscard]] VkFormatProperties GetFormatProperties(VkFormat format) const;
 
-    VkPhysicalDeviceProperties properties;
+    VkPhysicalDeviceProperties properties{};
 
-    uint32_t FindMemoryType(uint32_t typeFilter, VkFlags properties);
+    uint32_t FindMemoryType(uint32_t typeFilter, VkFlags properties) const;
     void CreateImageWithInfo(
               const VkImageCreateInfo &imageInfo,
               VkMemoryPropertyFlags properties,
@@ -83,7 +83,7 @@ public:
 
 
     VkCommandBuffer beginSingleTimeCommands();
-    void endSingleTimeCommands(VkCommandBuffer commandBuffer);
+    void endSingleTimeCommands(VkCommandBuffer commandBuffer) const;
 
     void TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels);
     void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
@@ -99,26 +99,26 @@ private:
     void allocVmaAllocator();
 
     bool IsDeviceGood(VkPhysicalDevice device);
-    bool CheckValidationLayerSupport() const;
+    [[nodiscard]] bool CheckValidationLayerSupport() const;
     void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
-    std::vector<const char*> GetRequiredExtensions();
+    std::vector<const char*> GetRequiredExtensions() const;
     QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device);
-    bool CheckDeviceExtensionSupport(VkPhysicalDevice device);
+    bool CheckDeviceExtensionSupport(VkPhysicalDevice device) const;
     SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device) const;
 
 
-    VkInstance m_instance;
-    VkDebugUtilsMessengerEXT m_debugMessenger;
+    VkInstance m_instance{};
+    VkDebugUtilsMessengerEXT m_debugMessenger{};
     VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
-    VWindow &m_window;
-    VkCommandPool m_commandPool;
+    VWindow& m_window;
+    VkCommandPool m_commandPool{};
 
-    VkDevice m_device;
-    VkSurfaceKHR m_surface;
-    VkQueue m_graphicsQueue;
-    VkQueue m_presentQueue;
+    VkDevice m_device{};
+    VkSurfaceKHR m_surface{};
+    VkQueue m_graphicsQueue{};
+    VkQueue m_presentQueue{};
 
-    VmaAllocator m_allocator;
+    VmaAllocator m_allocator{};
 
     const std::vector<const char *> validationLayers = {"VK_LAYER_KHRONOS_validation"};
     const std::vector<const char *> deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};

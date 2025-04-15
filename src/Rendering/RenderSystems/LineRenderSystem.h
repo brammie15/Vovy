@@ -36,8 +36,8 @@ public:
     LineRenderSystem(VDevice& deviceRef, VkRenderPass renderPass, const std::vector<VkDescriptorSetLayout>& descriptorSetLayout);
     ~LineRenderSystem();
 
-    void renderLines(FrameContext context, const std::vector<LineSegment>& segments);
-    void renderBezier(FrameContext context, std::vector<BezierCurve>& curves);
+    void renderLines(const FrameContext& context, const std::vector<LineSegment>& segments);
+    void renderBezier(const FrameContext& context, std::vector<BezierCurve>& curves);
 
 private:
     void createPipelineLayout(const std::vector<VkDescriptorSetLayout>& descriptorSetLayouts);
@@ -47,7 +47,7 @@ private:
 
     //TODO: not const because transform doesn't have non const GetWorldPosition
     glm::vec3 deCasteljau(std::vector<BezierNode>& nodes, float t);
-    std::vector<glm::vec3> getControlPoints(std::vector<BezierNode>& nodes);
+    std::vector<glm::vec3> getControlPoints(const std::vector<BezierNode>& nodes);
 
     VDevice& m_device;
 

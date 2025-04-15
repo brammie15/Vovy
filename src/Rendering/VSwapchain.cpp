@@ -3,6 +3,7 @@
 #include <array>
 #include <limits>
 #include <stdexcept>
+#include <utility>
 
 VSwapchain::VSwapchain(VDevice& deviceRef, VkExtent2D windowExtent): m_device(deviceRef), m_windowExtent{windowExtent} {
     createSwapChain();
@@ -13,7 +14,7 @@ VSwapchain::VSwapchain(VDevice& deviceRef, VkExtent2D windowExtent): m_device(de
     createSyncObjects();
 }
 
-VSwapchain::VSwapchain(VDevice& deviceRef, VkExtent2D windowExtent, std::shared_ptr<VSwapchain> previous): m_device{deviceRef}, m_windowExtent{windowExtent}, m_oldSwapChain{previous} {
+VSwapchain::VSwapchain(VDevice& deviceRef, VkExtent2D windowExtent, std::shared_ptr<VSwapchain> previous): m_device{deviceRef}, m_windowExtent{windowExtent}, m_oldSwapChain{std::move(previous)} {
     init();
     m_oldSwapChain = nullptr;
 }
@@ -49,7 +50,7 @@ VSwapchain::~VSwapchain() {
     }
 }
 
-VkFormat VSwapchain::findDepthFormat() {
+VkFormat VSwapchain::findDepthFormat() const {
     return m_device.FindSupportedFormat(
         {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
         VK_IMAGE_TILING_OPTIMAL,
@@ -79,7 +80,7 @@ VkResult VSwapchain::acquireNextImage(uint32_t* imageIndex) {
     return result;
 }
 
-VkResult VSwapchain::submitCommandBuffers(const VkCommandBuffer* buffers, uint32_t* imageIndex) {
+VkResult VSwapchain::submitCommandBuffers(const VkCommandBuffer* buffers, const uint32_t* imageIndex) {
     if (m_imagesInFlight[*imageIndex] != VK_NULL_HANDLE) {
         // Wait until the image is no longer in use
         vkWaitForFences(m_device.device(), 1, &m_imagesInFlight[*imageIndex], VK_TRUE, UINT64_MAX);
@@ -416,7 +417,6 @@ VkExtent2D VSwapchain::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabili
     if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
         return capabilities.currentExtent;
     } else {
-        int width, height;
         VkExtent2D actualExtent = m_windowExtent;
         actualExtent.width = std::max(
             capabilities.minImageExtent.width,

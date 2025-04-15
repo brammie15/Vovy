@@ -72,7 +72,7 @@ private:
     uint32_t m_indexCount;
     std::unique_ptr<VBuffer> m_indexBuffer;
 
-    VImage* m_textureImage;
+    VImage* m_textureImage{};
 
     Transform m_transform;
 

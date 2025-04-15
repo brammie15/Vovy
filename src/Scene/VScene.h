@@ -9,7 +9,7 @@
 
 class VScene {
 public:
-    explicit VScene(const std::string& name, std::function<void(VScene*)> loadFunction = nullptr);
+    explicit VScene(std::string  name, std::function<void(VScene*)> loadFunction = nullptr);
     ~VScene() = default;
 
     void addGameObject(std::unique_ptr<VGameObject> gameObject);

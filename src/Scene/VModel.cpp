@@ -3,11 +3,11 @@
 #include <execution>
 #include <iostream>
 #include <assimp/Importer.hpp>
-#include <assimp/scene.h>
 #include <assimp/postprocess.h>
+#include <assimp/scene.h>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "../Rendering/RenderSystems/GameObjectRenderSystem.h"
+#include "Rendering/RenderSystems/GameObjectRenderSystem.h"
 
 VModel::VModel(VDevice& deviceRef, const std::string& path, VGameObject* parent): m_device{deviceRef} {
     loadModel(path);
@@ -159,8 +159,8 @@ VMesh::Builder VModel::processMesh(aiMesh* mesh, const aiScene* scene) {
 
 void VModel::generateMeshes(VGameObject* parent) {
     //TODO: Fix this
-    m_builders.erase(std::remove_if(m_builders.begin(), m_builders.end(),
-        [](const VMesh::Builder& builder) { return builder.vertices.empty(); }), m_builders.end());
+    m_builders.erase(std::ranges::remove_if(m_builders,
+    [](const VMesh::Builder& builder) { return builder.vertices.empty(); }).begin(), m_builders.end());
 
 
     m_descriptorPool = VDescriptorPool::Builder(m_device)
@@ -181,7 +181,7 @@ void VModel::generateMeshes(VGameObject* parent) {
     }
 
     for (const auto& builder : m_builders) {
-        std::unique_ptr<VMesh> mesh = std::make_unique<VMesh>(m_device, builder);
+        auto mesh = std::make_unique<VMesh>(m_device, builder);
         mesh->getTransform().SetWorldMatrix(builder.transform); // Apply transform
         if (parent) {
             mesh->getTransform().SetParent(&parent->transform, true);

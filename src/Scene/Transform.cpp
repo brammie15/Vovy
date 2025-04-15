@@ -31,7 +31,7 @@ void Transform::SetWorldMatrix(const glm::mat4& mat) {
         glm::length(glm::vec3(mat[2]))
     );
 
-    glm::mat3 rotationMatrix = glm::mat3(
+    const auto rotationMatrix = glm::mat3(
         glm::vec3(mat[0]) / m_WorldScale.x,
         glm::vec3(mat[1]) / m_WorldScale.y,
         glm::vec3(mat[2]) / m_WorldScale.z
@@ -39,8 +39,8 @@ void Transform::SetWorldMatrix(const glm::mat4& mat) {
     m_WorldRotation = glm::quat_cast(rotationMatrix);
 
     if (m_Parent) {
-        glm::mat4 parentInv = glm::inverse(m_Parent->GetWorldMatrix());
-        glm::mat4 localMat = parentInv * mat;
+        const auto parentInv = glm::inverse(m_Parent->GetWorldMatrix());
+        const auto localMat = parentInv * mat;
         m_LocalPosition = glm::vec3(localMat[3]);
         glm::mat3 localRotationMatrix = glm::mat3(
             glm::vec3(localMat[0]) / m_WorldScale.x,
@@ -234,7 +234,7 @@ void Transform::UpdateWorldMatrix() {
 void Transform::SetPositionDirty() {
     m_PositionDirty = true;
     m_MatrixDirty = true;
-    for (auto child: m_Children) {
+    for (const auto child: m_Children) {
         child->SetPositionDirty();
     }
 }

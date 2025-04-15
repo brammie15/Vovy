@@ -3,8 +3,8 @@
 #include <cassert>
 #include <memory>
 
-#include "Core/VDevice.h"
 #include "VSwapchain.h"
+#include "Core/VDevice.h"
 #include "Core/VWindow.h"
 
 
@@ -32,8 +32,8 @@ public:
 
     VkCommandBuffer BeginFrame();
     void endFrame();
-    void beginSwapChainRenderPass(VkCommandBuffer commandBuffer);
-    void endSwapChainRenderPass(VkCommandBuffer commandBuffer);
+    void beginSwapChainRenderPass(VkCommandBuffer commandBuffer) const;
+    void endSwapChainRenderPass(VkCommandBuffer commandBuffer) const;
 private:
 
     void createCommandBuffers();
@@ -45,7 +45,7 @@ private:
     std::unique_ptr<VSwapchain> m_swapChain;
     std::vector<VkCommandBuffer> commandBuffers;
 
-    uint32_t m_currentImageIndex;
+    uint32_t m_currentImageIndex{};
     int m_currentFrameIndex{0};
     bool m_isFrameStarted{false};
 };

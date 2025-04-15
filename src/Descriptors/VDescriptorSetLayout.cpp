@@ -6,7 +6,7 @@
 VDescriptorSetLayout::Builder& VDescriptorSetLayout::Builder::addBinding(uint32_t binding, VkDescriptorType type,
                                                                          VkShaderStageFlags stageFlags,
                                                                          uint32_t count) {
-    assert(m_bindings.count(binding) == 0 && "Binding already in use");
+    assert(!m_bindings.contains(binding) && "Binding already in use");
     VkDescriptorSetLayoutBinding layoutBinding{};
     layoutBinding.binding = binding;
     layoutBinding.descriptorType = type;
@@ -21,7 +21,7 @@ std::unique_ptr<VDescriptorSetLayout> VDescriptorSetLayout::Builder::build() {
 }
 
 VDescriptorSetLayout::VDescriptorSetLayout(VDevice& deviceRef,
-                                           std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding> bindings): m_device{deviceRef}, m_bindings{bindings} {
+                                           const std::unordered_map<uint32_t, VkDescriptorSetLayoutBinding>& bindings): m_device{deviceRef}, m_bindings{bindings} {
     std::vector<VkDescriptorSetLayoutBinding> setLayoutBindings{};
     for (auto kv: bindings) {
         setLayoutBindings.push_back(kv.second);
