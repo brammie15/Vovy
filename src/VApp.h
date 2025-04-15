@@ -4,16 +4,13 @@
 #include <memory>
 
 #include "Core/VDevice.h"
-#include "Scene/VMesh.h"
 #include "Rendering/VPipeline.h"
 #include "Core/VWindow.h"
 #include "Scene/VGameObject.h"
 #include "Rendering/VRenderPass.h"
 #include "Descriptors/VDescriptorPool.h"
-#include "Rendering/RenderSystems/LineRenderSystem.h"
 #include "Scene/VScene.h"
-//
-//
+
 // namespace std {
 //     template<typename T>
 //     using freaky_ptr = unique_ptr<T>;

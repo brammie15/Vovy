@@ -4,7 +4,7 @@
 #include "Utils/FrameContext.h"
 #include "Core/VDevice.h"
 #include "Scene/VGameObject.h"
-#include "../VPipeline.h"
+#include "Rendering/VPipeline.h"
 
 struct LineSegment {
     glm::vec3 start;
@@ -15,7 +15,8 @@ struct LineSegment {
 struct BezierNode {
     glm::vec3 position;
 
-    explicit BezierNode(const glm::vec3& pos) : position(pos) {}
+    explicit BezierNode(const glm::vec3& pos) : position(pos) {
+    }
 };
 
 struct BezierCurve {
@@ -37,6 +38,7 @@ public:
 
     void renderLines(FrameContext context, const std::vector<LineSegment>& segments);
     void renderBezier(FrameContext context, std::vector<BezierCurve>& curves);
+
 private:
     void createPipelineLayout(const std::vector<VkDescriptorSetLayout>& descriptorSetLayouts);
     void createPipeline(VkRenderPass renderPass);

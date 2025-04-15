@@ -4,6 +4,7 @@
 #include <string>
 
 #define GLFW_INCLUDE_VULKAN
+#include <unordered_map>
 #include <glm/vec2.hpp>
 
 #include "GLFW/glfw3.h"
@@ -32,10 +33,16 @@ public:
 
     glm::vec2 getMouseDelta();
 
+    void PollInput();
+    bool isKeyDown(int key) const;
+    bool isKeyUp(int key) const;
+    bool isKeyPressed(int key);
+
     [[nodiscard]] uint32_t getWidth() const { return m_width; }
     [[nodiscard]] uint32_t getHeight() const { return m_height; }
 private:
     static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
+    static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
     void LoadGamepadMappins(const std::string& filename);
 
     uint32_t m_width;
@@ -49,6 +56,9 @@ private:
 
     bool m_cursorLocked = false;
     bool m_shouldToggleCursor = false;
+
+    std::unordered_map<int, bool> m_currentKeys;
+    std::unordered_map<int, bool> m_previousKeys;
 };
 
 #endif //FWINDOW_H

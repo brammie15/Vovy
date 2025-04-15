@@ -1,13 +1,12 @@
 #ifndef IMGUIRENDERSYSTEM_H
 #define IMGUIRENDERSYSTEM_H
+
 #include "Core/VDevice.h"
 #include "Scene/VGameObject.h"
-#include "../VPipeline.h"
+#include "Rendering/VPipeline.h"
 #include "imgui.h"
-#include "imgui_impl_glfw.h"
 #include "imgui_impl_vulkan.h"
 #include "Utils/VCamera.h"
-
 
 class ImguiRenderSystem {
 public:
@@ -33,9 +32,7 @@ private:
 
     std::unique_ptr<VDescriptorPool> m_descriptorPool;
 
-    bool m_frameStarted{ false };
+    bool m_frameStarted{false};
 };
-
-
 
 #endif //IMGUIRENDERSYSTEM_H

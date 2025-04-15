@@ -36,6 +36,7 @@ public:
 
     void bind(VkCommandBuffer buffer);
     static void DefaultPipelineConfigInfo(VPipelineConfigInfo& configInfo);
+
 private:
     static std::vector<char> readFile(const std::string& filename);
 

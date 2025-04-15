@@ -21,11 +21,10 @@ LineRenderSystem::~LineRenderSystem() {
 }
 
 void LineRenderSystem::renderLines(FrameContext context, const std::vector<LineSegment>& segments) {
-
     std::vector<VMesh::Vertex> vertexData;
     vertexData.reserve(segments.size() * 2);
 
-    for (const auto& segment : segments) {
+    for (const auto& segment: segments) {
         vertexData.push_back({segment.start, segment.color});
         vertexData.push_back({segment.end, segment.color});
     }
@@ -67,15 +66,15 @@ void LineRenderSystem::renderLines(FrameContext context, const std::vector<LineS
     push.modelMatrix = glm::mat4(1.f);
 
     vkCmdPushConstants(context.commandBuffer,
-        m_pipelineLayout,
-        VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-        0,
-        sizeof(AnotherPushConstantData),
-        &push
+                       m_pipelineLayout,
+                       VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                       0,
+                       sizeof(AnotherPushConstantData),
+                       &push
     );
 
-    VkBuffer buffers[] = { m_vertexBuffer->getBuffer() };
-    VkDeviceSize offsets[] = { 0 };
+    VkBuffer buffers[] = {m_vertexBuffer->getBuffer()};
+    VkDeviceSize offsets[] = {0};
     vkCmdBindVertexBuffers(context.commandBuffer, 0, 1, buffers, offsets);
 
     vkCmdDraw(context.commandBuffer, static_cast<uint32_t>(vertexData.size()), 1, 0, 0);
@@ -88,7 +87,7 @@ void LineRenderSystem::renderBezier(FrameContext context, std::vector<BezierCurv
 
     std::vector<VMesh::Vertex> vertexData;
 
-    for (auto& curve : curves) {
+    for (auto& curve: curves) {
         for (int i = 0; i < curve.resolution; ++i) {
             float t = static_cast<float>(i) / (curve.resolution - 1);
             glm::vec3 point = deCasteljau(curve.nodes, t);
@@ -96,8 +95,8 @@ void LineRenderSystem::renderBezier(FrameContext context, std::vector<BezierCurv
             vertexData.push_back({point, curve.color});
         }
 
-        for (auto& node : curve.nodes) {
-            vertexData.push_back({node.position, glm::vec3(0.0f, 0.0f, 1.0f)});  // Blue color for control points
+        for (auto& node: curve.nodes) {
+            vertexData.push_back({node.position, glm::vec3(0.0f, 0.0f, 1.0f)}); // Blue color for control points
         }
     }
 
@@ -138,15 +137,15 @@ void LineRenderSystem::renderBezier(FrameContext context, std::vector<BezierCurv
     push.modelMatrix = glm::mat4(1.f);
 
     vkCmdPushConstants(context.commandBuffer,
-        m_pipelineLayout,
-        VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-        0,
-        sizeof(AnotherPushConstantData),
-        &push
+                       m_pipelineLayout,
+                       VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                       0,
+                       sizeof(AnotherPushConstantData),
+                       &push
     );
 
-    VkBuffer buffers[] = { m_vertexBuffer->getBuffer() };
-    VkDeviceSize offsets[] = { 0 };
+    VkBuffer buffers[] = {m_vertexBuffer->getBuffer()};
+    VkDeviceSize offsets[] = {0};
     vkCmdBindVertexBuffers(context.commandBuffer, 0, 1, buffers, offsets);
 
     vkCmdDraw(context.commandBuffer, static_cast<uint32_t>(vertexData.size()), 1, 0, 0);
@@ -169,7 +168,7 @@ glm::vec3 LineRenderSystem::deCasteljau(std::vector<BezierNode>& nodes, float t)
 
 std::vector<glm::vec3> LineRenderSystem::getControlPoints(std::vector<BezierNode>& nodes) {
     std::vector<glm::vec3> controlPoints;
-    for (auto& node : nodes) {
+    for (auto& node: nodes) {
         controlPoints.push_back(node.position);
     }
     return controlPoints;

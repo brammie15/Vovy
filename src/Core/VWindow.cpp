@@ -17,6 +17,7 @@ VWindow::VWindow(uint32_t width, uint32_t height, const std::string& windowName)
     gWindow = glfwCreateWindow(static_cast<int>(m_width), static_cast<int>(m_height),m_windowName.c_str(), nullptr, nullptr);
     glfwSetWindowUserPointer(gWindow, this);
     glfwSetFramebufferSizeCallback(gWindow, framebufferResizeCallback);
+    // glfwSetKeyCallback(gWindow, keyCallback);
     glfwSetCursorPosCallback(gWindow, [](GLFWwindow* window, double x, double y) {
         const auto MyWindow = static_cast<VWindow*>(glfwGetWindowUserPointer(window));
         MyWindow->m_currentMousePos.x = static_cast<uint32_t>(x);
@@ -85,11 +86,50 @@ glm::vec2 VWindow::getMouseDelta() {
     return delta;
 }
 
+void VWindow::PollInput() {
+    glfwPollEvents();
+    m_previousKeys = m_currentKeys;
+}
+
+bool VWindow::isKeyDown(int key) const {
+    int state = glfwGetKey(gWindow, key);
+    return state == GLFW_PRESS;
+}
+
+bool VWindow::isKeyUp(int key) const {
+    int state = glfwGetKey(gWindow, key);
+    return state == GLFW_RELEASE;
+}
+
+bool VWindow::isKeyPressed(int key) {
+    int state = glfwGetKey(gWindow, key);
+
+    bool wasPressed = m_currentKeys[key];
+
+    if (state == GLFW_PRESS && !wasPressed) {
+        m_currentKeys[key] = true;
+        return true;
+    } else if (state == GLFW_RELEASE) {
+        m_currentKeys[key] = false;
+    }
+
+    return false;
+}
+
 void VWindow::framebufferResizeCallback(GLFWwindow* window, int width, int height) {
     auto MyWindow = static_cast<VWindow*>(glfwGetWindowUserPointer(window));
     MyWindow->m_resized = true;
     MyWindow->m_width = width;
     MyWindow->m_height = height;
+}
+
+void VWindow::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    auto MyWindow = static_cast<VWindow*>(glfwGetWindowUserPointer(window));
+    if (action == GLFW_PRESS) {
+        MyWindow->m_currentKeys[key] = true;
+    } else if (action == GLFW_RELEASE) {
+        MyWindow->m_currentKeys[key] = false;
+    }
 }
 
 void VWindow::LoadGamepadMappins(const std::string& filename) {
