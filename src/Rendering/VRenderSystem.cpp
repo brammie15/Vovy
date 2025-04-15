@@ -13,7 +13,6 @@ VRenderSystem::~VRenderSystem() {
 
 void VRenderSystem::renderGameObjects(const FrameContext& frameContext, const std::vector<std::unique_ptr<VGameObject>>& gameObjects) {
     m_pipeline->bind(frameContext.commandBuffer);
-    // auto projectionView = frameContext.camera.getProjection() * frameInfo.camera.getView();
 
     vkCmdBindDescriptorSets(
         frameContext.commandBuffer,
@@ -27,20 +26,6 @@ void VRenderSystem::renderGameObjects(const FrameContext& frameContext, const st
     );
 
     for (auto& obj : gameObjects) {
-        // PushConstantData push{};
-        // push.color = obj.color;
-        // auto modelMatrix = obj.transform.mat4();
-        // push.transform = projectionView * modelMatrix;
-        // push.normalMatrix = obj.transform.normalMatrix();
-
-        // vkCmdPushConstants(
-        //     frameContext.commandBuffer,
-        //     m_pipelineLayout,
-        //     VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-        //     0,
-        //     sizeof(PushConstantData),
-        //     &push);
-        // obj.model->bind(frameContext.commandBuffer);
         obj->model->draw(frameContext.commandBuffer, m_pipelineLayout);
     }
 

@@ -10,6 +10,7 @@
 #include "Scene/VGameObject.h"
 #include "Rendering/VRenderPass.h"
 #include "Descriptors/VDescriptorPool.h"
+#include "Rendering/LineRenderSystem.h"
 //
 //
 // namespace std {
@@ -50,6 +51,8 @@ private:
     VWindow m_window{WIDTH, HEIGHT, "Hello Vulkan!"};
     VDevice m_device{m_window};
     VRenderPass m_renderPass{m_window, m_device};
+
+    std::vector<LineSegment> m_lineSegments;
 
     std::vector<std::unique_ptr<VGameObject>> m_gameObjects;
     std::unique_ptr<VDescriptorPool> m_globalPool{};

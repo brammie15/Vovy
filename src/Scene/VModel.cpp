@@ -20,7 +20,6 @@ VModel::VModel(VDevice& deviceRef, const std::vector<VMesh::Builder>& builders):
 
 void VModel::draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout) const {
     for (const auto& mesh : m_meshes) {
-
         PushConstantData push{};
         push.modelMatrix = mesh->getTransform().GetWorldMatrix();
 

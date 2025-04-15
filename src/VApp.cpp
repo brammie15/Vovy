@@ -1,12 +1,15 @@
 #include "VApp.h"
 
-#include "Scene/VMesh.h"
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_FORCE_ALIGNED_GENTYPES
 #include <glm/glm.hpp>
 #include <chrono>
+#include <math.h>
+
+#define _USE_MATH_DEFINES
+#include <math.h>
 #include <thread>
 #include <glm/gtx/string_cast.hpp>
 
@@ -16,7 +19,9 @@
 #include "Descriptors/VDescriptorSetLayout.h"
 #include "Descriptors/VDescriptorWriter.h"
 #include "Rendering/ImguiRenderSystem.h"
+#include "Rendering/LineRenderSystem.h"
 #include "Utils/DeltaTime.h"
+#include "Scene/VMesh.h"
 
 
 struct GlobalUBO {
@@ -33,9 +38,33 @@ VApp::VApp() {
             .build();
 
     loadGameObjects();
+
+    //Make a circle of line segments
+    int numSegments = 100;
+    float radius = 1.0f;
+    for (int i = 0; i < numSegments; i++) {
+        float angle = 2.0f * M_PI * i / numSegments;
+        m_lineSegments.emplace_back(LineSegment{
+            {radius * cos(angle), radius * sin(angle), 0.0f},
+            {radius * cos(angle + 2.0f * M_PI / numSegments), radius * sin(angle + 2.0f * M_PI / numSegments), 0.0f},
+            {1.f, 1.f, 0.f}
+        });
+    }
+
+    // //Make another circle 90 degrees rotated on the Z axis
+    // for (int i = 0; i < numSegments; i++) {
+    //     float angle = 2.0f * M_PI * i / numSegments;
+    //     m_lineSegments.emplace_back(LineSegment{
+    //         {0.0f, radius * sin(angle), radius * cos(angle)},
+    //         {0.0f, radius * sin(angle + 2.0f * M_PI / numSegments), radius * cos(angle + 2.0f * M_PI / numSegments)},
+    //         {1.f, 0.f, 1.f}
+    //     });
+    // }
 }
 
 VApp::~VApp() = default;
+
+bool isPDown = false;
 
 void VApp::run() {
     std::vector<std::unique_ptr<VBuffer>> uboBuffers(VSwapchain::MAX_FRAMES_IN_FLIGHT);
@@ -68,6 +97,9 @@ void VApp::run() {
         }
     }
 
+    bool escKeyLastFrame = false;
+
+
 
     VRenderSystem renderSystem{
         m_device,
@@ -75,30 +107,65 @@ void VApp::run() {
         {globalSetLayout->getDescriptorSetLayout(), modelSetLayout->getDescriptorSetLayout()}
     };
 
-    ImguiRenderSystem m_imguiRenderSystem{
+    ImguiRenderSystem imguiRenderSystem{
         m_device,
         m_renderPass.GetSwapChainRenderPass(),
         static_cast<int>(m_window.getWidth()),
         static_cast<int>(m_window.getHeight())
     };
 
-    float time = 0.0f;
+    LineRenderSystem lineRenderSystem{
+        m_device,
+        m_renderPass.GetSwapChainRenderPass(),
+        { globalSetLayout->getDescriptorSetLayout(), modelSetLayout->getDescriptorSetLayout() }
+    };
+
     VCamera camera{{-2.0f, 1.0f, 0}, {0.0f, 1.0f, 0.0f}};
-
-
+    int offset = 0;
     while (!m_window.ShouldClose()) {
         DeltaTime::GetInstance().Update();
         glfwPollEvents();
 
-        m_imguiRenderSystem.beginFrame();
+        imguiRenderSystem.beginFrame();
 
         this->imGui();
+        imguiRenderSystem.drawGizmos(&camera, &m_gameObjects[0]->model->getMeshes()[0]->getTransform());
 
-        m_imguiRenderSystem.endFrame();
+        imguiRenderSystem.endFrame();
 
+        //TODO: add a keychecking to window class
+        bool tildaPressedLastFrame = glfwGetKey(VWindow::gWindow, GLFW_KEY_GRAVE_ACCENT) == GLFW_PRESS;
+        if (tildaPressedLastFrame && !escKeyLastFrame) {
+            if (m_window.isCursorLocked()) {
+                m_window.UnlockCursor();
+            } else {
+                m_window.LockCursor();
+            }
+        }
+        escKeyLastFrame = tildaPressedLastFrame;
 
-        if (glfwGetKey(VWindow::gWindow, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-            glfwSetWindowShouldClose(VWindow::gWindow, GLFW_TRUE);
+        if (glfwGetKey(VWindow::gWindow, GLFW_KEY_P) == GLFW_PRESS && !isPDown) {
+            isPDown = true;
+            if (m_lineSegments.size() == 0) {
+                m_lineSegments.emplace_back(LineSegment{
+                    {0.0f, 0.0f, 0.0f},
+                    {1.0f, 1.0f, 1.0f},
+                    {1.f, 1.f, 0.f}
+                    // {rand() % 255 / 255.0f, rand() % 255 / 255.0f, rand() % 255 / 255.0f}
+                });
+            } else {
+                //Add the cameras postion to the line segments the start should be the previous line segment
+                m_lineSegments.emplace_back(LineSegment{
+                    m_lineSegments[m_lineSegments.size() - 1].end,
+                    camera.m_position,
+                    {1.f, 1.f, 0.f}
+                    // {rand() % 255 / 255.0f, rand() % 255 / 255.0f, rand() % 255 / 255.0f}
+                });
+            }
+        }
+
+        if (glfwGetKey(VWindow::gWindow, GLFW_KEY_P) == GLFW_RELEASE) {
+            isPDown = false;
         }
 
         //TODO: remove
@@ -127,9 +194,14 @@ void VApp::run() {
             uboBuffers[frameIndex]->flush();
 
             m_renderPass.beginSwapChainRenderPass(commandBuffer);
+
+            if (m_lineSegments.size() > 2) {
+                lineRenderSystem.renderLines(frameInfo, m_lineSegments);
+            }
+
             renderSystem.renderGameObjects(frameInfo, m_gameObjects);
 
-            m_imguiRenderSystem.renderImgui(commandBuffer);
+            imguiRenderSystem.renderImgui(commandBuffer);
             m_renderPass.endSwapChainRenderPass(commandBuffer);
             m_renderPass.endFrame();
         }
@@ -144,29 +216,58 @@ void VApp::run() {
 }
 
 void VApp::imGui() {
+    if (ImGui::BeginMainMenuBar())
+    {
+        if (ImGui::BeginMenu("Tools"))
+        {
+            if (ImGui::MenuItem("New"))
+            {
+                // Action for New
+            }
+            ImGui::EndMenu();
+        }
+        ImGui::EndMainMenuBar();
+    }
+
     ImGui::Begin("Stats");
     ImGui::Text("FPS: %.1f", 1.0f / DeltaTime::GetInstance().GetDeltaTime());
     ImGui::Text("Frame Time: %.3f ms", DeltaTime::GetInstance().GetDeltaTime() * 1000.0f);
     ImGui::Text("Window Size: %d x %d", m_window.getWidth(), m_window.getHeight());
     ImGui::End();
 
-    ImGui::Begin("Object 1 Transform");
-    glm::vec3 translation = m_gameObjects[1]->transform.GetLocalPosition();
-    glm::quat rotation = m_gameObjects[1]->transform.GetLocalRotation();
-    glm::vec3 scale = m_gameObjects[1]->transform.GetLocalScale();
 
-    if (ImGui::DragFloat3("Translation", &translation[0], 0.1f)) {
-        m_gameObjects[1]->transform.SetLocalPosition(translation);
+    //
+    // ImGui::Begin("Object 1 Transform");
+    // glm::vec3 translation = m_gameObjects[1]->transform.GetLocalPosition();
+    // glm::quat rotation = m_gameObjects[1]->transform.GetLocalRotation();
+    // glm::vec3 scale = m_gameObjects[1]->transform.GetLocalScale();
+    //
+    // if (ImGui::DragFloat3("Translation", &translation[0], 0.1f)) {
+    //     m_gameObjects[1]->transform.SetLocalPosition(translation);
+    // }
+    //
+    // if (ImGui::DragFloat3("Rotation", &rotation.x, 0.1f)) {
+    //     m_gameObjects[1]->transform.SetLocalRotation(rotation);
+    // }
+    //
+    // if (ImGui::DragFloat3("Scale", &scale.x, 0.1f)) {
+    //     m_gameObjects[1]->transform.SetLocalScale(scale);
+    // }
+    //
+    // // ImGui::End();
+    // //
+    // // //Window for linesegments
+    ImGui::Begin("Line Segments");
+    ImGui::Text("Line Segments: %d", m_lineSegments.size());
+    for (int i = 0; i < m_lineSegments.size(); i++) {
+        std::string label = "Line Segment " + std::to_string(i);
+        if (ImGui::BeginCombo(label.c_str(), "Line Segment")) {
+            ImGui::DragFloat3("Start", &m_lineSegments[i].start.x, 0.1f);
+            ImGui::DragFloat3("End", &m_lineSegments[i].end.x, 0.1f);
+            ImGui::DragFloat3("Color", &m_lineSegments[i].color.x, 0.1f);
+            ImGui::EndCombo();
+        }
     }
-
-    if (ImGui::DragFloat3("Rotation", &rotation.x, 0.1f)) {
-        m_gameObjects[1]->transform.SetLocalRotation(rotation);
-    }
-
-    if (ImGui::DragFloat3("Scale", &scale.x, 0.1f)) {
-        m_gameObjects[1]->transform.SetLocalScale(scale);
-    }
-
     ImGui::End();
 }
 
@@ -174,7 +275,8 @@ void VApp::loadGameObjects() {
     auto sponzaScene = VGameObject::createGameObject();
 
     // const auto mainSponzaModel = std::make_shared<VModel>(m_device, "resources/sponza/NewSponza_Main_glTF_003.gltf");
-    const auto mainSponzaModel = std::make_shared<VModel>(m_device, "resources/sponza/sponza.obj", sponzaScene.get());
+    // const auto mainSponzaModel = std::make_shared<VModel>(m_device, "resources/sponza/sponza.obj", sponzaScene.get());
+    const auto mainSponzaModel = std::make_shared<VModel>(m_device, "resources/sigmavanni/SigmaVanni.gltf", sponzaScene.get());
 
     // auto mainSponzaModel = std::make_shared<VModel>(m_device, "resources/sponza/NewSponza_Main_Yup_003.fbx");
 

@@ -16,7 +16,7 @@ VCamera::VCamera(const glm::vec3& position, const glm::vec3& up): m_position{pos
 void VCamera::Update(float deltaTime) {
     const auto MyWindow = static_cast<VWindow*>(glfwGetWindowUserPointer(VWindow::gWindow));
 
-#pragma region Mouse Movement
+#pragma region Keyboard Movement
     totalPitch = glm::clamp(totalPitch, -glm::half_pi<float>() + 0.01f, glm::half_pi<float>() - 0.01f);
 
     float MovementSpeed = 2.0f;
@@ -60,14 +60,47 @@ void VCamera::Update(float deltaTime) {
 
     totalPitch = glm::clamp(totalPitch, -glm::half_pi<float>(), glm::half_pi<float>());
 
-    const glm::mat4 yawMatrix   = glm::rotate(glm::mat4(1.0f), -totalYaw, glm::vec3(0, 1, 0));
+    const glm::mat4 yawMatrix = glm::rotate(glm::mat4(1.0f), -totalYaw, glm::vec3(0, 1, 0));
     const glm::mat4 pitchMatrix = glm::rotate(glm::mat4(1.0f), totalPitch, glm::vec3(0, 0, 1));
 
     const glm::mat4 rotationMatrix = yawMatrix * pitchMatrix;
 
     m_forward = glm::vec3(rotationMatrix * glm::vec4(1, 0, 0, 0));
-    m_right   = glm::normalize(glm::cross(m_forward, glm::vec3(0, 1, 0)));
-    m_up      = glm::normalize(glm::cross(m_right, m_forward));
+    m_right = glm::normalize(glm::cross(m_forward, glm::vec3(0, 1, 0)));
+    m_up = glm::normalize(glm::cross(m_right, m_forward));
+#pragma endregion
+
+#pragma region Mouse Looking
+    static double lastMouseX = 0.0;
+    static double lastMouseY = 0.0;
+    static bool firstMouse = true;
+
+    if (MyWindow->isCursorLocked()) {
+        double mouseX, mouseY;
+        glfwGetCursorPos(VWindow::gWindow, &mouseX, &mouseY);
+
+        if (firstMouse) {
+            lastMouseX = mouseX;
+            lastMouseY = mouseY;
+            firstMouse = false;
+        }
+
+        float xOffset = static_cast<float>(mouseX - lastMouseX);
+        float yOffset = static_cast<float>(lastMouseY - mouseY); // Reversed: y goes from bottom to top
+
+        lastMouseX = mouseX;
+        lastMouseY = mouseY;
+
+        float sensitivity = 0.002f; // Adjust to your liking
+        xOffset *= sensitivity;
+        yOffset *= sensitivity;
+
+        totalYaw += xOffset;
+        totalPitch += yOffset;
+
+        // Clamp pitch to avoid flipping
+        totalPitch = glm::clamp(totalPitch, -glm::half_pi<float>() + 0.01f, glm::half_pi<float>() - 0.01f);
+    }
 #pragma endregion
 
 #pragma region Controller Movement
@@ -80,7 +113,7 @@ void VCamera::Update(float deltaTime) {
 
 
             //TODO: god knows what this is
-            auto Deadzone = [](float value, float threshold = 0.1f) {
+            auto Deadzone = [] (float value, float threshold = 0.1f) {
                 if (fabs(value) < threshold)
                     return 0.0f;
                 const float sign = (value > 0) ? 1.0f : -1.0f;
@@ -99,14 +132,14 @@ void VCamera::Update(float deltaTime) {
             const float ry = Deadzone(state.axes[GLFW_GAMEPAD_AXIS_RIGHT_Y]);
 
             m_position += m_forward * (-ly * moveSpeed);
-            m_position += m_right   * (lx * moveSpeed);
+            m_position += m_right * (lx * moveSpeed);
 
             const float lTrigger = (state.axes[GLFW_GAMEPAD_AXIS_LEFT_TRIGGER] + 1.0f) / 2.0f;
             const float rTrigger = (state.axes[GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER] + 1.0f) / 2.0f;
             const float vertical = (rTrigger - lTrigger);
             m_position += m_up * vertical * moveSpeed;
 
-            totalYaw   += rx * rotSpeed;
+            totalYaw += rx * rotSpeed;
             totalPitch -= ry * rotSpeed;
         }
     }

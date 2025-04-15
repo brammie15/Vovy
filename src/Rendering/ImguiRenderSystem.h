@@ -6,6 +6,7 @@
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_vulkan.h"
+#include "Utils/VCamera.h"
 
 
 class ImguiRenderSystem {
@@ -21,6 +22,8 @@ public:
         vkCmdNextSubpass(commandBuffer, VK_SUBPASS_CONTENTS_INLINE);
         ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
     }
+
+    void drawGizmos(VCamera* camera, Transform* transform);
 
 private:
     void setupDockspace();

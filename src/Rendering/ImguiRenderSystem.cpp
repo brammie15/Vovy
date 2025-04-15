@@ -2,6 +2,8 @@
 
 #include <imgui_internal.h>
 #include <stdexcept>
+#include <ImGuizmo.h>
+#include <glm/gtc/type_ptr.hpp>
 
 #include "VSwapchain.h"
 
@@ -19,12 +21,44 @@ void ImguiRenderSystem::beginFrame() {
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
-
+    // ImGuizmo::SetImGuiContext(ImGui::GetCurrentContext());
     setupDockspace();
 }
 
+static ImGuizmo::OPERATION currentGizmoOperation = ImGuizmo::TRANSLATE;
+static ImGuizmo::MODE currentGizmoMode = ImGuizmo::WORLD;
+
 void ImguiRenderSystem::endFrame() {
     ImGui::Render();
+}
+
+void ImguiRenderSystem::drawGizmos(VCamera* camera, Transform* transform) {
+    ImGuizmo::BeginFrame();
+
+    ImGui::Begin("Gizmos");
+
+    if (ImGui::RadioButton("Translate", currentGizmoOperation == ImGuizmo::TRANSLATE))
+        currentGizmoOperation = ImGuizmo::TRANSLATE;
+    ImGui::SameLine();
+    if (ImGui::RadioButton("Rotate", currentGizmoOperation == ImGuizmo::ROTATE))
+        currentGizmoOperation = ImGuizmo::ROTATE;
+    ImGui::SameLine();
+    if (ImGui::RadioButton("Scale", currentGizmoOperation == ImGuizmo::SCALE))
+        currentGizmoOperation = ImGuizmo::SCALE;
+    ImGui::End();
+
+    ImGuizmo::SetRect(0, 0, ImGui::GetIO().DisplaySize.x, ImGui::GetIO().DisplaySize.y);
+
+    glm::mat4 objectMatrix = transform->GetWorldMatrix();
+    ImGuizmo::Manipulate(
+        glm::value_ptr(camera->GetViewMatrix()),
+        glm::value_ptr(camera->GetProjectionMatrix()),
+        currentGizmoOperation,
+        currentGizmoMode,
+        glm::value_ptr(objectMatrix)
+    );
+
+    transform->SetWorldMatrix(objectMatrix);
 }
 
 void ImguiRenderSystem::setupDockspace() {
@@ -40,8 +74,15 @@ void ImguiRenderSystem::setupDockspace() {
                                     ImGuiWindowFlags_NoNavFocus |
                                     ImGuiWindowFlags_NoBackground;
 
-    ImGui::SetNextWindowPos(viewport->Pos);
-    ImGui::SetNextWindowSize(viewport->Size);
+    // Get the menu bar height from ImGui's current style
+    float menuBarHeight = ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeight(); // This is roughly the height of the menubar
+
+    // Adjust the dockspace position and size to avoid overlap with the menubar
+    ImVec2 newSize = ImVec2(viewport->Size.x, viewport->Size.y - menuBarHeight);
+    ImVec2 newPos = ImVec2(viewport->Pos.x, viewport->Pos.y + menuBarHeight);
+
+    ImGui::SetNextWindowPos(newPos);
+    ImGui::SetNextWindowSize(newSize);
     ImGui::SetNextWindowViewport(viewport->ID);
 
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
@@ -56,7 +97,7 @@ void ImguiRenderSystem::setupDockspace() {
         // Set up the main dockspace
         ImGui::DockBuilderRemoveNode(dockspace_id); // clear previous layout
         ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
-        ImGui::DockBuilderSetNodeSize(dockspace_id, viewport->Size);
+        ImGui::DockBuilderSetNodeSize(dockspace_id, newSize);
 
         // Split it into 5 areas
         ImGuiID dock_main_id = dockspace_id;
@@ -81,6 +122,7 @@ void ImguiRenderSystem::setupDockspace() {
     ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
     ImGui::End();
 }
+
 
 void ImguiRenderSystem::initImgui(VkRenderPass renderPass, int width, int height) {
     m_descriptorPool =

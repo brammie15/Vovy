@@ -11,7 +11,6 @@
 class VWindow {
 public:
     VWindow(uint32_t width, uint32_t height, const std::string& windowName);
-
     ~VWindow();
 
     [[nodiscard]] bool ShouldClose() const { return glfwWindowShouldClose(gWindow); }
@@ -22,6 +21,10 @@ public:
     void resetWindowResized(){ m_resized = false; }
 
     [[nodiscard]] VkExtent2D getExtent() const{ return {static_cast<uint32_t>(m_width), static_cast<uint32_t>(m_height)}; }
+
+    void LockCursor();
+    void UnlockCursor();
+    [[nodiscard]] bool isCursorLocked() const { return m_cursorLocked; }
 
     static GLFWwindow* gWindow;
 
@@ -41,9 +44,11 @@ private:
     glm::vec2 m_lastMousePos;
     glm::vec2 m_currentMousePos;
 
-
     bool m_resized = false;
     std::string m_windowName;
+
+    bool m_cursorLocked = false;
+    bool m_shouldToggleCursor = false;
 };
 
 #endif //FWINDOW_H

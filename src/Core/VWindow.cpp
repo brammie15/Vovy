@@ -4,6 +4,8 @@
 #include <iostream>
 #include <stdexcept>
 
+#include "Utils/stb_image.h"
+
 GLFWwindow* VWindow::gWindow = nullptr;
 
 VWindow::VWindow(uint32_t width, uint32_t height, const std::string& windowName): m_width(width), m_height(height),
@@ -21,6 +23,13 @@ VWindow::VWindow(uint32_t width, uint32_t height, const std::string& windowName)
         MyWindow->m_currentMousePos.y = static_cast<uint32_t>(y);
     });
 
+    glfwMaximizeWindow(gWindow);
+
+    GLFWimage images[1];
+    images[0].pixels = stbi_load("resources/vovy_logo.png", &images[0].width, &images[0].height, 0, 4); //rgba channels
+    glfwSetWindowIcon(gWindow, 1, images);
+    stbi_image_free(images[0].pixels);
+
     // glfwSetInputMode(gWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     if (!gWindow) {
@@ -34,6 +43,7 @@ VWindow::VWindow(uint32_t width, uint32_t height, const std::string& windowName)
     } else {
         std::cerr << "No joystick detected!" << std::endl;
     }
+
 }
 
 VWindow::~VWindow() {
@@ -50,6 +60,17 @@ void VWindow::CreateSurface(VkInstance instance, VkSurfaceKHR* surface) {
         throw std::runtime_error("failed to create window surface!");
     }
 }
+
+void VWindow::LockCursor() {
+    m_cursorLocked = true;
+    glfwSetInputMode(gWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+}
+
+void VWindow::UnlockCursor() {
+    m_cursorLocked = false;
+    glfwSetInputMode(gWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+}
+
 
 glm::vec2 VWindow::getMousePosition() const {
     double xpos, ypos;

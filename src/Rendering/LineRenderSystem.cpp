@@ -6,10 +6,10 @@ LineRenderSystem::LineRenderSystem(VDevice& deviceRef, VkRenderPass renderPass, 
     createPipelineLayout(descriptorSetLayout);
     createPipeline(renderPass);
 
-    // Create a temporary vertex buffer
+    m_vertexBufferSize = sizeof(VMesh::Vertex) * 100;
     m_vertexBuffer = new VBuffer{
         m_device,
-        sizeof(VMesh::Vertex) * 30,
+        m_vertexBufferSize,
         VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
         VMA_MEMORY_USAGE_CPU_TO_GPU
     };
@@ -30,8 +30,25 @@ void LineRenderSystem::renderLines(FrameContext context, const std::vector<LineS
         vertexData.push_back({segment.end, segment.color});
     }
 
+    VkDeviceSize requiredSize = sizeof(VMesh::Vertex) * vertexData.size();
+
+    // Resize buffer if needed
+    if (requiredSize > m_vertexBufferSize) {
+        delete m_vertexBuffer;
+
+        // Optional: grow buffer a bit more than required to reduce reallocations
+        m_vertexBufferSize = requiredSize * 2;
+
+        m_vertexBuffer = new VBuffer{
+            m_device,
+            m_vertexBufferSize,
+            VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+            VMA_MEMORY_USAGE_CPU_TO_GPU
+        };
+    }
+
     m_vertexBuffer->map();
-    m_vertexBuffer->copyTo(vertexData.data(), sizeof(VMesh::Vertex) * vertexData.size());
+    m_vertexBuffer->copyTo(vertexData.data(), requiredSize);
     m_vertexBuffer->unmap();
 
     m_pipeline->bind(context.commandBuffer);

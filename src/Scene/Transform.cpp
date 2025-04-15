@@ -154,7 +154,6 @@ void Transform::SetWorldScale(const glm::vec3& scale) {
 
 void Transform::SetParent(Transform* parent, bool useWorldPosition) {
     if (parent == m_Parent or parent == this or IsChild(parent)) {
-        std::cout << "Transform::SetParent: Invalid parent" << std::endl;
         return;
     }
 
