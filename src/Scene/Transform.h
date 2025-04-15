@@ -21,7 +21,6 @@ public:
     const glm::quat& GetWorldRotation();
     const glm::mat4& GetWorldMatrix();
 
-
     [[nodiscard]] const glm::vec3& GetLocalPosition() const { return m_LocalPosition; }
     [[nodiscard]] const glm::quat& GetLocalRotation() const { return m_LocalRotation; }
     [[nodiscard]] const glm::vec3& GetLocalScale() const { return m_LocalScale; }

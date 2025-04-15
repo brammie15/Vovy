@@ -1,8 +1,10 @@
 #include "VPipeline.h"
 
 #include <cassert>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <Utils/Chalk.h>
 
 #include "Scene/VMesh.h"
 
@@ -113,11 +115,18 @@ void VPipeline::CreateGraphicsPipeline(const std::string& vertPath, const std::s
                                        const VPipelineConfigInfo& configInfo) {
     assert(configInfo.pipelineLayout != VK_NULL_HANDLE && "no pipelineLayout provided in configInfo");
     assert(configInfo.renderPass != VK_NULL_HANDLE && "no renderPass provided in configInfo");
+
+    std::string VertFileName = std::filesystem::path(vertPath).filename().string();
+    std::string FragFileName = std::filesystem::path(fragPath).filename().string();
+
     auto vertCode = readFile(vertPath);
     auto fragCode = readFile(fragPath);
 
-    std::cout << "Vert code size: " << vertCode.size() << std::endl;
-    std::cout << "Frag code size: " << fragCode.size() << std::endl;
+    std::cout << "Vert file: " << Chalk::Green << VertFileName << Chalk::Reset << std::endl;
+    std::cout << "Frag file: " << Chalk::Blue << FragFileName << Chalk::Reset << std::endl;
+    std::cout << "Vert code size: " << Chalk::Green << vertCode.size() << Chalk::Reset << std::endl;
+    std::cout << "Frag code size: " << Chalk::Blue << fragCode.size() << Chalk::Reset << std::endl;
+    std::cout << std::endl;
 
     CreateShaderModule(vertCode, &m_vertShaderModule);
     CreateShaderModule(fragCode, &m_fragShaderModule);

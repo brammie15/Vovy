@@ -11,6 +11,7 @@
 #include "Rendering/VRenderPass.h"
 #include "Descriptors/VDescriptorPool.h"
 #include "Rendering/LineRenderSystem.h"
+#include "Scene/VScene.h"
 //
 //
 // namespace std {
@@ -45,16 +46,18 @@ public:
     void imGui();
 
 private:
-
     void loadGameObjects();
 
     VWindow m_window{WIDTH, HEIGHT, "Hello Vulkan!"};
     VDevice m_device{m_window};
     VRenderPass m_renderPass{m_window, m_device};
 
-    std::vector<LineSegment> m_lineSegments;
+    std::unique_ptr<VScene> m_sigmaVanniScene{};
+    std::unique_ptr<VScene> m_sponzaScene{};
 
-    std::vector<std::unique_ptr<VGameObject>> m_gameObjects;
+    Transform* m_selectedTransform{ nullptr };
+
+    VScene* m_currentScene{ nullptr };
     std::unique_ptr<VDescriptorPool> m_globalPool{};
 };
 

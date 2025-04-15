@@ -8,3 +8,5 @@ resources/pkg_a_curtains
 
 out
 .vs
+
+build/

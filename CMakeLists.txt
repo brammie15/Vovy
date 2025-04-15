@@ -31,6 +31,7 @@ add_executable(${PROJECT_NAME}
         ${SRC_ROOT}/Scene/VModel.h ${SRC_ROOT}/Scene/VModel.cpp
         ${SRC_ROOT}/Scene/VGameObject.h ${SRC_ROOT}/Scene/VGameObject.cpp
         ${SRC_ROOT}/Scene/Transform.h ${SRC_ROOT}/Scene/Transform.cpp
+        ${SRC_ROOT}/Scene/VScene.h ${SRC_ROOT}/Scene/VScene.cpp
 
         ${SRC_ROOT}/Utils/FrameContext.h
         ${SRC_ROOT}/Utils/stb_image.h

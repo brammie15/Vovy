@@ -33,6 +33,9 @@ void ImguiRenderSystem::endFrame() {
 }
 
 void ImguiRenderSystem::drawGizmos(VCamera* camera, Transform* transform) {
+    if (transform == nullptr) {
+        return;
+    }
     ImGuizmo::BeginFrame();
 
     ImGui::Begin("Gizmos");
@@ -45,6 +48,15 @@ void ImguiRenderSystem::drawGizmos(VCamera* camera, Transform* transform) {
     ImGui::SameLine();
     if (ImGui::RadioButton("Scale", currentGizmoOperation == ImGuizmo::SCALE))
         currentGizmoOperation = ImGuizmo::SCALE;
+
+
+    if (ImGui::RadioButton("World", currentGizmoMode == ImGuizmo::WORLD))
+        currentGizmoMode = ImGuizmo::WORLD;
+    ImGui::SameLine();
+    if (ImGui::RadioButton("Local", currentGizmoMode == ImGuizmo::LOCAL))
+        currentGizmoMode = ImGuizmo::LOCAL;
+
+
     ImGui::End();
 
     ImGuizmo::SetRect(0, 0, ImGui::GetIO().DisplaySize.x, ImGui::GetIO().DisplaySize.y);

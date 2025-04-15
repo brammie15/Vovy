@@ -9,6 +9,7 @@
 #include <math.h>
 
 #define _USE_MATH_DEFINES
+#include <functional>
 #include <math.h>
 #include <thread>
 #include <glm/gtx/string_cast.hpp>
@@ -37,6 +38,10 @@ VApp::VApp() {
             .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VSwapchain::MAX_FRAMES_IN_FLIGHT)
             .build();
 
+    m_sigmaVanniScene = std::make_unique<VScene>("SigmaVanniScene");
+    m_sponzaScene = std::make_unique<VScene>("SponzaScene");
+
+    m_currentScene = m_sigmaVanniScene.get();
     loadGameObjects();
 
     //Make a circle of line segments
@@ -44,22 +49,25 @@ VApp::VApp() {
     float radius = 1.0f;
     for (int i = 0; i < numSegments; i++) {
         float angle = 2.0f * M_PI * i / numSegments;
-        m_lineSegments.emplace_back(LineSegment{
+        m_sigmaVanniScene->addLineSegment(LineSegment{
             {radius * cos(angle), radius * sin(angle), 0.0f},
             {radius * cos(angle + 2.0f * M_PI / numSegments), radius * sin(angle + 2.0f * M_PI / numSegments), 0.0f},
             {1.f, 1.f, 0.f}
         });
     }
 
-    // //Make another circle 90 degrees rotated on the Z axis
-    // for (int i = 0; i < numSegments; i++) {
-    //     float angle = 2.0f * M_PI * i / numSegments;
-    //     m_lineSegments.emplace_back(LineSegment{
-    //         {0.0f, radius * sin(angle), radius * cos(angle)},
-    //         {0.0f, radius * sin(angle + 2.0f * M_PI / numSegments), radius * cos(angle + 2.0f * M_PI / numSegments)},
-    //         {1.f, 0.f, 1.f}
-    //     });
-    // }
+    std::vector<BezierNode> controlPoints = {
+        {glm::vec3(0.0f, 0.0f, 0.0f)},
+        {glm::vec3(1.0f, 2.0f, 0.0f)},
+        {glm::vec3(2.0f, -1.0f, 0.0f)},
+        {glm::vec3(3.0f, 0.0f, 0.0f)}
+    };
+
+    m_sigmaVanniScene->addBezierCurve(BezierCurve{
+        controlPoints,
+        glm::vec3(1.0f, 0.0f, 0.0f),  // Red color
+        100
+    });
 }
 
 VApp::~VApp() = default;
@@ -120,6 +128,8 @@ void VApp::run() {
         { globalSetLayout->getDescriptorSetLayout(), modelSetLayout->getDescriptorSetLayout() }
     };
 
+
+
     VCamera camera{{-2.0f, 1.0f, 0}, {0.0f, 1.0f, 0.0f}};
     int offset = 0;
     while (!m_window.ShouldClose()) {
@@ -129,7 +139,9 @@ void VApp::run() {
         imguiRenderSystem.beginFrame();
 
         this->imGui();
-        imguiRenderSystem.drawGizmos(&camera, &m_gameObjects[0]->model->getMeshes()[0]->getTransform());
+        if (m_currentScene->getGameObjects().size() > 0 && m_selectedTransform) {
+            imguiRenderSystem.drawGizmos(&camera, m_selectedTransform);
+        }
 
         imguiRenderSystem.endFrame();
 
@@ -146,17 +158,17 @@ void VApp::run() {
 
         if (glfwGetKey(VWindow::gWindow, GLFW_KEY_P) == GLFW_PRESS && !isPDown) {
             isPDown = true;
-            if (m_lineSegments.size() == 0) {
-                m_lineSegments.emplace_back(LineSegment{
+            if (m_currentScene->getLineSegments().size() == 0) {
+                m_currentScene->addLineSegment(LineSegment{
                     {0.0f, 0.0f, 0.0f},
                     {1.0f, 1.0f, 1.0f},
                     {1.f, 1.f, 0.f}
-                    // {rand() % 255 / 255.0f, rand() % 255 / 255.0f, rand() % 255 / 255.0f}
                 });
             } else {
                 //Add the cameras postion to the line segments the start should be the previous line segment
-                m_lineSegments.emplace_back(LineSegment{
-                    m_lineSegments[m_lineSegments.size() - 1].end,
+                const auto& lastSegment = m_currentScene->getLineSegments().back();
+                m_currentScene->addLineSegment(LineSegment{
+                    lastSegment.end,
                     camera.m_position,
                     {1.f, 1.f, 0.f}
                     // {rand() % 255 / 255.0f, rand() % 255 / 255.0f, rand() % 255 / 255.0f}
@@ -195,11 +207,13 @@ void VApp::run() {
 
             m_renderPass.beginSwapChainRenderPass(commandBuffer);
 
-            if (m_lineSegments.size() > 2) {
-                lineRenderSystem.renderLines(frameInfo, m_lineSegments);
+            if (m_currentScene->getLineSegments().size() > 2) {
+                lineRenderSystem.renderLines(frameInfo, m_currentScene->getLineSegments());
             }
 
-            renderSystem.renderGameObjects(frameInfo, m_gameObjects);
+            lineRenderSystem.renderBezier(frameInfo, m_currentScene->getBezierCurves());
+
+            renderSystem.renderGameObjects(frameInfo, m_currentScene->getGameObjects());
 
             imguiRenderSystem.renderImgui(commandBuffer);
             m_renderPass.endSwapChainRenderPass(commandBuffer);
@@ -235,48 +249,88 @@ void VApp::imGui() {
     ImGui::Text("Window Size: %d x %d", m_window.getWidth(), m_window.getHeight());
     ImGui::End();
 
-
-    //
-    // ImGui::Begin("Object 1 Transform");
-    // glm::vec3 translation = m_gameObjects[1]->transform.GetLocalPosition();
-    // glm::quat rotation = m_gameObjects[1]->transform.GetLocalRotation();
-    // glm::vec3 scale = m_gameObjects[1]->transform.GetLocalScale();
-    //
-    // if (ImGui::DragFloat3("Translation", &translation[0], 0.1f)) {
-    //     m_gameObjects[1]->transform.SetLocalPosition(translation);
-    // }
-    //
-    // if (ImGui::DragFloat3("Rotation", &rotation.x, 0.1f)) {
-    //     m_gameObjects[1]->transform.SetLocalRotation(rotation);
-    // }
-    //
-    // if (ImGui::DragFloat3("Scale", &scale.x, 0.1f)) {
-    //     m_gameObjects[1]->transform.SetLocalScale(scale);
-    // }
-    //
-    // // ImGui::End();
-    // //
-    // // //Window for linesegments
     ImGui::Begin("Line Segments");
-    ImGui::Text("Line Segments: %d", m_lineSegments.size());
-    for (int i = 0; i < m_lineSegments.size(); i++) {
+    ImGui::Text("Line Segments: %d", m_currentScene->getLineSegments().size());
+    for (int i = 0; i < m_currentScene->getLineSegments().size(); i++) {
         std::string label = "Line Segment " + std::to_string(i);
         if (ImGui::BeginCombo(label.c_str(), "Line Segment")) {
-            ImGui::DragFloat3("Start", &m_lineSegments[i].start.x, 0.1f);
-            ImGui::DragFloat3("End", &m_lineSegments[i].end.x, 0.1f);
-            ImGui::DragFloat3("Color", &m_lineSegments[i].color.x, 0.1f);
+            ImGui::DragFloat3("Start", &m_currentScene->getLineSegments()[i].start.x, 0.1f);
+            ImGui::DragFloat3("End", &m_currentScene->getLineSegments()[i].end.x, 0.1f);
             ImGui::EndCombo();
         }
     }
     ImGui::End();
+
+
+    ImGui::Begin("Bezier Segments");
+    if (m_currentScene->getBezierCurves().size() > 0) {
+        ImGui::Text("Bezier Segments: %d", m_currentScene->getBezierCurves()[0].nodes.size());
+        for (int i = 0; i < m_currentScene->getBezierCurves()[0].nodes.size(); i++) {
+            std::string label = "Control Point " + std::to_string(i);
+            if (ImGui::BeginCombo(label.c_str(), "Control Point")) {
+                ImGui::DragFloat3("Position", &m_currentScene->getBezierCurves()[0].nodes[i].position.x, 0.1f);
+                ImGui::EndCombo();
+            }
+        }
+    }
+    ImGui::End();
+
+    ImGui::Begin("Scenes");
+    std::string currentSceneName = "Unknown?";
+    if (m_currentScene != nullptr) {
+        currentSceneName = m_currentScene->getName();
+    }
+    ImGui::Text("Current Scene: %s", currentSceneName.c_str());
+    if (ImGui::Button("SigmaVanni")) {
+        m_currentScene = m_sigmaVanniScene.get();
+    }
+    if (ImGui::Button("Sponza")) {
+        m_currentScene = m_sponzaScene.get();
+    }
+    ImGui::End();
+
+    auto& objects = m_currentScene->getGameObjects();
+    int id{ 0 };
+    std::function<void(Transform*)> RenderObject = [&](Transform* object) {
+        ImGui::PushID(++id);
+        bool treeOpen = ImGui::TreeNodeEx(std::to_string(++id).c_str(), ImGuiTreeNodeFlags_AllowOverlap);
+
+        ImGui::SameLine();
+        if (ImGui::SmallButton("Select")) {
+            m_selectedTransform = object;
+        }
+
+        if (treeOpen) {
+            ImGui::SeparatorText("Children");
+            for (auto child : object->GetChildren()) {
+                //TODO: check if i can do with VGameobjects because with just transform i don't
+                //Know exactly what the owner is
+                RenderObject(child);
+            }
+            ImGui::TreePop();
+        }
+        ImGui::PopID();
+    };
+
+    ImGui::Begin("Scene");
+    if (ImGui::TreeNode("ROOT")) {
+            for (auto& object : objects) {
+                if (!object->transform.GetParent()) { //Only do root one
+                    RenderObject(&object->transform);
+                }
+            }
+        ImGui::TreePop();
+    }
+    ImGui::End();
+
 }
 
 void VApp::loadGameObjects() {
-    auto sponzaScene = VGameObject::createGameObject();
+    auto sigmaVanni = VGameObject::createGameObject();
 
     // const auto mainSponzaModel = std::make_shared<VModel>(m_device, "resources/sponza/NewSponza_Main_glTF_003.gltf");
     // const auto mainSponzaModel = std::make_shared<VModel>(m_device, "resources/sponza/sponza.obj", sponzaScene.get());
-    const auto mainSponzaModel = std::make_shared<VModel>(m_device, "resources/sigmavanni/SigmaVanni.gltf", sponzaScene.get());
+    const auto mainSigmaVanniModel = std::make_shared<VModel>(m_device, "resources/sigmavanni/SigmaVanni.gltf", sigmaVanni.get());
 
     // auto mainSponzaModel = std::make_shared<VModel>(m_device, "resources/sponza/NewSponza_Main_Yup_003.fbx");
 
@@ -284,19 +338,27 @@ void VApp::loadGameObjects() {
     // auto mainSponzaModel = std::make_shared<VModel>(m_device, "resources/MonkeyTest.obj");
     // auto mainSponzaModel = std::make_shared<VModel>(m_device, "resources/viking_room.obj");
 
-    sponzaScene->model = std::move(mainSponzaModel);
+    sigmaVanni->model = std::move(mainSigmaVanniModel);
 
-    m_gameObjects.push_back(std::move(sponzaScene));
+    m_sigmaVanniScene->addGameObject(std::move(sigmaVanni));
 
     auto testObject = VGameObject::createGameObject();
     const auto testModel = std::make_shared<VModel>(m_device, "resources/cat.obj", testObject.get());
     testObject->model = std::move(testModel);
     testObject->transform.SetLocalPosition({0.0f, 0.0f, 0.0f});
 
-    m_gameObjects.push_back(std::move(testObject));
+    m_sigmaVanniScene->addGameObject(std::move(testObject));
 
     // auto curtainsSponzaModel = std::make_shared<VModel>(m_device, "resources/pkg_a_curtains/NewSponza_Curtains_glTF.gltf");
     // auto curtainsSponza = VGameObject::createGameObject();
     // curtainsSponza->model = std::move(curtainsSponzaModel);
     // m_gameObjects.push_back(std::move(curtainsSponza));
+
+    auto sponzaScene = VGameObject::createGameObject();
+
+    const auto mainSponzaModel = std::make_shared<VModel>(m_device, "resources/sponza/sponza.obj", sponzaScene.get());
+    sponzaScene->model = std::move(mainSponzaModel);
+
+    m_sponzaScene->addGameObject(std::move(sponzaScene));
+
 }

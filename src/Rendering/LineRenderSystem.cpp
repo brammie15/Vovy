@@ -36,6 +36,76 @@ void LineRenderSystem::renderLines(FrameContext context, const std::vector<LineS
     if (requiredSize > m_vertexBufferSize) {
         delete m_vertexBuffer;
 
+        m_vertexBufferSize = requiredSize * 2;
+
+        m_vertexBuffer = new VBuffer{
+            m_device,
+            m_vertexBufferSize,
+            VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+            VMA_MEMORY_USAGE_CPU_TO_GPU
+        };
+    }
+
+    m_vertexBuffer->map();
+    m_vertexBuffer->copyTo(vertexData.data(), requiredSize);
+    m_vertexBuffer->unmap();
+
+    m_pipeline->bind(context.commandBuffer);
+
+    vkCmdBindDescriptorSets(
+        context.commandBuffer,
+        VK_PIPELINE_BIND_POINT_GRAPHICS,
+        m_pipelineLayout,
+        0,
+        1,
+        &context.globalDescriptor,
+        0,
+        nullptr
+    );
+
+    AnotherPushConstantData push{};
+    push.modelMatrix = glm::mat4(1.f);
+
+    vkCmdPushConstants(context.commandBuffer,
+        m_pipelineLayout,
+        VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+        0,
+        sizeof(AnotherPushConstantData),
+        &push
+    );
+
+    VkBuffer buffers[] = { m_vertexBuffer->getBuffer() };
+    VkDeviceSize offsets[] = { 0 };
+    vkCmdBindVertexBuffers(context.commandBuffer, 0, 1, buffers, offsets);
+
+    vkCmdDraw(context.commandBuffer, static_cast<uint32_t>(vertexData.size()), 1, 0, 0);
+}
+
+void LineRenderSystem::renderBezier(FrameContext context, const std::vector<BezierCurve>& curves) {
+    if (curves.size() == 0) {
+        return;
+    }
+
+    std::vector<VMesh::Vertex> vertexData;
+
+    for (const auto& curve : curves) {
+        for (int i = 0; i < curve.resolution; ++i) {
+            float t = static_cast<float>(i) / (curve.resolution - 1);
+            glm::vec3 point = deCasteljau(curve.nodes, t);
+
+            vertexData.push_back({point, curve.color});
+        }
+
+        for (const auto& node : curve.nodes) {
+            vertexData.push_back({node.position, glm::vec3(0.0f, 0.0f, 1.0f)});  // Blue color for control points
+        }
+    }
+
+    VkDeviceSize requiredSize = sizeof(VMesh::Vertex) * vertexData.size();
+
+    if (requiredSize > m_vertexBufferSize) {
+        delete m_vertexBuffer;
+
         // Optional: grow buffer a bit more than required to reduce reallocations
         m_vertexBufferSize = requiredSize * 2;
 
@@ -80,6 +150,29 @@ void LineRenderSystem::renderLines(FrameContext context, const std::vector<LineS
     vkCmdBindVertexBuffers(context.commandBuffer, 0, 1, buffers, offsets);
 
     vkCmdDraw(context.commandBuffer, static_cast<uint32_t>(vertexData.size()), 1, 0, 0);
+}
+
+//https://en.wikipedia.org/wiki/De_Casteljau%27s_algorithm
+glm::vec3 LineRenderSystem::deCasteljau(const std::vector<BezierNode>& nodes, float t) {
+    std::vector<glm::vec3> points = getControlPoints(nodes);
+
+    while (points.size() > 1) {
+        std::vector<glm::vec3> nextPoints;
+        for (size_t i = 0; i < points.size() - 1; ++i) {
+            nextPoints.push_back((1 - t) * points[i] + t * points[i + 1]);
+        }
+        points = std::move(nextPoints);
+    }
+
+    return points[0];
+}
+
+std::vector<glm::vec3> LineRenderSystem::getControlPoints(const std::vector<BezierNode>& nodes) {
+    std::vector<glm::vec3> controlPoints;
+    for (const auto& node : nodes) {
+        controlPoints.push_back(node.position);
+    }
+    return controlPoints;
 }
 
 void LineRenderSystem::createPipelineLayout(const std::vector<VkDescriptorSetLayout>& descriptorSetLayouts) {
