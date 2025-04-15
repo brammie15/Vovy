@@ -1,6 +1,7 @@
 #ifndef FRAMECONTEXT_H
 #define FRAMECONTEXT_H
 
+#include "VCamera.h"
 #include "Core/VDevice.h"
 
 struct FrameContext {
@@ -8,7 +9,7 @@ struct FrameContext {
     float frameTime;
     VkCommandBuffer commandBuffer;
     VkDescriptorSet globalDescriptor;
-    // VCamera &camera;
+    VCamera &camera;
 };
 
 #endif //FRAMECONTEXT_H

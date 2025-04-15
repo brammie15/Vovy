@@ -1,17 +1,17 @@
-#include "VRenderSystem.h"
+#include "GameObjectRenderSystem.h"
 
 #include <stdexcept>
 
-VRenderSystem::VRenderSystem(VDevice& deviceRef, VkRenderPass renderPass,  const std::vector<VkDescriptorSetLayout>& descriptorSetLayout): m_device{deviceRef} {
+GameObjectRenderSystem::GameObjectRenderSystem(VDevice& deviceRef, VkRenderPass renderPass,  const std::vector<VkDescriptorSetLayout>& descriptorSetLayout): m_device{deviceRef} {
     createPipelineLayout(descriptorSetLayout);
     createPipeline(renderPass);
 }
 
-VRenderSystem::~VRenderSystem() {
+GameObjectRenderSystem::~GameObjectRenderSystem() {
     vkDestroyPipelineLayout(m_device.device(), m_pipelineLayout, nullptr);
 }
 
-void VRenderSystem::renderGameObjects(const FrameContext& frameContext, const std::vector<std::unique_ptr<VGameObject>>& gameObjects) {
+void GameObjectRenderSystem::renderGameObjects(const FrameContext& frameContext, const std::vector<std::unique_ptr<VGameObject>>& gameObjects) {
     m_pipeline->bind(frameContext.commandBuffer);
 
     vkCmdBindDescriptorSets(
@@ -31,7 +31,7 @@ void VRenderSystem::renderGameObjects(const FrameContext& frameContext, const st
 
 }
 
-void VRenderSystem::createPipelineLayout(const std::vector<VkDescriptorSetLayout>& descriptorSetLayouts) {
+void GameObjectRenderSystem::createPipelineLayout(const std::vector<VkDescriptorSetLayout>& descriptorSetLayouts) {
     VkPushConstantRange pushConstantRange{};
     pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
     pushConstantRange.offset = 0;
@@ -49,7 +49,7 @@ void VRenderSystem::createPipelineLayout(const std::vector<VkDescriptorSetLayout
     }
 }
 
-void VRenderSystem::createPipeline(VkRenderPass renderPass) {
+void GameObjectRenderSystem::createPipeline(VkRenderPass renderPass) {
     assert(m_pipelineLayout != nullptr && "Cannot create pipeline before pipeline layout");
 
     VPipelineConfigInfo pipelineConfig{};

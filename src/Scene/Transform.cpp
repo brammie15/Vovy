@@ -12,6 +12,14 @@ Transform::~Transform() {
     }
 }
 
+Transform::Transform(const glm::vec3 position): m_LocalPosition(position),
+      m_LocalRotation(glm::quat(1, 0, 0, 0)),
+      m_LocalScale(glm::vec3(1.0f)) {
+    SetPositionDirty();
+    SetRotationDirty();
+    SetScaleDirty();
+}
+
 void Transform::SetWorldMatrix(const glm::mat4& mat) {
     m_WorldMatrix = mat;
 
@@ -40,7 +48,7 @@ void Transform::SetWorldMatrix(const glm::mat4& mat) {
             glm::vec3(localMat[2]) / m_WorldScale.z
         );
         m_LocalRotation = glm::quat_cast(localRotationMatrix);
-        m_LocalScale = m_WorldScale;  // Assuming no shearing
+        m_LocalScale = m_Parent ? m_WorldScale / m_Parent->GetWorldScale() : m_WorldScale;
     } else {
         m_LocalPosition = m_WorldPosition;
         m_LocalRotation = m_WorldRotation;
@@ -148,7 +156,7 @@ void Transform::SetWorldScale(const glm::vec3& scale) {
     if (m_Parent == nullptr) {
         SetLocalScale(scale);
     } else {
-        SetLocalScale(scale - m_Parent->GetWorldScale());
+        SetLocalScale(scale / m_Parent->GetWorldScale());
     }
 }
 

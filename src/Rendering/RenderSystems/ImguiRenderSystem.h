@@ -2,7 +2,7 @@
 #define IMGUIRENDERSYSTEM_H
 #include "Core/VDevice.h"
 #include "Scene/VGameObject.h"
-#include "VPipeline.h"
+#include "../VPipeline.h"
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_vulkan.h"
@@ -18,12 +18,12 @@ public:
     void endFrame();
 
     void renderImgui(VkCommandBuffer commandBuffer) {
-        // m_pipeline->bind(commandBuffer);
         vkCmdNextSubpass(commandBuffer, VK_SUBPASS_CONTENTS_INLINE);
         ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
     }
 
-    void drawGizmos(VCamera* camera, Transform* transform);
+    void drawGizmos(VCamera* camera, Transform* transform, const std::string& id);
+    void drawGizmos(VCamera* camera, glm::vec3& position, const std::string& id);
 
 private:
     void setupDockspace();
@@ -32,6 +32,8 @@ private:
     VDevice& m_device;
 
     std::unique_ptr<VDescriptorPool> m_descriptorPool;
+
+    bool m_frameStarted{ false };
 };
 
 

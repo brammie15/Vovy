@@ -4,7 +4,7 @@
 #include "Utils/FrameContext.h"
 #include "Core/VDevice.h"
 #include "Scene/VGameObject.h"
-#include "VPipeline.h"
+#include "../VPipeline.h"
 
 struct LineSegment {
     glm::vec3 start;
@@ -14,6 +14,8 @@ struct LineSegment {
 
 struct BezierNode {
     glm::vec3 position;
+
+    explicit BezierNode(const glm::vec3& pos) : position(pos) {}
 };
 
 struct BezierCurve {
@@ -34,14 +36,16 @@ public:
     ~LineRenderSystem();
 
     void renderLines(FrameContext context, const std::vector<LineSegment>& segments);
-    void renderBezier(FrameContext context, const std::vector<BezierCurve>& curves);
+    void renderBezier(FrameContext context, std::vector<BezierCurve>& curves);
 private:
     void createPipelineLayout(const std::vector<VkDescriptorSetLayout>& descriptorSetLayouts);
     void createPipeline(VkRenderPass renderPass);
 
     //Bezier stuff
-    glm::vec3 deCasteljau(const std::vector<BezierNode>& nodes, float t);
-    std::vector<glm::vec3> getControlPoints(const std::vector<BezierNode>& nodes);
+
+    //TODO: not const because transform doesn't have non const GetWorldPosition
+    glm::vec3 deCasteljau(std::vector<BezierNode>& nodes, float t);
+    std::vector<glm::vec3> getControlPoints(std::vector<BezierNode>& nodes);
 
     VDevice& m_device;
 

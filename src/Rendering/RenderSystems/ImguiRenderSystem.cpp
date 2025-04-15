@@ -5,7 +5,7 @@
 #include <ImGuizmo.h>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "VSwapchain.h"
+#include "../VSwapchain.h"
 
 ImguiRenderSystem::ImguiRenderSystem(VDevice& deviceRef, VkRenderPass renderPass, int width, int height): m_device{deviceRef} {
     initImgui(renderPass, width, height);
@@ -22,6 +22,7 @@ void ImguiRenderSystem::beginFrame() {
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
     // ImGuizmo::SetImGuiContext(ImGui::GetCurrentContext());
+
     setupDockspace();
 }
 
@@ -30,13 +31,23 @@ static ImGuizmo::MODE currentGizmoMode = ImGuizmo::WORLD;
 
 void ImguiRenderSystem::endFrame() {
     ImGui::Render();
+    m_frameStarted = false;
 }
 
-void ImguiRenderSystem::drawGizmos(VCamera* camera, Transform* transform) {
+void ImguiRenderSystem::drawGizmos(VCamera* camera, Transform* transform, const std::string& id) {
     if (transform == nullptr) {
         return;
     }
-    ImGuizmo::BeginFrame();
+    if (!m_frameStarted) {
+        ImGuizmo::BeginFrame();
+    }
+
+    ImGuizmo::DrawGrid(
+      glm::value_ptr(camera->GetViewMatrix()),
+      glm::value_ptr(camera->GetProjectionMatrix()),
+      glm::value_ptr(glm::mat4(1.f)),
+      1.f
+  );
 
     ImGui::Begin("Gizmos");
 
@@ -62,6 +73,7 @@ void ImguiRenderSystem::drawGizmos(VCamera* camera, Transform* transform) {
     ImGuizmo::SetRect(0, 0, ImGui::GetIO().DisplaySize.x, ImGui::GetIO().DisplaySize.y);
 
     glm::mat4 objectMatrix = transform->GetWorldMatrix();
+    ImGuizmo::PushID(id.c_str());
     ImGuizmo::Manipulate(
         glm::value_ptr(camera->GetViewMatrix()),
         glm::value_ptr(camera->GetProjectionMatrix()),
@@ -69,8 +81,30 @@ void ImguiRenderSystem::drawGizmos(VCamera* camera, Transform* transform) {
         currentGizmoMode,
         glm::value_ptr(objectMatrix)
     );
+    ImGuizmo::PopID();
 
     transform->SetWorldMatrix(objectMatrix);
+}
+
+void ImguiRenderSystem::drawGizmos(VCamera* camera, glm::vec3& position, const std::string& id) {
+    if (!m_frameStarted) {
+        ImGuizmo::BeginFrame();
+    }
+
+    ImGuizmo::SetRect(0, 0, ImGui::GetIO().DisplaySize.x, ImGui::GetIO().DisplaySize.y);
+
+    ImGuizmo::PushID(id.c_str());
+    glm::mat4 objectMatrix = glm::translate(glm::mat4(1.f), position);
+    ImGuizmo::Manipulate(
+        glm::value_ptr(camera->GetViewMatrix()),
+        glm::value_ptr(camera->GetProjectionMatrix()),
+        currentGizmoOperation,
+        currentGizmoMode,
+        glm::value_ptr(objectMatrix)
+    );
+    ImGuizmo::PopID();
+
+    position = glm::vec3(objectMatrix[3]);
 }
 
 void ImguiRenderSystem::setupDockspace() {

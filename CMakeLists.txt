@@ -19,10 +19,11 @@ add_executable(${PROJECT_NAME}
 
         ${SRC_ROOT}/Rendering/VPipeline.h ${SRC_ROOT}/Rendering/VPipeline.cpp
         ${SRC_ROOT}/Rendering/VRenderPass.h ${SRC_ROOT}/Rendering/VRenderPass.cpp
-        ${SRC_ROOT}/Rendering/VRenderSystem.h ${SRC_ROOT}/Rendering/VRenderSystem.cpp
         ${SRC_ROOT}/Rendering/VSwapchain.h ${SRC_ROOT}/Rendering/VSwapchain.cpp
-        ${SRC_ROOT}/Rendering/ImguiRenderSystem.h ${SRC_ROOT}/Rendering/ImGuiRenderSystem.cpp
-        ${SRC_ROOT}/Rendering/LineRenderSystem.h ${SRC_ROOT}/Rendering/LineRenderSystem.cpp
+
+        ${SRC_ROOT}/Rendering/RenderSystems/GameObjectRenderSystem.h ${SRC_ROOT}/Rendering/RenderSystems/GameObjectRenderSystem.cpp
+        ${SRC_ROOT}/Rendering/RenderSystems/ImguiRenderSystem.h ${SRC_ROOT}/Rendering/RenderSystems/ImGuiRenderSystem.cpp
+        ${SRC_ROOT}/Rendering/RenderSystems/LineRenderSystem.h ${SRC_ROOT}/Rendering/RenderSystems/LineRenderSystem.cpp
 
         ${SRC_ROOT}/Resources/VBuffer.h ${SRC_ROOT}/Resources/VBuffer.cpp
         ${SRC_ROOT}/Resources/VImage.h ${SRC_ROOT}/Resources/VImage.cpp

@@ -81,14 +81,14 @@ void LineRenderSystem::renderLines(FrameContext context, const std::vector<LineS
     vkCmdDraw(context.commandBuffer, static_cast<uint32_t>(vertexData.size()), 1, 0, 0);
 }
 
-void LineRenderSystem::renderBezier(FrameContext context, const std::vector<BezierCurve>& curves) {
+void LineRenderSystem::renderBezier(FrameContext context, std::vector<BezierCurve>& curves) {
     if (curves.size() == 0) {
         return;
     }
 
     std::vector<VMesh::Vertex> vertexData;
 
-    for (const auto& curve : curves) {
+    for (auto& curve : curves) {
         for (int i = 0; i < curve.resolution; ++i) {
             float t = static_cast<float>(i) / (curve.resolution - 1);
             glm::vec3 point = deCasteljau(curve.nodes, t);
@@ -96,7 +96,7 @@ void LineRenderSystem::renderBezier(FrameContext context, const std::vector<Bezi
             vertexData.push_back({point, curve.color});
         }
 
-        for (const auto& node : curve.nodes) {
+        for (auto& node : curve.nodes) {
             vertexData.push_back({node.position, glm::vec3(0.0f, 0.0f, 1.0f)});  // Blue color for control points
         }
     }
@@ -153,7 +153,7 @@ void LineRenderSystem::renderBezier(FrameContext context, const std::vector<Bezi
 }
 
 //https://en.wikipedia.org/wiki/De_Casteljau%27s_algorithm
-glm::vec3 LineRenderSystem::deCasteljau(const std::vector<BezierNode>& nodes, float t) {
+glm::vec3 LineRenderSystem::deCasteljau(std::vector<BezierNode>& nodes, float t) {
     std::vector<glm::vec3> points = getControlPoints(nodes);
 
     while (points.size() > 1) {
@@ -167,9 +167,9 @@ glm::vec3 LineRenderSystem::deCasteljau(const std::vector<BezierNode>& nodes, fl
     return points[0];
 }
 
-std::vector<glm::vec3> LineRenderSystem::getControlPoints(const std::vector<BezierNode>& nodes) {
+std::vector<glm::vec3> LineRenderSystem::getControlPoints(std::vector<BezierNode>& nodes) {
     std::vector<glm::vec3> controlPoints;
-    for (const auto& node : nodes) {
+    for (auto& node : nodes) {
         controlPoints.push_back(node.position);
     }
     return controlPoints;

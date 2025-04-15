@@ -10,20 +10,21 @@
 
 #define _USE_MATH_DEFINES
 #include <functional>
+#include <iostream>
 #include <math.h>
 #include <thread>
+#include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/string_cast.hpp>
 
 #include "Utils/FrameContext.h"
 #include "Utils/VCamera.h"
-#include "Rendering/VRenderSystem.h"
+#include "Rendering/RenderSystems/GameObjectRenderSystem.h"
 #include "Descriptors/VDescriptorSetLayout.h"
 #include "Descriptors/VDescriptorWriter.h"
-#include "Rendering/ImguiRenderSystem.h"
-#include "Rendering/LineRenderSystem.h"
+#include "Rendering/RenderSystems/ImguiRenderSystem.h"
+#include "Rendering/RenderSystems/LineRenderSystem.h"
 #include "Utils/DeltaTime.h"
 #include "Scene/VMesh.h"
-
 
 struct GlobalUBO {
     glm::mat4 view;
@@ -40,6 +41,7 @@ VApp::VApp() {
 
     m_sigmaVanniScene = std::make_unique<VScene>("SigmaVanniScene");
     m_sponzaScene = std::make_unique<VScene>("SponzaScene");
+    m_vikingRoomScene = std::make_unique<VScene>("VikingRoomScene");
 
     m_currentScene = m_sigmaVanniScene.get();
     loadGameObjects();
@@ -57,16 +59,16 @@ VApp::VApp() {
     }
 
     std::vector<BezierNode> controlPoints = {
-        {glm::vec3(0.0f, 0.0f, 0.0f)},
-        {glm::vec3(1.0f, 2.0f, 0.0f)},
-        {glm::vec3(2.0f, -1.0f, 0.0f)},
-        {glm::vec3(3.0f, 0.0f, 0.0f)}
+        BezierNode{glm::vec3(0.0f, 0.0f, 0.0f)},
+        BezierNode{glm::vec3(1.0f, 2.0f, 0.0f)},
+        BezierNode{glm::vec3(2.0f, -1.0f, 0.0f)},
+        BezierNode{glm::vec3(3.0f, 0.0f, 0.0f)}
     };
-
+    //
     m_sigmaVanniScene->addBezierCurve(BezierCurve{
-        controlPoints,
-        glm::vec3(1.0f, 0.0f, 0.0f),  // Red color
-        100
+    controlPoints,
+    glm::vec3(1.0f, 0.0f, 0.0f),  // Red color
+    100
     });
 }
 
@@ -109,7 +111,7 @@ void VApp::run() {
 
 
 
-    VRenderSystem renderSystem{
+    GameObjectRenderSystem renderSystem{
         m_device,
         m_renderPass.GetSwapChainRenderPass(),
         {globalSetLayout->getDescriptorSetLayout(), modelSetLayout->getDescriptorSetLayout()}
@@ -128,8 +130,6 @@ void VApp::run() {
         { globalSetLayout->getDescriptorSetLayout(), modelSetLayout->getDescriptorSetLayout() }
     };
 
-
-
     VCamera camera{{-2.0f, 1.0f, 0}, {0.0f, 1.0f, 0.0f}};
     int offset = 0;
     while (!m_window.ShouldClose()) {
@@ -140,8 +140,18 @@ void VApp::run() {
 
         this->imGui();
         if (m_currentScene->getGameObjects().size() > 0 && m_selectedTransform) {
-            imguiRenderSystem.drawGizmos(&camera, m_selectedTransform);
+            imguiRenderSystem.drawGizmos(&camera, m_selectedTransform, "Maintransform");
         }
+
+        auto& curves = m_currentScene->getBezierCurves();
+        for (int i = 0; i < curves.size(); i++) {
+            for (int j = 0; j < curves[i].nodes.size(); j++) {
+                std::string id = "BezierNode" + std::to_string(j);
+                std::cout << id << std::endl;
+                imguiRenderSystem.drawGizmos(&camera, curves[i].nodes[j].position, id);
+            }
+        }
+
 
         imguiRenderSystem.endFrame();
 
@@ -191,7 +201,7 @@ void VApp::run() {
 
         if (auto commandBuffer = m_renderPass.BeginFrame()) {
             int frameIndex = m_renderPass.GetFrameIndex();
-            FrameContext frameInfo{frameIndex, static_cast<float>(DeltaTime::GetInstance().GetDeltaTime()), commandBuffer, globalDescriptorSets[frameIndex]};
+            FrameContext frameInfo{frameIndex, static_cast<float>(DeltaTime::GetInstance().GetDeltaTime()), commandBuffer, globalDescriptorSets[frameIndex], camera};
 
             GlobalUBO ubo{};
 
@@ -275,6 +285,9 @@ void VApp::imGui() {
     }
     ImGui::End();
 
+
+
+
     ImGui::Begin("Scenes");
     std::string currentSceneName = "Unknown?";
     if (m_currentScene != nullptr) {
@@ -286,6 +299,9 @@ void VApp::imGui() {
     }
     if (ImGui::Button("Sponza")) {
         m_currentScene = m_sponzaScene.get();
+    }
+    if (ImGui::Button("Viking Room")) {
+        m_currentScene = m_vikingRoomScene.get();
     }
     ImGui::End();
 
@@ -349,16 +365,14 @@ void VApp::loadGameObjects() {
 
     m_sigmaVanniScene->addGameObject(std::move(testObject));
 
-    // auto curtainsSponzaModel = std::make_shared<VModel>(m_device, "resources/pkg_a_curtains/NewSponza_Curtains_glTF.gltf");
-    // auto curtainsSponza = VGameObject::createGameObject();
-    // curtainsSponza->model = std::move(curtainsSponzaModel);
-    // m_gameObjects.push_back(std::move(curtainsSponza));
+    // auto sponzaScene = VGameObject::createGameObject();
+    // const auto mainSponzaModel = std::make_shared<VModel>(m_device, "resources/sponza/sponza.obj", sponzaScene.get());
+    // sponzaScene->model = std::move(mainSponzaModel);
+    // m_sponzaScene->addGameObject(std::move(sponzaScene));
 
-    auto sponzaScene = VGameObject::createGameObject();
-
-    const auto mainSponzaModel = std::make_shared<VModel>(m_device, "resources/sponza/sponza.obj", sponzaScene.get());
-    sponzaScene->model = std::move(mainSponzaModel);
-
-    m_sponzaScene->addGameObject(std::move(sponzaScene));
+    auto vikingRoomScene = VGameObject::createGameObject();
+    const auto mainVikingRoomModel = std::make_shared<VModel>(m_device, "resources/viking_room.obj", vikingRoomScene.get());
+    vikingRoomScene->model = std::move(mainVikingRoomModel);
+    m_vikingRoomScene->addGameObject(std::move(vikingRoomScene));
 
 }

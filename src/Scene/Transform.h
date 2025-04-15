@@ -9,6 +9,9 @@ class Transform final {
 public:
     explicit Transform() = default;
     ~Transform();
+
+    Transform(const glm::vec3 position);
+
     void SetWorldMatrix(const glm::mat4& mat);
 
     Transform(const Transform&) = delete;

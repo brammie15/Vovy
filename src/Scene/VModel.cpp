@@ -7,7 +7,7 @@
 #include <assimp/postprocess.h>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "Rendering/VRenderSystem.h"
+#include "../Rendering/RenderSystems/GameObjectRenderSystem.h"
 
 VModel::VModel(VDevice& deviceRef, const std::string& path, VGameObject* parent): m_device{deviceRef} {
     loadModel(path);

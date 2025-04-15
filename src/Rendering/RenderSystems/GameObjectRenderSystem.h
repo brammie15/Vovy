@@ -1,18 +1,18 @@
 #ifndef VRENDERSYSTEM_H
 #define VRENDERSYSTEM_H
-#include "Utils/FrameContext.h"
-#include "Core/VDevice.h"
-#include "Scene/VGameObject.h"
-#include "VPipeline.h"
+#include "../../Utils/FrameContext.h"
+#include "../../Core/VDevice.h"
+#include "../../Scene/VGameObject.h"
+#include "../VPipeline.h"
 
 struct PushConstantData {
     glm::mat4 modelMatrix{1.f};
 };
 
-class VRenderSystem {
+class GameObjectRenderSystem {
 public:
-    VRenderSystem(VDevice& deviceRef, VkRenderPass renderPass, const std::vector<VkDescriptorSetLayout>& descriptorSetLayout);
-    ~VRenderSystem();
+    GameObjectRenderSystem(VDevice& deviceRef, VkRenderPass renderPass, const std::vector<VkDescriptorSetLayout>& descriptorSetLayout);
+    ~GameObjectRenderSystem();
 
     void renderGameObjects(const FrameContext& frameContext, const std::vector<std::unique_ptr<VGameObject>>& gameObjects);
 private:

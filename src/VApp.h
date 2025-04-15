@@ -10,7 +10,7 @@
 #include "Scene/VGameObject.h"
 #include "Rendering/VRenderPass.h"
 #include "Descriptors/VDescriptorPool.h"
-#include "Rendering/LineRenderSystem.h"
+#include "Rendering/RenderSystems/LineRenderSystem.h"
 #include "Scene/VScene.h"
 //
 //
@@ -54,6 +54,7 @@ private:
 
     std::unique_ptr<VScene> m_sigmaVanniScene{};
     std::unique_ptr<VScene> m_sponzaScene{};
+    std::unique_ptr<VScene> m_vikingRoomScene{};
 
     Transform* m_selectedTransform{ nullptr };
 
