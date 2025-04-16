@@ -26,6 +26,8 @@ public:
     std::shared_ptr<VModel> model{};
     glm::vec3 color{};
 
+    static std::unique_ptr<VGameObject> LoadModelFromDisk(VDevice& device, const std::string& filepath);
+
     Transform transform{};
     explicit VGameObject(uint32_t id): m_id(id) {}
 private:

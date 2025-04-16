@@ -41,6 +41,7 @@ add_executable(${PROJECT_NAME}
         ${SRC_ROOT}/Utils/Singleton.h
         ${SRC_ROOT}/Utils/Timer.h ${SRC_ROOT}/Utils/Timer.cpp
         ${SRC_ROOT}/Utils/DeltaTime.h ${SRC_ROOT}/Utils/DeltaTime.cpp
+        ${SRC_ROOT}/Utils/BezierCurves.h ${SRC_ROOT}/Utils/BezierCurves.cpp
 )
 #
 #add_executable(${PROJECT_NAME}
@@ -139,6 +140,11 @@ add_custom_target(CopyResources ALL
         COMMENT "Copying resources folder to build directory"
 )
 add_dependencies(${PROJECT_NAME} CopyResources)
+
+add_custom_command(TARGET CopyResources POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${RESOURCE_SRC_DIR}/imgui.ini ${RESOURCE_DST_DIR}/imgui.ini
+        COMMENT "Copying imgui.ini to build directory"
+)
 
 
 

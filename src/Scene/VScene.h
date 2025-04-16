@@ -4,8 +4,8 @@
 #include <functional>
 #include <memory>
 #include <vector>
-#include "VGameObject.h"
 #include "Rendering/RenderSystems/LineRenderSystem.h"
+#include "Scene/VGameObject.h"
 
 class VScene {
 public:

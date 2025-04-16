@@ -52,8 +52,13 @@ private:
     std::unique_ptr<VScene> m_sigmaVanniScene{};
     std::unique_ptr<VScene> m_sponzaScene{};
     std::unique_ptr<VScene> m_vikingRoomScene{};
+    std::unique_ptr<VScene> m_bezierTestScene{};
 
-    Transform* m_selectedTransform{ nullptr };
+    Transform* m_selectedTransform = nullptr;
+    Transform* m_bezierFollowerTransform = nullptr;
+    float m_bezierProgress = 0.0f;
+    float m_bezierSpeed = 0.5f; // Speed at which the transform moves along the curve
+    bool m_shouldRotate = false; // Whether the transform should rotate to follow the curve
 
     VScene* m_currentScene{ nullptr };
     std::unique_ptr<VDescriptorPool> m_globalPool{};

@@ -5,24 +5,12 @@
 #include "Core/VDevice.h"
 #include "Scene/VGameObject.h"
 #include "Rendering/VPipeline.h"
+#include "Utils/BezierCurves.h"
 
 struct LineSegment {
     glm::vec3 start;
     glm::vec3 end;
     glm::vec3 color;
-};
-
-struct BezierNode {
-    glm::vec3 position;
-
-    explicit BezierNode(const glm::vec3& pos) : position(pos) {
-    }
-};
-
-struct BezierCurve {
-    std::vector<BezierNode> nodes;
-    glm::vec3 color;
-    int resolution;
 };
 
 //TODO: fix this
@@ -39,15 +27,13 @@ public:
     void renderLines(const FrameContext& context, const std::vector<LineSegment>& segments);
     void renderBezier(const FrameContext& context, std::vector<BezierCurve>& curves);
 
+    //Bezier stuff
+    glm::vec3 deCasteljau(const std::vector<BezierNode>& nodes, float t);
+    std::vector<glm::vec3> getControlPoints(const std::vector<BezierNode>& nodes);
+
 private:
     void createPipelineLayout(const std::vector<VkDescriptorSetLayout>& descriptorSetLayouts);
     void createPipeline(VkRenderPass renderPass);
-
-    //Bezier stuff
-
-    //TODO: not const because transform doesn't have non const GetWorldPosition
-    glm::vec3 deCasteljau(std::vector<BezierNode>& nodes, float t);
-    std::vector<glm::vec3> getControlPoints(const std::vector<BezierNode>& nodes);
 
     VDevice& m_device;
 

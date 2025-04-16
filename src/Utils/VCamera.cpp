@@ -150,14 +150,44 @@ void VCamera::Update(float deltaTime) {
 }
 
 void VCamera::CalculateViewMatrix() {
-    m_viewMatrix = glm::lookAt(m_position, m_position + m_forward, m_up);
-    m_invMatrix = glm::inverse(m_viewMatrix);
+    if (m_useTarget) {
+        m_forward = glm::normalize(m_target - m_position);
+        m_right = glm::normalize(glm::cross(m_forward, glm::vec3(0, 1, 0)));
+        m_up = glm::normalize(glm::cross(m_right, m_forward));
+        m_viewMatrix = glm::lookAt(m_position, m_target, m_up);
+    } else {
+        m_viewMatrix = glm::lookAt(m_position, m_position + m_forward, m_up);
+    }
 
-    // m_right = glm::vec3(m_viewMatrix[0]);
-    // m_up = glm::vec3(m_viewMatrix[1]);
-    // m_forward = glm::vec3(m_viewMatrix[2]);
+    m_invMatrix = glm::inverse(m_viewMatrix);
 }
 
 void VCamera::CalculateProjectionMatrix() {
     m_projectionMatrix = glm::perspective(glm::radians(fovAngle), m_aspectRatio, m_zNear, m_zFar);
+}
+
+void VCamera::ClearTarget() {
+    m_useTarget = false;
+    m_forward = glm::normalize(m_target - m_position);
+    m_right = glm::normalize(glm::cross(m_forward, glm::vec3(0, 1, 0)));
+    m_up = glm::normalize(glm::cross(m_right, m_forward));
+}
+
+void VCamera::SetTarget(const glm::vec3& target) {
+    m_target = target;
+    m_useTarget = true;
+    // m_forward = glm::normalize(m_target - m_position);
+    // m_right = glm::normalize(glm::cross(m_forward, glm::vec3(0, 1, 0)));
+    // m_up = glm::normalize(glm::cross(m_right, m_forward));
+}
+
+void VCamera::Target(const glm::vec3& target) {
+    glm::vec3 directionToTarget = glm::normalize(target - m_position);
+
+    m_forward = glm::normalize(target - m_position);
+    m_right = glm::normalize(glm::cross(m_forward, glm::vec3(0, 1, 0)));
+    m_up = glm::normalize(glm::cross(m_right, m_forward));
+
+    m_viewMatrix = glm::lookAt(m_position, m_position + m_forward, m_up);
+    m_invMatrix = glm::inverse(m_viewMatrix);
 }

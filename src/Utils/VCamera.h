@@ -24,6 +24,12 @@ public:
         m_position += translation;
     }
 
+    void SetTarget(const glm::vec3& target);
+    [[nodiscard]] glm::vec3 GetTarget() const { return m_target; }
+    void ClearTarget();
+    bool IsTargetting() const { return m_useTarget; }
+    void Target(const glm::vec3& target);
+
 private:
 
     float fovAngle{90.f};
@@ -33,6 +39,8 @@ private:
     glm::vec3 m_up      {0, 1, 0};
     glm::vec3 m_right   {0, 0, 1};
 
+    glm::vec3 m_target{ 0.0f, 0.0f, 0.0f };
+    bool m_useTarget{ false };
 
     float totalPitch{ 0.0f };
     float totalYaw{ 0.0f };

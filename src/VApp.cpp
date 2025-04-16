@@ -8,6 +8,7 @@
 #include <glm/glm.hpp>
 
 #include <functional>
+#include <iostream>
 #include <thread>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/string_cast.hpp>
@@ -18,6 +19,7 @@
 #include "Rendering/RenderSystems/ImguiRenderSystem.h"
 #include "Rendering/RenderSystems/LineRenderSystem.h"
 #include "Scene/VMesh.h"
+#include "Utils/BezierCurves.h"
 #include "Utils/DeltaTime.h"
 #include "Utils/FrameContext.h"
 #include "Utils/VCamera.h"
@@ -38,9 +40,10 @@ VApp::VApp() {
     m_sigmaVanniScene = std::make_unique<VScene>("SigmaVanniScene");
     m_sponzaScene = std::make_unique<VScene>("SponzaScene");
     m_vikingRoomScene = std::make_unique<VScene>("VikingRoomScene");
+    m_bezierTestScene = std::make_unique<VScene>("BezierTestScene");
 
     loadGameObjects();
-    m_currentScene = m_sigmaVanniScene.get();
+    m_currentScene = m_bezierTestScene.get();
     m_currentScene->sceneLoad();
 
     const std::vector<BezierNode> controlPoints = {
@@ -123,6 +126,36 @@ void VApp::run() {
             imguiRenderSystem.drawGizmos(&camera, m_selectedTransform, "Maintransform");
         }
 
+        if (m_bezierFollowerTransform && !m_currentScene->getBezierCurves().empty()) {
+            const auto& curve = m_currentScene->getBezierCurves()[0]; // Using first curve for now
+            m_bezierProgress += m_bezierSpeed * static_cast<float>(DeltaTime::GetInstance().GetDeltaTime());
+            if (m_bezierProgress > 1.0f) m_bezierProgress = 0.0f;
+
+            glm::vec3 position = lineRenderSystem.deCasteljau(curve.nodes, m_bezierProgress);
+            m_bezierFollowerTransform->SetLocalPosition(position);
+
+            if (m_shouldRotate) {
+                float nextT = m_bezierProgress + 0.01f;
+                if (nextT > 1.0f) nextT = 0.0f;
+                glm::vec3 nextPosition = lineRenderSystem.deCasteljau(curve.nodes, nextT);
+
+                glm::vec3 direction = glm::normalize(nextPosition - position);
+
+                glm::vec3 up(0.0f, 1.0f, 0.0f); // Y is up
+                glm::vec3 right = glm::normalize(glm::cross(up, direction));
+                up = glm::normalize(glm::cross(direction, right));
+
+                glm::mat4 rotationMatrix(1.0f);
+                rotationMatrix[0] = glm::vec4(right, 0.0f);
+                rotationMatrix[1] = glm::vec4(up, 0.0f);
+                rotationMatrix[2] = glm::vec4(-direction, 0.0f); //-Z forward
+
+                glm::quat rotation = glm::quat_cast(rotationMatrix);
+                m_bezierFollowerTransform->SetLocalRotation(rotation);
+            }
+        }
+
+
         auto& curves = m_currentScene->getBezierCurves();
         for (auto & curve : curves) {
             for (int j = 0; j < curve.nodes.size(); j++) {
@@ -138,6 +171,17 @@ void VApp::run() {
                 m_window.UnlockCursor();
             } else {
                 m_window.LockCursor();
+            }
+        }
+
+        if (m_window.isKeyPressed(GLFW_KEY_F)) {
+            if (m_selectedTransform) {
+                const glm::vec3 focusPos = m_selectedTransform->GetWorldPosition();
+                glm::vec3 offset = glm::vec3(0.0f, 0.0f, 5.0f);  // Or calculate based on camera forward
+                camera.m_position = focusPos + offset;
+
+                camera.Target(focusPos);
+                camera.CalculateViewMatrix();
             }
         }
 
@@ -184,7 +228,7 @@ void VApp::run() {
             m_renderPass.beginSwapChainRenderPass(commandBuffer);
 
             if (m_currentScene->getLineSegments().size() > 2) {
-                lineRenderSystem.renderLines(frameInfo, m_currentScene->getLineSegments());
+                // lineRenderSystem.renderLines(frameInfo, m_currentScene->getLineSegments());
             }
 
             lineRenderSystem.renderBezier(frameInfo, m_currentScene->getBezierCurves());
@@ -225,6 +269,13 @@ void VApp::imGui() {
     ImGui::Text("Window Size: %d x %d", m_window.getWidth(), m_window.getHeight());
     ImGui::End();
 
+    ImGui::Begin("Controls");
+    ImGui::Text("Controls:");
+    ImGui::Text("WASD: Move Camera");
+    ImGui::Text("Press ` to lock/unlock cursor");
+    ImGui::Text("Press F to focus on selected object (BIG WIP)");
+    ImGui::End();
+
     ImGui::Begin("Line Segments");
     ImGui::Text("Line Segments: %d", m_currentScene->getLineSegments().size());
     for (int i = 0; i < m_currentScene->getLineSegments().size(); i++) {
@@ -239,10 +290,31 @@ void VApp::imGui() {
 
 
     ImGui::Begin("Bezier Segments");
+    ImGui::Text("Bezier Segments: %d", m_currentScene->getBezierCurves().size());
+
+    static char filenameBuffer[256] = "curves.bez"; // Default filename
+
+    ImGui::Separator();
+    ImGui::InputText("File", filenameBuffer, IM_ARRAYSIZE(filenameBuffer));
+
+    if (ImGui::Button("Save Curves")) {
+        BezierSerializer::writeBezierCurves(filenameBuffer, m_currentScene->getBezierCurves());
+    }
+
+    ImGui::SameLine();
+
+    if (ImGui::Button("Load Curves")) {
+        auto loadedCurves = BezierSerializer::readBezierCurves(filenameBuffer);
+        m_currentScene->getBezierCurves() = loadedCurves;
+    }
 
     auto& curves = m_currentScene->getBezierCurves();
     if (ImGui::Button("Add Curve")) {
-        curves.emplace_back(); // Add an empty curve
+        curves.push_back({
+            {},
+            glm::vec3(1.0f, 0.0f, 0.0f),
+            100
+        });
     }
 
     for (size_t curveIndex = 0; curveIndex < curves.size(); ++curveIndex) {
@@ -274,6 +346,25 @@ void VApp::imGui() {
 
     ImGui::End();
 
+    ImGui::Begin("Model Loader");
+
+    static char modelPath[256] = "models/viking_room.obj"; // default path
+
+    ImGui::InputText("Model Path", modelPath, IM_ARRAYSIZE(modelPath));
+
+    if (ImGui::Button("Load Model")) {
+        std::string pathStr = modelPath;
+        auto modelGameObject = VGameObject::LoadModelFromDisk(m_device, pathStr);
+        if (modelGameObject) {
+            std::cout << "Loaded model from: " << pathStr << std::endl;
+            m_currentScene->addGameObject(std::move(modelGameObject));
+        } else {
+            std::cerr << "Failed to load model from: " << pathStr << std::endl;
+        }
+    }
+
+    ImGui::End();
+
     ImGui::Begin("Scenes");
     std::string currentSceneName = "Unknown?";
     if (m_currentScene != nullptr) {
@@ -290,6 +381,10 @@ void VApp::imGui() {
     }
     if (ImGui::Button("Viking Room")) {
         m_currentScene = m_vikingRoomScene.get();
+        m_currentScene->sceneLoad();
+    }
+    if (ImGui::Button("Bezier Test")) {
+        m_currentScene = m_bezierTestScene.get();
         m_currentScene->sceneLoad();
     }
     ImGui::End();
@@ -331,6 +426,20 @@ void VApp::imGui() {
     }
     ImGui::End();
 
+    ImGui::Begin("Bezier Curve Follower");
+    if (ImGui::Button("Set Selected as Follower")) {
+        m_bezierFollowerTransform = m_selectedTransform;
+    }
+    if (ImGui::Button("Clear Follower")) {
+        m_bezierFollowerTransform = nullptr;
+    }
+    if (m_bezierFollowerTransform) {
+        ImGui::Text("Current Follower: %p", m_bezierFollowerTransform);
+        ImGui::SliderFloat("Follow Speed", &m_bezierSpeed, 0.1f, 2.0f);
+        ImGui::SliderFloat("Progress", &m_bezierProgress, 0.0f, 1.0f);
+        ImGui::Checkbox("Should Rotate", &m_shouldRotate);
+    }
+    ImGui::End();
 }
 
 void VApp::loadGameObjects() {
@@ -369,4 +478,13 @@ void VApp::loadGameObjects() {
     };
 
     m_vikingRoomScene->setSceneLoadFunction(vikingRoomSceneLoadFunction);
+
+    auto bezierTestSceneLoadFunction = [&](VScene* scene) {
+        auto bezierTestObject = VGameObject::createGameObject();
+        const auto bezierTestModel = std::make_shared<VModel>(m_device, "resources/XYZaxis.obj", bezierTestObject.get());
+        bezierTestObject->model = std::move(bezierTestModel);
+        scene->addGameObject(std::move(bezierTestObject));
+    };
+
+    m_bezierTestScene->setSceneLoadFunction(bezierTestSceneLoadFunction);
 }

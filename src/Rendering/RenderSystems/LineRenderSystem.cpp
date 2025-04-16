@@ -160,7 +160,7 @@ void LineRenderSystem::renderBezier(const FrameContext& context, std::vector<Bez
 }
 
 //https://en.wikipedia.org/wiki/De_Casteljau%27s_algorithm
-glm::vec3 LineRenderSystem::deCasteljau(std::vector<BezierNode>& nodes, float t) {
+glm::vec3 LineRenderSystem::deCasteljau(const std::vector<BezierNode>& nodes, float t) {
     std::vector<glm::vec3> points = getControlPoints(nodes);
 
     while (points.size() > 1) {
