@@ -184,6 +184,7 @@ void ImguiRenderSystem::initImgui(VkRenderPass renderPass, int width, int height
     (void)io;
     io.DisplaySize = ImVec2(static_cast<float>(width), static_cast<float>(height));
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+    io.IniFilename = "resources/imgui.ini";
     // io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
     ImGui_ImplVulkan_InitInfo init_info = {};

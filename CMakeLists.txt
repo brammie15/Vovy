@@ -49,6 +49,13 @@ add_executable(${PROJECT_NAME}
 #)
 
 
+if (MSVC AND CMAKE_BUILD_TYPE STREQUAL "Debug")
+    message(STATUS "Enabling AddressSanitizer for MSVC Debug build")
+
+#    target_compile_options(${PROJECT_NAME} PRIVATE /fsanitize=address)
+#    target_link_options(${PROJECT_NAME} PRIVATE /fsanitize=address)
+endif()
+
 find_package(Vulkan REQUIRED)
 
 include(cmake/LinkGLFW.cmake)
@@ -71,10 +78,20 @@ include(cmake/LinkImGuizmo.cmake)
 LinkImGuizmo(${PROJECT_NAME} PRIVATE)
 target_link_libraries(imguizmo PRIVATE imgui)
 
+find_package(VLD CONFIG)
+
+if (NOT VLD_FOUND)
+    message("VLD NOT FOUND!")
+endif ()
+
+
+
+
 #include(cmake/LinkTinyObjLoader.cmake)
 #LinkTinyObjLoader(${PROJECT_NAME} PUBLIC)
 
-target_link_libraries(${PROJECT_NAME} PUBLIC Vulkan::Vulkan)
+target_link_libraries(${PROJECT_NAME} PUBLIC Vulkan::Vulkan ${VLD_LIBRARY})
+target_include_directories(${PROJECT_NAME} PUBLIC ${VLD_INCLUDE_DIR})
 
 
 
@@ -130,23 +147,8 @@ add_dependencies(${PROJECT_NAME} CompileShaders)
 set(RESOURCE_SRC_DIR "${PROJECT_SOURCE_DIR}/resources")
 set(RESOURCE_DST_DIR "${CMAKE_BINARY_DIR}/resources")
 
-#add_custom_target(CopyResources ALL
-#        COMMAND ${CMAKE_COMMAND} -E make_directory ${RESOURCE_DST_DIR}
-#        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${RESOURCE_SRC_DIR}/* ${RESOURCE_DST_DIR}/
-#        COMMENT "Copying resources folder to build directory"
-#)
 add_custom_target(CopyResources ALL
         COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different  ${RESOURCE_SRC_DIR} ${RESOURCE_DST_DIR}
         COMMENT "Copying resources folder to build directory"
 )
 add_dependencies(${PROJECT_NAME} CopyResources)
-
-add_custom_command(TARGET CopyResources POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${RESOURCE_SRC_DIR}/imgui.ini ${RESOURCE_DST_DIR}/imgui.ini
-        COMMENT "Copying imgui.ini to build directory"
-)
-
-
-
-#include(cmake/DownloadSponza.cmake)
-#DownloadSponza(${CMAKE_BINARY_DIR}/resources/sponza)

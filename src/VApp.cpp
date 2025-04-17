@@ -43,7 +43,7 @@ VApp::VApp() {
     m_bezierTestScene = std::make_unique<VScene>("BezierTestScene");
 
     loadGameObjects();
-    m_currentScene = m_bezierTestScene.get();
+    m_currentScene = m_vikingRoomScene.get();
     m_currentScene->sceneLoad();
 
     const std::vector<BezierNode> controlPoints = {
