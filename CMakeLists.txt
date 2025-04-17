@@ -10,44 +10,39 @@ set(SRC_ROOT ${CMAKE_SOURCE_DIR}/src)
 add_executable(${PROJECT_NAME}
         ${SRC_ROOT}/main.cpp
         ${SRC_ROOT}/VApp.h  ${SRC_ROOT}/VApp.cpp
-        ${SRC_ROOT}/Core/VDevice.h ${SRC_ROOT}/Core/VDevice.cpp
-        ${SRC_ROOT}/Core/VWindow.h ${SRC_ROOT}/Core/VWindow.cpp
+        ${SRC_ROOT}/Core/Device.h ${SRC_ROOT}/Core/Device.cpp
+        ${SRC_ROOT}/Core/Window.h ${SRC_ROOT}/Core/Window.cpp
 
-        ${SRC_ROOT}/Descriptors/VDescriptorPool.h ${SRC_ROOT}/Descriptors/VDescriptorPool.cpp
-        ${SRC_ROOT}/Descriptors/VDescriptorWriter.h ${SRC_ROOT}/Descriptors/VDescriptorWriter.cpp
-        ${SRC_ROOT}/Descriptors/VDescriptorSetLayout.h ${SRC_ROOT}/Descriptors/VDescriptorSetLayout.cpp
+        ${SRC_ROOT}/Descriptors/DescriptorPool.h ${SRC_ROOT}/Descriptors/DescriptorPool.cpp
+        ${SRC_ROOT}/Descriptors/DescriptorWriter.h ${SRC_ROOT}/Descriptors/DescriptorWriter.cpp
+        ${SRC_ROOT}/Descriptors/DescriptorSetLayout.h ${SRC_ROOT}/Descriptors/DescriptorSetLayout.cpp
 
-        ${SRC_ROOT}/Rendering/VPipeline.h ${SRC_ROOT}/Rendering/VPipeline.cpp
-        ${SRC_ROOT}/Rendering/VRenderPass.h ${SRC_ROOT}/Rendering/VRenderPass.cpp
-        ${SRC_ROOT}/Rendering/VSwapchain.h ${SRC_ROOT}/Rendering/VSwapchain.cpp
+        ${SRC_ROOT}/Rendering/Pipeline.h ${SRC_ROOT}/Rendering/Pipeline.cpp
+        ${SRC_ROOT}/Rendering/Renderer.h ${SRC_ROOT}/Rendering/Renderer.cpp
+        ${SRC_ROOT}/Rendering/Swapchain.h ${SRC_ROOT}/Rendering/Swapchain.cpp
 
         ${SRC_ROOT}/Rendering/RenderSystems/GameObjectRenderSystem.h ${SRC_ROOT}/Rendering/RenderSystems/GameObjectRenderSystem.cpp
         ${SRC_ROOT}/Rendering/RenderSystems/ImguiRenderSystem.h ${SRC_ROOT}/Rendering/RenderSystems/ImGuiRenderSystem.cpp
         ${SRC_ROOT}/Rendering/RenderSystems/LineRenderSystem.h ${SRC_ROOT}/Rendering/RenderSystems/LineRenderSystem.cpp
 
-        ${SRC_ROOT}/Resources/VBuffer.h ${SRC_ROOT}/Resources/VBuffer.cpp
-        ${SRC_ROOT}/Resources/VImage.h ${SRC_ROOT}/Resources/VImage.cpp
+        ${SRC_ROOT}/Resources/Buffer.h ${SRC_ROOT}/Resources/Buffer.cpp
+        ${SRC_ROOT}/Resources/Image.h ${SRC_ROOT}/Resources/Image.cpp
 
-        ${SRC_ROOT}/Scene/VMesh.h ${SRC_ROOT}/Scene/VMesh.cpp
-        ${SRC_ROOT}/Scene/VModel.h ${SRC_ROOT}/Scene/VModel.cpp
-        ${SRC_ROOT}/Scene/VGameObject.h ${SRC_ROOT}/Scene/VGameObject.cpp
+        ${SRC_ROOT}/Scene/Mesh.h ${SRC_ROOT}/Scene/Mesh.cpp
+        ${SRC_ROOT}/Scene/Model.h ${SRC_ROOT}/Scene/Model.cpp
+        ${SRC_ROOT}/Scene/GameObject.h ${SRC_ROOT}/Scene/GameObject.cpp
         ${SRC_ROOT}/Scene/Transform.h ${SRC_ROOT}/Scene/Transform.cpp
-        ${SRC_ROOT}/Scene/VScene.h ${SRC_ROOT}/Scene/VScene.cpp
+        ${SRC_ROOT}/Scene/Scene.h ${SRC_ROOT}/Scene/Scene.cpp
 
         ${SRC_ROOT}/Utils/FrameContext.h
         ${SRC_ROOT}/Utils/stb_image.h
-        ${SRC_ROOT}/Utils/VCamera.h ${SRC_ROOT}/Utils/VCamera.cpp
+        ${SRC_ROOT}/Utils/Camera.h ${SRC_ROOT}/Utils/Camera.cpp
         ${SRC_ROOT}/Utils/ResourceManager.h ${SRC_ROOT}/Utils/ResourceManager.cpp
         ${SRC_ROOT}/Utils/Singleton.h
         ${SRC_ROOT}/Utils/Timer.h ${SRC_ROOT}/Utils/Timer.cpp
         ${SRC_ROOT}/Utils/DeltaTime.h ${SRC_ROOT}/Utils/DeltaTime.cpp
         ${SRC_ROOT}/Utils/BezierCurves.h ${SRC_ROOT}/Utils/BezierCurves.cpp
 )
-#
-#add_executable(${PROJECT_NAME}
-#        old_main.cpp
-#)
-
 
 if (MSVC AND CMAKE_BUILD_TYPE STREQUAL "Debug")
     message(STATUS "Enabling AddressSanitizer for MSVC Debug build")

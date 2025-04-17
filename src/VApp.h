@@ -3,13 +3,13 @@
 
 #include <memory>
 
-#include "Core/VDevice.h"
-#include "Core/VWindow.h"
-#include "Descriptors/VDescriptorPool.h"
-#include "Rendering/VPipeline.h"
-#include "Rendering/VRenderPass.h"
-#include "Scene/VGameObject.h"
-#include "Scene/VScene.h"
+#include "Core/Device.h"
+#include "Core/Window.h"
+#include "Descriptors/DescriptorPool.h"
+#include "Rendering/Pipeline.h"
+#include "Rendering/Renderer.h"
+#include "Scene/GameObject.h"
+#include "Scene/Scene.h"
 
 // namespace std {
 //     template<typename T>
@@ -23,8 +23,6 @@
 //         return std::make_unique<T>(std::forward<Args>(args)...);
 //     }
 // }
-
-
 
 class VApp {
 public:
@@ -45,23 +43,23 @@ public:
 private:
     void loadGameObjects();
 
-    VWindow m_window{WIDTH, HEIGHT, "Hello Vulkan!"};
-    VDevice m_device{m_window};
-    VRenderPass m_renderPass{m_window, m_device};
+    vov::Window m_window{WIDTH, HEIGHT, "Hello Vulkan!"};
+    vov::Device m_device{m_window};
+    vov::Renderer m_renderPass{m_window, m_device};
 
-    std::unique_ptr<VScene> m_sigmaVanniScene{};
-    std::unique_ptr<VScene> m_sponzaScene{};
-    std::unique_ptr<VScene> m_vikingRoomScene{};
-    std::unique_ptr<VScene> m_bezierTestScene{};
+    std::unique_ptr<vov::Scene> m_sigmaVanniScene{};
+    std::unique_ptr<vov::Scene> m_sponzaScene{};
+    std::unique_ptr<vov::Scene> m_vikingRoomScene{};
+    std::unique_ptr<vov::Scene> m_bezierTestScene{};
 
-    Transform* m_selectedTransform = nullptr;
-    Transform* m_bezierFollowerTransform = nullptr;
+    vov::Transform* m_selectedTransform = nullptr;
+    vov::Transform* m_bezierFollowerTransform = nullptr;
     float m_bezierProgress = 0.0f;
     float m_bezierSpeed = 0.5f; // Speed at which the transform moves along the curve
     bool m_shouldRotate = false; // Whether the transform should rotate to follow the curve
 
-    VScene* m_currentScene{ nullptr };
-    std::unique_ptr<VDescriptorPool> m_globalPool{};
+    vov::Scene* m_currentScene{ nullptr };
+    std::unique_ptr<vov::DescriptorPool> m_globalPool{};
 };
 
 #endif //VAPP_H

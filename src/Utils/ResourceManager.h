@@ -5,23 +5,24 @@
 #include <unordered_map>
 
 #include "Singleton.h"
-#include "Resources/VImage.h"
+#include "Resources/Image.h"
+namespace vov {
+    class ResourceManager final: public Singleton<ResourceManager> {
+    public:
 
-class ResourceManager final: public Singleton<ResourceManager> {
-public:
+        Image* loadImage(Device& deviceRef, const std::string& filename, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage);
+        void clear();
 
-    VImage* loadImage(VDevice& deviceRef, const std::string& filename, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage);
-    void clear();
+    private:
 
-private:
+        std::unordered_map<std::string, std::unique_ptr<Image>> m_images;
 
-    std::unordered_map<std::string, std::unique_ptr<VImage>> m_images;
+        ResourceManager() = default;
 
-    ResourceManager() = default;
-
-    ~ResourceManager() override;
-    friend class Singleton<ResourceManager>;
-};
+        ~ResourceManager() override;
+        friend class Singleton<ResourceManager>;
+    };
+}
 
 
 #endif //RESOURCEMANAGER_H

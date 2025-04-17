@@ -1,15 +1,17 @@
 #ifndef FRAMECONTEXT_H
 #define FRAMECONTEXT_H
 
-#include "VCamera.h"
-#include "Core/VDevice.h"
+#include "Camera.h"
+#include "Core/Device.h"
 
-struct FrameContext {
-    int frameIndex;
-    float frameTime;
-    VkCommandBuffer commandBuffer;
-    VkDescriptorSet globalDescriptor;
-    VCamera &camera;
-};
+namespace vov {
+    struct FrameContext {
+        int frameIndex;
+        float frameTime;
+        VkCommandBuffer commandBuffer;
+        VkDescriptorSet globalDescriptor;
+        Camera& camera;
+    };
+}
 
 #endif //FRAMECONTEXT_H

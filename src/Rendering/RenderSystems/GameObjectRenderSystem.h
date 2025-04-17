@@ -1,28 +1,36 @@
-#ifndef VRENDERSYSTEM_H
-#define VRENDERSYSTEM_H
-#include "../../Utils/FrameContext.h"
-#include "../../Core/VDevice.h"
-#include "../../Scene/VGameObject.h"
-#include "../VPipeline.h"
+#ifndef RENDERSYSTEM_H
+#define RENDERSYSTEM_H
 
-struct PushConstantData {
-    glm::mat4 modelMatrix{1.f};
-};
+#include <memory>
+#include <vector>
 
-class GameObjectRenderSystem {
-public:
-    GameObjectRenderSystem(VDevice& deviceRef, VkRenderPass renderPass, const std::vector<VkDescriptorSetLayout>& descriptorSetLayout);
-    ~GameObjectRenderSystem();
+#include <glm/glm.hpp>
+#include "core/Device.h"
+#include "Rendering/Pipeline.h"
+#include "Scene/GameObject.h"
+#include "Utils/FrameContext.h"
 
-    void renderGameObjects(const FrameContext& frameContext, const std::vector<std::unique_ptr<VGameObject>>& gameObjects) const;
-private:
-    void createPipelineLayout(const std::vector<VkDescriptorSetLayout>& descriptorSetLayouts);
-    void createPipeline(VkRenderPass renderPass);
+namespace vov {
+    struct PushConstantData {
+        glm::mat4 modelMatrix{1.f};
+    };
 
-    VDevice& m_device;
+    class GameObjectRenderSystem {
+    public:
+        GameObjectRenderSystem(Device& deviceRef, VkRenderPass renderPass, const std::vector<VkDescriptorSetLayout>& descriptorSetLayout);
+        ~GameObjectRenderSystem();
 
-    std::unique_ptr<VPipeline> m_pipeline;
-    VkPipelineLayout m_pipelineLayout{};
-};
+        void renderGameObjects(const FrameContext& frameContext, const std::vector<std::unique_ptr<GameObject>>& gameObjects) const;
 
-#endif //VRENDERSYSTEM_H
+    private:
+        void createPipelineLayout(const std::vector<VkDescriptorSetLayout>& descriptorSetLayouts);
+        void createPipeline(VkRenderPass renderPass);
+
+        Device& m_device;
+
+        std::unique_ptr<Pipeline> m_pipeline;
+        VkPipelineLayout m_pipelineLayout{};
+    };
+}
+
+#endif //RENDERSYSTEM_H
