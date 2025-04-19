@@ -8,6 +8,8 @@
 
 Beats opengl suckers 😎
 
+[![wakatime](https://wakatime.com/badge/user/7036fa97-51eb-4a58-ba1e-c1fb2ff046be/project/7b7de548-826b-46c0-80d9-11372d0e20bb.svg)](https://wakatime.com/badge/user/7036fa97-51eb-4a58-ba1e-c1fb2ff046be/project/7b7de548-826b-46c0-80d9-11372d0e20bb)
+
 ---
 
 ## 🚀 Features

@@ -20,6 +20,7 @@ add_executable(${PROJECT_NAME}
         ${SRC_ROOT}/Rendering/Pipeline.h ${SRC_ROOT}/Rendering/Pipeline.cpp
         ${SRC_ROOT}/Rendering/Renderer.h ${SRC_ROOT}/Rendering/Renderer.cpp
         ${SRC_ROOT}/Rendering/Swapchain.h ${SRC_ROOT}/Rendering/Swapchain.cpp
+        ${SRC_ROOT}/Rendering/RenderTexture.h ${SRC_ROOT}/Rendering/RenderTexture.cpp
 
         ${SRC_ROOT}/Rendering/RenderSystems/GameObjectRenderSystem.h ${SRC_ROOT}/Rendering/RenderSystems/GameObjectRenderSystem.cpp
         ${SRC_ROOT}/Rendering/RenderSystems/ImguiRenderSystem.h ${SRC_ROOT}/Rendering/RenderSystems/ImGuiRenderSystem.cpp
