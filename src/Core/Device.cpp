@@ -323,12 +323,26 @@ namespace vov {
         std::vector<VkPhysicalDevice> devices(deviceCount);
         vkEnumeratePhysicalDevices(m_instance, &deviceCount, devices.data());
 
-        for (const auto& device: devices) {
-            if (IsDeviceGood(device)) {
-                m_physicalDevice = device;
+        VkPhysicalDevice discreteGPU = VK_NULL_HANDLE;
+        VkPhysicalDevice integratedGPU = VK_NULL_HANDLE;
+
+        for (const auto& device : devices) {
+            if (!IsDeviceGood(device)) {
+                continue;
+            }
+
+            VkPhysicalDeviceProperties props;
+            vkGetPhysicalDeviceProperties(device, &props);
+
+            if (props.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
+                discreteGPU = device;
                 break;
+            } else if (props.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU) {
+                integratedGPU = device;
             }
         }
+
+        m_physicalDevice = (discreteGPU != VK_NULL_HANDLE) ? discreteGPU : integratedGPU;
 
         if (m_physicalDevice == VK_NULL_HANDLE) {
             throw std::runtime_error("failed to find a suitable GPU!");
@@ -337,11 +351,12 @@ namespace vov {
         vkGetPhysicalDeviceProperties(m_physicalDevice, &properties);
 
         if (properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
-            std::cout << "yay, discrete GPU" << std::endl;
+            std::cout << "Using discrete GPU: " << properties.deviceName << std::endl;
         } else if (properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU) {
-            std::cout << "booh, i hate integrated GPUs" << std::endl;
+            std::cout << "Using integrated GPU: " << properties.deviceName << std::endl;
+        } else {
+            std::cout << "Using other GPU type: " << properties.deviceName << std::endl;
         }
-        std::cout << "physical device: " << properties.deviceName << std::endl;
     }
 
     void Device::CreateLogicalDevice() {
@@ -435,7 +450,7 @@ namespace vov {
         bool isDiscreteGPU = properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
 
         return indices.isComplete() && extensionsSupported && swapChainAdequate &&
-               supportedFeatures.samplerAnisotropy && isDiscreteGPU;
+               supportedFeatures.samplerAnisotropy;
     }
 
     bool Device::CheckValidationLayerSupport() const {
