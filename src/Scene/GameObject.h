@@ -10,7 +10,6 @@
 namespace vov {
     class GameObject {
     public:
-        //TODO: ask if dirty or not
         static std::unique_ptr<GameObject> createGameObject() {
             static uint32_t id = 0;
             return std::make_unique<GameObject>(id++);

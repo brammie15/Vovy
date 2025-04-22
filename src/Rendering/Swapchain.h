@@ -18,6 +18,11 @@ namespace vov {
             return m_swapChainFramebuffers[index];
         }
 
+        VkImageView GetImageView(int index);
+        VkImage GetImage(int index);
+        VkImage GetDepthImage(int index);
+        VkImageView GetDepthImageView(int index);
+
         Swapchain(const Swapchain&) = delete;
         void operator=(const Swapchain&) = delete;
 
@@ -59,6 +64,8 @@ namespace vov {
 
         std::vector<VkFramebuffer> m_swapChainFramebuffers;
 
+
+        //TODO: replace with vov::image
         std::vector<VkImage> m_depthImages;
         std::vector<VkDeviceMemory> m_depthImageMemorys;
         std::vector<VkImageView> m_depthImageViews;

@@ -7,30 +7,29 @@
 
 #include "Window.h"
 
-
-struct VulkanDeviceDebugUtilsFuncTable {
-    VkDevice device;
-    PFN_vkSetDebugUtilsObjectNameEXT vkSetDebugUtilsObjectNameEXT;
-    PFN_vkCmdBeginDebugUtilsLabelEXT vkCmdBeginDebugUtilsLabelEXT;
-    PFN_vkCmdEndDebugUtilsLabelEXT vkCmdEndDebugUtilsLabelEXT;
-    PFN_vkCmdInsertDebugUtilsLabelEXT vkCmdInsertDebugUtilsLabelEXT;
-};
-
-struct SwapChainSupportDetails {
-    VkSurfaceCapabilitiesKHR capabilities{};
-    std::vector<VkSurfaceFormatKHR> formats{};
-    std::vector<VkPresentModeKHR> presentModes{};
-};
-
-struct QueueFamilyIndices {
-    uint32_t graphicsFamily{};
-    uint32_t presentFamily{};
-    bool graphicsFamilyHasValue = false;
-    bool presentFamilyHasValue = false;
-    [[nodiscard]] bool isComplete() const { return graphicsFamilyHasValue && presentFamilyHasValue; }
-};
-
 namespace vov {
+    struct VulkanDeviceDebugUtilsFuncTable {
+        VkDevice device;
+        PFN_vkSetDebugUtilsObjectNameEXT vkSetDebugUtilsObjectNameEXT;
+        PFN_vkCmdBeginDebugUtilsLabelEXT vkCmdBeginDebugUtilsLabelEXT;
+        PFN_vkCmdEndDebugUtilsLabelEXT vkCmdEndDebugUtilsLabelEXT;
+        PFN_vkCmdInsertDebugUtilsLabelEXT vkCmdInsertDebugUtilsLabelEXT;
+    };
+
+    struct SwapChainSupportDetails {
+        VkSurfaceCapabilitiesKHR capabilities{};
+        std::vector<VkSurfaceFormatKHR> formats{};
+        std::vector<VkPresentModeKHR> presentModes{};
+    };
+
+    struct QueueFamilyIndices {
+        uint32_t graphicsFamily{};
+        uint32_t presentFamily{};
+        bool graphicsFamilyHasValue = false;
+        bool presentFamilyHasValue = false;
+        [[nodiscard]] bool isComplete() const { return graphicsFamilyHasValue && presentFamilyHasValue; }
+    };
+
     class Buffer;
 
     class Device final {
@@ -74,7 +73,7 @@ namespace vov {
 
         VkPhysicalDeviceProperties properties{};
 
-        uint32_t FindMemoryType(uint32_t typeFilter, VkFlags properties) const;
+        [[nodiscard]] uint32_t FindMemoryType(uint32_t typeFilter, VkFlags properties) const;
         void CreateImageWithInfo(
             const VkImageCreateInfo& imageInfo,
             VkMemoryPropertyFlags properties,
@@ -123,7 +122,7 @@ namespace vov {
         VmaAllocator m_allocator{};
 
         const std::vector<const char*> validationLayers = {"VK_LAYER_KHRONOS_validation"};
-        const std::vector<const char*> deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+        const std::vector<const char*> deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME};
     };
 }
 

@@ -54,7 +54,6 @@ namespace vov {
 
         PipelineConfigInfo pipelineConfig{};
         Pipeline::DefaultPipelineConfigInfo(pipelineConfig);
-        pipelineConfig.renderPass = renderPass;
         pipelineConfig.pipelineLayout = m_pipelineLayout;
         m_pipeline = std::make_unique<Pipeline>(
             m_device,

@@ -43,8 +43,9 @@ VApp::VApp() {
     m_vikingRoomScene = std::make_unique<vov::Scene>("VikingRoomScene");
     m_bezierTestScene = std::make_unique<vov::Scene>("BezierTestScene");
 
+
     loadGameObjects();
-    m_currentScene = m_vikingRoomScene.get();
+    m_currentScene = m_sigmaVanniScene.get();
     m_currentScene->sceneLoad();
 
     const std::vector<BezierNode> controlPoints = {
@@ -102,7 +103,7 @@ void VApp::run() {
 
     vov::ImguiRenderSystem imguiRenderSystem{
         m_device,
-        m_renderPass.GetSwapChainRenderPass(),
+        VK_FORMAT_B8G8R8A8_SRGB, //TODO: this should really be a global
         static_cast<int>(m_window.getWidth()),
         static_cast<int>(m_window.getHeight())
     };
@@ -119,7 +120,7 @@ void VApp::run() {
     while (!m_window.ShouldClose()) {
         vov::DeltaTime::GetInstance().Update();
         m_window.PollInput();
-
+        //
         imguiRenderSystem.beginFrame();
 
         this->imGui();
@@ -186,25 +187,6 @@ void VApp::run() {
             }
         }
 
-        if (m_window.isKeyPressed(GLFW_KEY_P)) {
-            if (m_currentScene->getLineSegments().empty()) {
-                m_currentScene->addLineSegment(vov::LineSegment{
-                    {0.0f, 0.0f, 0.0f},
-                    {1.0f, 1.0f, 1.0f},
-                    {1.f, 1.f, 0.f}
-                });
-            } else {
-                //Add the cameras postion to the line segments the start should be the previous line segment
-                const auto& lastSegment = m_currentScene->getLineSegments().back();
-                m_currentScene->addLineSegment(vov::LineSegment{
-                    lastSegment.end,
-                    camera.m_position,
-                    {1.f, 1.f, 0.f}
-                });
-            }
-        }
-
-        //TODO: remove
         camera.Update(static_cast<float>(vov::DeltaTime::GetInstance().GetDeltaTime()));
 
         camera.CalculateProjectionMatrix();
@@ -229,7 +211,7 @@ void VApp::run() {
             m_renderPass.beginSwapChainRenderPass(commandBuffer);
 
             if (m_currentScene->getLineSegments().size() > 2) {
-                // lineRenderSystem.renderLines(frameInfo, m_currentScene->getLineSegments());
+                lineRenderSystem.renderLines(frameInfo, m_currentScene->getLineSegments());
             }
 
             lineRenderSystem.renderBezier(frameInfo, m_currentScene->getBezierCurves());

@@ -1,6 +1,7 @@
 #include "Swapchain.h"
 
 #include <array>
+#include <iostream>
 #include <limits>
 #include <stdexcept>
 #include <utility>
@@ -9,9 +10,9 @@ namespace vov {
     Swapchain::Swapchain(Device& deviceRef, VkExtent2D windowExtent): m_device(deviceRef), m_windowExtent{windowExtent} {
         createSwapChain();
         createImageViews();
-        createRenderPass();
+        // createRenderPass();
         createDepthResources();
-        createFramebuffers();
+        // createFramebuffers();
         createSyncObjects();
     }
 
@@ -49,6 +50,22 @@ namespace vov {
             vkDestroySemaphore(m_device.device(), m_imageAvailableSemaphores[i], nullptr);
             vkDestroyFence(m_device.device(), m_inFlightFences[i], nullptr);
         }
+    }
+
+    VkImageView Swapchain::GetImageView(int index) {
+        return m_swapChainImageViews[index];
+    }
+
+    VkImage Swapchain::GetImage(int index) {
+        return m_swapChainImages[index];
+    }
+
+    VkImage Swapchain::GetDepthImage(int index) {
+        return m_depthImages[index];
+    }
+
+    VkImageView Swapchain::GetDepthImageView(int index) {
+        return m_depthImageViews[index];
     }
 
     VkFormat Swapchain::findDepthFormat() const {
@@ -131,9 +148,9 @@ namespace vov {
     void Swapchain::init() {
         createSwapChain();
         createImageViews();
-        createRenderPass();
+        // createRenderPass();
         createDepthResources();
-        createFramebuffers();
+        // createFramebuffers();
         createSyncObjects();
     }
 

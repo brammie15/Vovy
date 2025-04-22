@@ -163,7 +163,7 @@ namespace vov {
     }
 
     void Camera::CalculateProjectionMatrix() {
-        m_projectionMatrix = glm::perspective(glm::radians(fovAngle), m_aspectRatio, m_zNear, m_zFar);
+        m_projectionMatrix = glm::perspectiveRH_ZO(glm::radians(fovAngle), m_aspectRatio, m_zNear, m_zFar);
     }
 
     void Camera::ClearTarget() {

@@ -13,12 +13,19 @@
 #include "Utils/ResourceManager.h"
 
 namespace vov {
+    PFN_vkCmdBeginRenderingKHR vkCmdBeginRenderingKHR = nullptr;
+    PFN_vkCmdEndRenderingKHR vkCmdEndRenderingKHR = nullptr;
+}
+
+
+namespace vov {
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
         VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
         VkDebugUtilsMessageTypeFlagsEXT messageType,
         const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
         void* pUserData) {
         std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
+        std::cout << std::endl;
 
         return VK_FALSE;
     }
@@ -272,7 +279,7 @@ namespace vov {
         appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
         appInfo.pEngineName = "No Engine";
         appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-        appInfo.apiVersion = VK_API_VERSION_1_0;
+        appInfo.apiVersion = VK_API_VERSION_1_3;
 
         VkInstanceCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -389,6 +396,13 @@ namespace vov {
         createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
         createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
+        VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeatures {
+            .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR,
+            .dynamicRendering = VK_TRUE,
+        };
+
+        createInfo.pNext = &dynamicRenderingFeatures;
+
         if (enableValidationLayers) {
             createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
             createInfo.ppEnabledLayerNames = validationLayers.data();
@@ -396,8 +410,16 @@ namespace vov {
             createInfo.enabledLayerCount = 0;
         }
 
+
         if (vkCreateDevice(m_physicalDevice, &createInfo, nullptr, &m_device) != VK_SUCCESS) {
             throw std::runtime_error("failed to create logical device!");
+        }
+
+        vkCmdBeginRenderingKHR = (PFN_vkCmdBeginRenderingKHR)vkGetDeviceProcAddr(m_device, "vkCmdBeginRenderingKHR");
+        vkCmdEndRenderingKHR   = (PFN_vkCmdEndRenderingKHR)vkGetDeviceProcAddr(m_device, "vkCmdEndRenderingKHR");
+
+        if (!vkCmdBeginRenderingKHR || !vkCmdEndRenderingKHR) {
+            throw std::runtime_error("Failed to load VK_KHR_dynamic_rendering function pointers.");
         }
 
         vkGetDeviceQueue(m_device, indices.graphicsFamily, 0, &m_graphicsQueue);
@@ -499,6 +521,8 @@ namespace vov {
         if (enableValidationLayers) {
             extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         }
+
+        extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
 
         return extensions;
     }

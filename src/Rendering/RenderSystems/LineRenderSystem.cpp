@@ -209,7 +209,7 @@ namespace vov {
         pipelineConfig.inputAssemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
 
 
-        pipelineConfig.renderPass = renderPass;
+        // pipelineConfig.renderPass = renderPass;
         pipelineConfig.pipelineLayout = m_pipelineLayout;
         m_pipeline = std::make_unique<Pipeline>(
             m_device,

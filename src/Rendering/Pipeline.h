@@ -20,9 +20,11 @@ namespace vov {
         VkPipelineDepthStencilStateCreateInfo depthStencilInfo;
         std::vector<VkDynamicState> dynamicStateEnables;
         VkPipelineDynamicStateCreateInfo dynamicStateInfo;
+
+        VkPipelineRenderingCreateInfoKHR renderingInfo{};
+        std::vector<VkFormat> colorAttachments{};
+
         VkPipelineLayout pipelineLayout = nullptr;
-        VkRenderPass renderPass = nullptr;
-        uint32_t subpass = 0;
     };
 
     class Pipeline {

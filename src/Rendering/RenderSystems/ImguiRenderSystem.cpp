@@ -8,8 +8,8 @@
 #include "Rendering/Swapchain.h"
 
 namespace vov {
-    ImguiRenderSystem::ImguiRenderSystem(Device& deviceRef, VkRenderPass renderPass, int width, int height): m_device{deviceRef} {
-        initImgui(renderPass, width, height);
+    ImguiRenderSystem::ImguiRenderSystem(Device& deviceRef, VkFormat colorFormat,  int width, int height): m_device{deviceRef} {
+        initImgui(colorFormat, width, height);
     }
 
     ImguiRenderSystem::~ImguiRenderSystem() {
@@ -171,7 +171,7 @@ namespace vov {
     }
 
 
-    void ImguiRenderSystem::initImgui(VkRenderPass renderPass, int width, int height) {
+    void ImguiRenderSystem::initImgui(VkFormat format, int width, int height) {
         m_descriptorPool =
                 DescriptorPool::Builder(m_device)
                 .setPoolFlags(VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT)
@@ -198,10 +198,16 @@ namespace vov {
         init_info.DescriptorPool = m_descriptorPool->getDescriptorPool();
         init_info.MinImageCount = Swapchain::MAX_FRAMES_IN_FLIGHT;
         init_info.ImageCount = Swapchain::MAX_FRAMES_IN_FLIGHT;
-        init_info.Subpass = 1;
         init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
         init_info.Allocator = nullptr;
-        init_info.RenderPass = renderPass;
+        init_info.UseDynamicRendering = true;
+        init_info.ApiVersion = VK_API_VERSION_1_3;
+        init_info.PipelineRenderingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
+        init_info.PipelineRenderingCreateInfo.colorAttachmentCount = 1;
+        init_info.PipelineRenderingCreateInfo.pColorAttachmentFormats = &format;
+        init_info.PipelineRenderingCreateInfo.colorAttachmentCount = 1;
+        init_info.PipelineRenderingCreateInfo.depthAttachmentFormat = VK_FORMAT_D32_SFLOAT;
+
 
         init_info.CheckVkResultFn = [] (const VkResult err) {
             if (err != VK_SUCCESS) {

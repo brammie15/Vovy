@@ -11,14 +11,13 @@
 namespace vov {
     class ImguiRenderSystem {
     public:
-        ImguiRenderSystem(Device& deviceRef, VkRenderPass renderPass, int width, int height);
+        ImguiRenderSystem(Device& deviceRef, VkFormat colorFormat, int width, int height);
         ~ImguiRenderSystem();
 
         void beginFrame();
         void endFrame();
 
         void renderImgui(VkCommandBuffer commandBuffer) {
-            vkCmdNextSubpass(commandBuffer, VK_SUBPASS_CONTENTS_INLINE);
             ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
         }
 
@@ -27,7 +26,7 @@ namespace vov {
 
     private:
         void setupDockspace();
-        void initImgui(VkRenderPass renderPass, int width, int height);
+        void initImgui(VkFormat format, int width, int height);
 
         Device& m_device;
 

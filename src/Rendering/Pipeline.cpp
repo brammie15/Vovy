@@ -1,5 +1,6 @@
 #include "Pipeline.h"
 
+#include <array>
 #include <cassert>
 #include <filesystem>
 #include <fstream>
@@ -11,6 +12,7 @@
 namespace vov {
     Pipeline::Pipeline(Device& device, const std::string& vertPath, const std::string& fragPath,
                          const PipelineConfigInfo& configInfo): m_device(device) {
+
         CreateGraphicsPipeline(vertPath, fragPath, configInfo);
     }
 
@@ -92,6 +94,11 @@ namespace vov {
         configInfo.dynamicStateInfo.pDynamicStates = configInfo.dynamicStateEnables.data();
         configInfo.dynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(configInfo.dynamicStateEnables.size());
         configInfo.dynamicStateInfo.flags = 0;
+
+        configInfo.renderingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
+        configInfo.renderingInfo.depthAttachmentFormat = VK_FORMAT_D32_SFLOAT;
+
+        configInfo.colorAttachments = {VK_FORMAT_B8G8R8A8_SRGB};
     }
 
     std::vector<char> Pipeline::readFile(const std::string& filename) {
@@ -115,7 +122,7 @@ namespace vov {
     void Pipeline::CreateGraphicsPipeline(const std::string& vertPath, const std::string& fragPath,
                                            const PipelineConfigInfo& configInfo) {
         assert(configInfo.pipelineLayout != VK_NULL_HANDLE && "no pipelineLayout provided in configInfo");
-        assert(configInfo.renderPass != VK_NULL_HANDLE && "no renderPass provided in configInfo");
+        // assert(configInfo.renderPass != VK_NULL_HANDLE && "no renderPass provided in configInfo");
 
         std::string VertFileName = std::filesystem::path(vertPath).filename().string();
         std::string FragFileName = std::filesystem::path(fragPath).filename().string();
@@ -175,9 +182,18 @@ namespace vov {
         pipelineInfo.pDepthStencilState = &configInfo.depthStencilInfo;
         pipelineInfo.pDynamicState = &configInfo.dynamicStateInfo;
 
+        VkPipelineRenderingCreateInfoKHR renderingInfo{};
+        renderingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
+        //TODO: make this also a array
+        renderingInfo.depthAttachmentFormat = configInfo.renderingInfo.depthAttachmentFormat;
+        renderingInfo.colorAttachmentCount = static_cast<uint32_t>(configInfo.colorAttachments.size());
+        renderingInfo.pColorAttachmentFormats = configInfo.colorAttachments.data();
+
+        pipelineInfo.pNext = &renderingInfo;
+
         pipelineInfo.layout = configInfo.pipelineLayout;
-        pipelineInfo.renderPass = configInfo.renderPass;
-        pipelineInfo.subpass = configInfo.subpass;
+        pipelineInfo.renderPass = nullptr;
+        // pipelineInfo.subpass = nullptr;
 
         pipelineInfo.basePipelineIndex = -1;
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;

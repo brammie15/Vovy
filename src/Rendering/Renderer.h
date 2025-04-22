@@ -8,6 +8,11 @@
 #include "Core/Window.h"
 
 namespace vov {
+    extern PFN_vkCmdBeginRenderingKHR vkCmdBeginRenderingKHR;
+    extern PFN_vkCmdEndRenderingKHR vkCmdEndRenderingKHR;
+}
+
+namespace vov {
     class Renderer {
     public:
         Renderer(Window& windowRef, Device& deviceRef);
