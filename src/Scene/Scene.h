@@ -4,6 +4,7 @@
 #include <functional>
 #include <memory>
 #include <vector>
+#include "DirectionalLight.h"
 #include "Rendering/RenderSystems/LineRenderSystem.h"
 #include "Scene/GameObject.h"
 
@@ -35,12 +36,18 @@ namespace vov {
 
         [[nodiscard]] bool isLoaded() const { return m_isLoaded; }
 
+        DirectionalLight& getDirectionalLight() {
+            return m_directionalLight;
+        }
+
     private:
         std::string m_name;
 
         std::vector<std::unique_ptr<GameObject>> m_gameObjects;
         std::vector<LineSegment> m_lineSegments;
         std::vector<BezierCurve> m_bezierCurves;
+
+        DirectionalLight m_directionalLight{};
 
         std::function<void(Scene*)> m_loadFunction;
 

@@ -11,6 +11,10 @@ namespace vov {
         struct UniformBufferObject {
             glm::vec4 direction;
             glm::vec4 color;
+            glm::mat4 lightProjection;
+            glm::mat4 lightView;
+            glm::mat4 viewProjection;
+
             glm::mat4 lightSpaceMatrix;
         };
 
@@ -18,40 +22,52 @@ namespace vov {
 
         void setDirection(const glm::vec3& newDirection);
 
+
         void setColor(const glm::vec3& newColor) {
-            color = newColor;
+            m_color = newColor;
         }
 
         void setIntensity(float newIntensity) {
-            intensity = newIntensity;
+            m_intensity = newIntensity;
         }
 
         void enableShadows(bool enable) {
-            shadowEnabled = enable;
+            m_shadowEnabled = enable;
         }
 
         void setShadowMapSize(uint32_t size) {
-            shadowMapSize = size;
+            m_shadowMapSize = size;
         }
 
-        UniformBufferObject getUBO() const;
+        [[nodiscard]] UniformBufferObject getUBO() const;
 
-        const glm::mat4& getLightSpaceMatrix() const {
-            return lightSpaceMatrix;
-        }
+        [[nodiscard]] const glm::mat4& getLightSpaceMatrix();
 
-        bool isShadowEnabled() const { return shadowEnabled; }
-        uint32_t getShadowMapSize() const { return shadowMapSize; }
+        [[nodiscard]] bool isShadowEnabled() const { return m_shadowEnabled; }
+        [[nodiscard]] uint32_t getShadowMapSize() const { return m_shadowMapSize; }
+
+        [[nodiscard]] glm::mat4 getLightProjection();
+        [[nodiscard]] glm::mat4 getLightView();
 
     private:
         void updateLightSpaceMatrix();
 
-        glm::vec3 direction;
-        glm::vec3 color;
-        float intensity;
-        bool shadowEnabled;
-        uint32_t shadowMapSize;
-        glm::mat4 lightSpaceMatrix;
+        glm::vec3 m_direction;
+        glm::vec3 m_color;
+        float m_intensity;
+        bool m_shadowEnabled;
+        uint32_t m_shadowMapSize;
+        glm::mat4 m_lightSpaceMatrix;
+
+        float m_orthoSize = 10.0f;
+        float m_lightDistance = 10.0f;
+        glm::vec3 m_lookAtPoint{ 0.0f, 0.0f, 0.0f };
+
+        glm::mat4 m_lightProjection;
+        glm::mat4 m_lightView;
+
+        bool m_viewDirty{ true };
+        bool m_projDirty{ true };
     };
 }
 

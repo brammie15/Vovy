@@ -29,7 +29,7 @@ float ShadowCalculation(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir) {
     projCoords.xy = projCoords.xy * 0.5 + 0.5;
     vec2 samplePos = vec2(projCoords.x,  1 - projCoords.y);
     if(samplePos.x < 0.0 || samplePos.x > 1.0 || samplePos.y < 0.0 || samplePos.y > 1.0) {
-        return -1.0f;
+        return 0.0;
     }
 
     float closestDepth = texture(shadowSampler, samplePos).r;
@@ -69,11 +69,6 @@ void main() {
     vec3 diffuseColor = texture(texSampler, inTexCoord).rgb;
 
     vec3 lighting = (ambient + (1.0 - shadow)) * (diffuseColor);
-
-    if(shadow < 0.0f) {
-        outColor = vec4(0.0f, 1.0f, 1.0f, 1.0f);
-        return;
-    }
 
 //    outColor = vec4(diffuseColor * (1 - shadow), 1.0f);
     outColor = vec4(lighting, 1.0f);

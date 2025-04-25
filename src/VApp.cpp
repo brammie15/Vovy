@@ -224,20 +224,6 @@ void VApp::run() {
         camera.CalculateProjectionMatrix();
         camera.CalculateViewMatrix();
 
-        glm::vec3 lightDirection = {0.0f, -0.5f, 0.5f};
-        float near_plane = 1.0f, far_plane = 35.5f;
-        glm::mat4 lightProjection = glm::orthoZO(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
-        // lightProjection = glm::perspectiveZO(glm::radians(45.0f), m_renderer.GetAspectRatio(), near_plane, far_plane);
-        lightProjection[1][1] *= -1; // Invert Y axis for OpenGL compatibility
-        glm::mat4 lightView = glm::lookAt(
-            -glm::normalize(lightDirection) * 10.0f,
-            glm::vec3(0.0f, 0.0f, 0.0f),
-            glm::vec3(0.0f, 1.0f, 0.0f)
-        );
-
-        glm::mat4 lightSpaceMatrix = lightProjection * lightView;
-
-
         if (auto commandBuffer = m_renderer.BeginFrame()) {
             int frameIndex = m_renderer.GetFrameIndex();
             vov::FrameContext shadowFrameInfo{frameIndex, static_cast<float>(vov::DeltaTime::GetInstance().GetDeltaTime()), commandBuffer, shadowDescriptorSets[frameIndex], camera};
@@ -246,9 +232,9 @@ void VApp::run() {
 
             camera.CalculateViewMatrix();
             camera.CalculateProjectionMatrix();
-            ShadowUbo.view = lightView;
-            ShadowUbo.proj = lightProjection;
-            ShadowUbo.lightSpaceMatrix = lightProjection * lightView;
+            ShadowUbo.view = m_currentScene->getDirectionalLight().getLightView();
+            ShadowUbo.proj = m_currentScene->getDirectionalLight().getLightProjection();
+            ShadowUbo.lightSpaceMatrix = m_currentScene->getDirectionalLight().getLightSpaceMatrix();
 
             ShadowUbo.proj[1][1] *= -1;
 
@@ -269,7 +255,7 @@ void VApp::run() {
             camera.CalculateViewMatrix();
             ubo.view = camera.GetViewMatrix();
             ubo.proj = camera.GetProjectionMatrix();
-            ubo.lightSpaceMatrix =  lightProjection * lightView;;
+            ubo.lightSpaceMatrix = m_currentScene->getDirectionalLight().getLightSpaceMatrix();
 
             ubo.proj[1][1] *= -1;
 
@@ -505,6 +491,11 @@ void VApp::loadGameObjects() {
         testObject->transform.SetLocalPosition({0.0f, 0.0f, 0.0f});
 
         scene->addGameObject(std::move(testObject));
+
+        auto& directionalLight = scene->getDirectionalLight();
+        directionalLight.setDirection(glm::vec3(0.0f, -0.5f, 0.5f));
+        directionalLight.setColor(glm::vec3(1.0f, 1.0f, 1.0f));
+        directionalLight.setIntensity(1.0f);
     };
 
     m_sigmaVanniScene->setSceneLoadFunction(sigmaVanniSceneLoadFunction);
