@@ -99,6 +99,9 @@ namespace vov {
         configInfo.renderingInfo.depthAttachmentFormat = VK_FORMAT_D32_SFLOAT;
 
         configInfo.colorAttachments = {VK_FORMAT_B8G8R8A8_SRGB};
+
+        configInfo.vertexAttributeDescriptions = std::move(Mesh::Vertex::getAttributeDescriptions());
+        configInfo.vertexBindingDescriptions = std::move(Mesh::Vertex::getBindingDescriptions());
     }
 
     std::vector<char> Pipeline::readFile(const std::string& filename) {
@@ -157,16 +160,12 @@ namespace vov {
         shaderStages[1].pNext = nullptr;
 
 
-        //TODO: Fix this
-        const auto bindingDescriptions = Mesh::Vertex::getBindingDescriptions();
-        const auto attributeDescriptions = Mesh::Vertex::getAttributeDescriptions();
-
         VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
         vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-        vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
-        vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
-        vertexInputInfo.vertexBindingDescriptionCount = static_cast<uint32_t>(bindingDescriptions.size());
-        vertexInputInfo.pVertexBindingDescriptions = bindingDescriptions.data();
+        vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(configInfo.vertexAttributeDescriptions.size());
+        vertexInputInfo.pVertexAttributeDescriptions = configInfo.vertexAttributeDescriptions.data();
+        vertexInputInfo.vertexBindingDescriptionCount = static_cast<uint32_t>(configInfo.vertexBindingDescriptions.size());
+        vertexInputInfo.pVertexBindingDescriptions = configInfo.vertexBindingDescriptions.data();
 
 
         VkGraphicsPipelineCreateInfo pipelineInfo{};

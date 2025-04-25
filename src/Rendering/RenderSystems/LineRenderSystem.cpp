@@ -1,10 +1,13 @@
 #include "LineRenderSystem.h"
 
 #include <stdexcept>
+
+#include "Utils/DebugLabel.h"
+
 namespace vov {
-    LineRenderSystem::LineRenderSystem(Device& deviceRef, VkRenderPass renderPass, const std::vector<VkDescriptorSetLayout>& descriptorSetLayout): m_device{deviceRef} {
+    LineRenderSystem::LineRenderSystem(Device& deviceRef, const std::vector<VkDescriptorSetLayout>& descriptorSetLayout): m_device{deviceRef} {
         createPipelineLayout(descriptorSetLayout);
-        createPipeline(renderPass);
+        createPipeline();
 
         m_vertexBufferSize = sizeof(Mesh::Vertex) * 100;
         m_vertexBuffer = new Buffer{
@@ -81,6 +84,11 @@ namespace vov {
     }
 
     void LineRenderSystem::renderBezier(const FrameContext& context, const std::vector<BezierCurve>& curves) {
+        DebugLabel::ScopedCmdLabel label(
+            context.commandBuffer,
+            "BezierRenderSystem",
+            {0.0f, 0.0f, 1.0f, 1.0f}
+        );
         if (curves.empty()) {
             return;
         }
@@ -200,16 +208,13 @@ namespace vov {
             }
     }
 
-    void LineRenderSystem::createPipeline(VkRenderPass renderPass) {
+    void LineRenderSystem::createPipeline() {
         assert(m_pipelineLayout != nullptr && "Cannot create pipeline before pipeline layout");
 
         PipelineConfigInfo pipelineConfig{};
         Pipeline::DefaultPipelineConfigInfo(pipelineConfig);
 
         pipelineConfig.inputAssemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
-
-
-        // pipelineConfig.renderPass = renderPass;
         pipelineConfig.pipelineLayout = m_pipelineLayout;
         m_pipeline = std::make_unique<Pipeline>(
             m_device,

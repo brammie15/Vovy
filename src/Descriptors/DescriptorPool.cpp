@@ -49,7 +49,11 @@ namespace vov {
 
 
         //Could overflow actually, well fix it in prod
-        return vkAllocateDescriptorSets(m_device.device(), &allocInfo, &descriptor) == VK_SUCCESS;
+        const auto result = vkAllocateDescriptorSets(m_device.device(), &allocInfo, &descriptor);
+        if (result == VK_ERROR_OUT_OF_POOL_MEMORY) {
+            throw std::runtime_error("Descriptor pool out of memory");
+        }
+        return result == VK_SUCCESS;
     }
 
     void DescriptorPool::freeDescriptors(const std::vector<VkDescriptorSet>& descriptors) const {

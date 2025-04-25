@@ -1,18 +1,27 @@
 #include "GameObjectRenderSystem.h"
+#include "core/Device.h"
 
 #include <stdexcept>
 
+#include "Utils/DebugLabel.h"
+
 namespace vov {
-    GameObjectRenderSystem::GameObjectRenderSystem(Device& deviceRef, VkRenderPass renderPass, const std::vector<VkDescriptorSetLayout>& descriptorSetLayout): m_device{deviceRef} {
+    GameObjectRenderSystem::GameObjectRenderSystem(Device& deviceRef, const std::vector<VkDescriptorSetLayout>& descriptorSetLayout): m_device{deviceRef} {
         createPipelineLayout(descriptorSetLayout);
-        createPipeline(renderPass);
+        createPipeline();
     }
 
     GameObjectRenderSystem::~GameObjectRenderSystem() {
         vkDestroyPipelineLayout(m_device.device(), m_pipelineLayout, nullptr);
     }
 
+
     void GameObjectRenderSystem::renderGameObjects(const FrameContext& frameContext, const std::vector<std::unique_ptr<GameObject>>& gameObjects) const {
+        DebugLabel::ScopedCmdLabel label(
+            frameContext.commandBuffer,
+            "GameObjectRenderSystem",
+            {0.0f, 1.0f, 0.0f, 1.0f}
+        );
         m_pipeline->bind(frameContext.commandBuffer);
 
         vkCmdBindDescriptorSets(
@@ -29,6 +38,7 @@ namespace vov {
         for (auto& obj: gameObjects) {
             obj->model->draw(frameContext.commandBuffer, m_pipelineLayout);
         }
+
     }
 
     void GameObjectRenderSystem::createPipelineLayout(const std::vector<VkDescriptorSetLayout>& descriptorSetLayouts) {
@@ -49,7 +59,7 @@ namespace vov {
         }
     }
 
-    void GameObjectRenderSystem::createPipeline(VkRenderPass renderPass) {
+    void GameObjectRenderSystem::createPipeline() {
         assert(m_pipelineLayout != nullptr && "Cannot create pipeline before pipeline layout");
 
         PipelineConfigInfo pipelineConfig{};

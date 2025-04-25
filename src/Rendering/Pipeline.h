@@ -8,9 +8,6 @@
 
 namespace vov {
     struct PipelineConfigInfo {
-        std::vector<VkVertexInputBindingDescription> bindingDescriptions{};
-        std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
-
         VkPipelineViewportStateCreateInfo viewportInfo{};
         VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo;
         VkPipelineRasterizationStateCreateInfo rasterizationInfo;
@@ -23,6 +20,9 @@ namespace vov {
 
         VkPipelineRenderingCreateInfoKHR renderingInfo{};
         std::vector<VkFormat> colorAttachments{};
+
+        std::vector<VkVertexInputBindingDescription> vertexBindingDescriptions{};
+        std::vector<VkVertexInputAttributeDescription> vertexAttributeDescriptions{};
 
         VkPipelineLayout pipelineLayout = nullptr;
     };

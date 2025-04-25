@@ -45,7 +45,7 @@ private:
 
     vov::Window m_window{WIDTH, HEIGHT, "Hello Vulkan!"};
     vov::Device m_device{m_window};
-    vov::Renderer m_renderPass{m_window, m_device};
+    vov::Renderer m_renderer{m_window, m_device};
 
     std::unique_ptr<vov::Scene> m_sigmaVanniScene{};
     std::unique_ptr<vov::Scene> m_sponzaScene{};
@@ -60,6 +60,7 @@ private:
 
     vov::Scene* m_currentScene{ nullptr };
     std::unique_ptr<vov::DescriptorPool> m_globalPool{};
+
 };
 
 #endif //VAPP_H

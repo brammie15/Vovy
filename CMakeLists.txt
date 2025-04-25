@@ -25,6 +25,7 @@ add_executable(${PROJECT_NAME}
         ${SRC_ROOT}/Rendering/RenderSystems/GameObjectRenderSystem.h ${SRC_ROOT}/Rendering/RenderSystems/GameObjectRenderSystem.cpp
         ${SRC_ROOT}/Rendering/RenderSystems/ImguiRenderSystem.h ${SRC_ROOT}/Rendering/RenderSystems/ImGuiRenderSystem.cpp
         ${SRC_ROOT}/Rendering/RenderSystems/LineRenderSystem.h ${SRC_ROOT}/Rendering/RenderSystems/LineRenderSystem.cpp
+        ${SRC_ROOT}/Rendering/RenderSystems/ShadowRenderSystem.h ${SRC_ROOT}/Rendering/RenderSystems/ShadowRenderSystem.cpp
 
         ${SRC_ROOT}/Resources/Buffer.h ${SRC_ROOT}/Resources/Buffer.cpp
         ${SRC_ROOT}/Resources/Image.h ${SRC_ROOT}/Resources/Image.cpp
@@ -34,6 +35,7 @@ add_executable(${PROJECT_NAME}
         ${SRC_ROOT}/Scene/GameObject.h ${SRC_ROOT}/Scene/GameObject.cpp
         ${SRC_ROOT}/Scene/Transform.h ${SRC_ROOT}/Scene/Transform.cpp
         ${SRC_ROOT}/Scene/Scene.h ${SRC_ROOT}/Scene/Scene.cpp
+        ${SRC_ROOT}/Scene/DirectionalLight.h ${SRC_ROOT}/Scene/DirectionalLight.cpp
 
         ${SRC_ROOT}/Utils/FrameContext.h
         ${SRC_ROOT}/Utils/stb_image.h
@@ -43,6 +45,7 @@ add_executable(${PROJECT_NAME}
         ${SRC_ROOT}/Utils/Timer.h ${SRC_ROOT}/Utils/Timer.cpp
         ${SRC_ROOT}/Utils/DeltaTime.h ${SRC_ROOT}/Utils/DeltaTime.cpp
         ${SRC_ROOT}/Utils/BezierCurves.h ${SRC_ROOT}/Utils/BezierCurves.cpp
+        ${SRC_ROOT}/Utils/DebugLabel.h ${SRC_ROOT}/Utils/DebugLabel.cpp
 )
 
 if (MSVC AND CMAKE_BUILD_TYPE STREQUAL "Debug")

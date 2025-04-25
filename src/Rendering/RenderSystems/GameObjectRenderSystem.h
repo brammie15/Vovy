@@ -17,14 +17,14 @@ namespace vov {
 
     class GameObjectRenderSystem {
     public:
-        GameObjectRenderSystem(Device& deviceRef, VkRenderPass renderPass, const std::vector<VkDescriptorSetLayout>& descriptorSetLayout);
+        GameObjectRenderSystem(Device& deviceRef, const std::vector<VkDescriptorSetLayout>& descriptorSetLayout);
         ~GameObjectRenderSystem();
 
         void renderGameObjects(const FrameContext& frameContext, const std::vector<std::unique_ptr<GameObject>>& gameObjects) const;
 
     private:
         void createPipelineLayout(const std::vector<VkDescriptorSetLayout>& descriptorSetLayouts);
-        void createPipeline(VkRenderPass renderPass);
+        void createPipeline();
 
         Device& m_device;
 

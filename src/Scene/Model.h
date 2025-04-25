@@ -20,6 +20,8 @@ namespace vov {
 
         [[nodiscard]] std::vector<std::unique_ptr<Mesh>>& getMeshes() { return m_meshes; }
 
+        void updateShadowMapDescriptorSet(VkDescriptorImageInfo descriptorSet);
+
     private:
         void loadModel(std::string path);
         void processNode(aiNode* node, const aiScene* scene, glm::mat4 parentTransform = glm::mat4(1.0f));

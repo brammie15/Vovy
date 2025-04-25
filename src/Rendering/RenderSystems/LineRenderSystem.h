@@ -22,7 +22,7 @@ namespace vov {
 
     class LineRenderSystem {
     public:
-        LineRenderSystem(Device& deviceRef, VkRenderPass renderPass, const std::vector<VkDescriptorSetLayout>& descriptorSetLayout);
+        LineRenderSystem(Device& deviceRef, const std::vector<VkDescriptorSetLayout>& descriptorSetLayout);
         ~LineRenderSystem();
 
         void renderLines(const FrameContext& context, const std::vector<LineSegment>& segments);
@@ -34,7 +34,7 @@ namespace vov {
 
     private:
         void createPipelineLayout(const std::vector<VkDescriptorSetLayout>& descriptorSetLayouts);
-        void createPipeline(VkRenderPass renderPass);
+        void createPipeline();
 
         Device& m_device;
 

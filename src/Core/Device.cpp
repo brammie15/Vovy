@@ -10,11 +10,13 @@
 #define VMA_IMPLEMENTATION
 #include <vma/vk_mem_alloc.h>
 
+#include "Utils/DebugLabel.h"
 #include "Utils/ResourceManager.h"
 
 namespace vov {
     PFN_vkCmdBeginRenderingKHR vkCmdBeginRenderingKHR = nullptr;
     PFN_vkCmdEndRenderingKHR vkCmdEndRenderingKHR = nullptr;
+
 }
 
 
@@ -305,6 +307,7 @@ namespace vov {
         if (vkCreateInstance(&createInfo, nullptr, &m_instance) != VK_SUCCESS) {
             throw std::runtime_error("failed to create instance!");
         }
+
     }
 
     void Device::SetupDebugMessenger() {
@@ -422,6 +425,7 @@ namespace vov {
             throw std::runtime_error("Failed to load VK_KHR_dynamic_rendering function pointers.");
         }
 
+        DebugLabel::Init(m_device);
         vkGetDeviceQueue(m_device, indices.graphicsFamily, 0, &m_graphicsQueue);
         vkGetDeviceQueue(m_device, indices.presentFamily, 0, &m_presentQueue);
     }
@@ -523,6 +527,7 @@ namespace vov {
         }
 
         extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+        extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 
         return extensions;
     }

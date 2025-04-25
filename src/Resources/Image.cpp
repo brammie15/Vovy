@@ -8,6 +8,7 @@
 #include <stdexcept>
 #include <Utils/Timer.h>
 
+#include "Utils/DebugLabel.h"
 #include "Utils/stb_image.h"
 
 
@@ -41,11 +42,9 @@ namespace vov {
         stagingTimer.stop();
 
         //TODO: should prob actually use the VMA auto mapper, o well :p
-        // stagingBuffer.map();
         Timer copyTimer{"Copying to staging buffer"};
         stagingBuffer.copyTo(pixels, imageSize);
         copyTimer.stop();
-        // stagingBuffer.unmap();
 
         stbi_image_free(pixels);
 
@@ -63,6 +62,8 @@ namespace vov {
         transitionTimer.stop();
 
         createSampler(VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT);
+
+        DebugLabel::NameImage(m_image, filename);
     }
 
     Image::~Image() {
@@ -84,6 +85,33 @@ namespace vov {
         imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
         return imageInfo;
+    }
+
+    void Image::transitionImageLayout(VkCommandBuffer commandBuffer, VkImageLayout oldLayout, VkImageLayout newLayout) const {
+        VkImageMemoryBarrier barrier{};
+        barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        barrier.oldLayout = oldLayout;
+        barrier.newLayout = newLayout;
+        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.image = m_image;
+        barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        barrier.subresourceRange.baseMipLevel = 0;
+        barrier.subresourceRange.levelCount = m_mipLevels;
+        barrier.subresourceRange.baseArrayLayer = 0;
+        barrier.subresourceRange.layerCount = 1;
+        barrier.srcAccessMask = 0;
+        barrier.dstAccessMask = 0;
+
+        vkCmdPipelineBarrier(
+            commandBuffer,
+            VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+            VK_PIPELINE_STAGE_TRANSFER_BIT,
+            0,
+            0, nullptr,
+            0, nullptr,
+            1, &barrier
+        );
     }
 
     void Image::createImage(uint32_t width, uint32_t height, uint32_t miplevels, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage) {
@@ -119,7 +147,7 @@ namespace vov {
         viewInfo.image = m_image;
         viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
         viewInfo.format = format;
-        viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        viewInfo.subresourceRange.aspectMask = getImageAspect(format);
         viewInfo.subresourceRange.baseMipLevel = 0;
         viewInfo.subresourceRange.levelCount = m_mipLevels;
         viewInfo.subresourceRange.baseArrayLayer = 0;
@@ -130,7 +158,7 @@ namespace vov {
         }
     }
 
-    void Image::createSampler(VkFilter filter, VkSamplerAddressMode addressMode) {
+    void Image::createSampler(const VkFilter filter, const VkSamplerAddressMode addressMode) {
         Timer timer{"Creating sampler"};
         VkSamplerCreateInfo samplerInfo{};
         samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -158,6 +186,7 @@ namespace vov {
 
     void Image::generateMipmaps(VkFormat format, uint32_t width, uint32_t height) const {
         const VkFormatProperties properties = m_device.GetFormatProperties(format);
+        VkImageAspectFlags aspect = getImageAspect(format);
 
         if (!(properties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT)) {
             throw std::runtime_error("Texture image format does not support linear blitting!");
@@ -175,7 +204,7 @@ namespace vov {
             barrier.image = m_image;
             barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
             barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            barrier.subresourceRange.aspectMask = aspect;
             barrier.subresourceRange.baseMipLevel = i - 1;
             barrier.subresourceRange.levelCount = 1;
             barrier.subresourceRange.baseArrayLayer = 0;
@@ -248,7 +277,7 @@ namespace vov {
         lastBarrier.image = m_image;
         lastBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         lastBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        lastBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        lastBarrier.subresourceRange.aspectMask = aspect;
         lastBarrier.subresourceRange.baseMipLevel = m_mipLevels - 1;
         lastBarrier.subresourceRange.levelCount = 1;
         lastBarrier.subresourceRange.baseArrayLayer = 0;
@@ -265,5 +294,21 @@ namespace vov {
 
         // m_device.TransitionImageLayout(m_image, format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_mipLevels);
         m_device.endSingleTimeCommands(commandBuffer);
+    }
+
+    //Thanks ChatGPT
+    VkImageAspectFlags Image::getImageAspect(VkFormat format) {
+        switch (format) {
+            case VK_FORMAT_D16_UNORM:
+            case VK_FORMAT_D32_SFLOAT:
+            case VK_FORMAT_X8_D24_UNORM_PACK32:
+                return VK_IMAGE_ASPECT_DEPTH_BIT;
+            case VK_FORMAT_D16_UNORM_S8_UINT:
+            case VK_FORMAT_D24_UNORM_S8_UINT:
+            case VK_FORMAT_D32_SFLOAT_S8_UINT:
+                return VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+            default:
+                return VK_IMAGE_ASPECT_COLOR_BIT;
+        }
     }
 }

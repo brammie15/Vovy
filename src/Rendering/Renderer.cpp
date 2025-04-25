@@ -2,8 +2,10 @@
 
 #include <array>
 #include <stdexcept>
+#include <ranges>
 
-#include "Resources/Image.h"
+#include "Utils/DebugLabel.h"
+
 
 namespace vov {
     Renderer::Renderer(Window& windowRef, Device& deviceRef): m_window{windowRef}, m_device{deviceRef} {
@@ -17,6 +19,8 @@ namespace vov {
 
     VkCommandBuffer Renderer::BeginFrame() {
         assert(!m_isFrameStarted && "Frame not in progress yet??");
+
+
 
         auto result = m_swapChain->acquireNextImage(&m_currentImageIndex);
         if (result == VK_ERROR_OUT_OF_DATE_KHR) {
@@ -37,11 +41,15 @@ namespace vov {
         if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
             throw std::runtime_error("failed to begin recording command buffer!");
         }
+
+
         return commandBuffer;
     }
 
     void Renderer::endFrame() {
         assert(m_isFrameStarted && "Can't call endFrame while frame is not in progress");
+
+
         auto commandBuffer = GetCurrentCommandBuffer();
         if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
             throw std::runtime_error("failed to record command buffer!");
@@ -60,7 +68,7 @@ namespace vov {
         m_currentFrameIndex = (m_currentFrameIndex + 1) % Swapchain::MAX_FRAMES_IN_FLIGHT;
     }
 
-    void Renderer:: beginSwapChainRenderPass(VkCommandBuffer commandBuffer) const {
+    void Renderer::beginSwapChainRenderPass(VkCommandBuffer commandBuffer) const {
         assert(m_isFrameStarted && "Can't call beginSwapChainRenderPass if frame is not in progress");
         assert(
             commandBuffer == GetCurrentCommandBuffer() &&
@@ -146,7 +154,15 @@ namespace vov {
             .pDepthAttachment = &depth_attachment_info,
         };
 
+        DebugLabel::BeginCmdLabel(
+           commandBuffer,
+           "RenderPass",
+           {1.f, 1.0f, 0.0f, 1.0f}
+       );
+
         vov::vkCmdBeginRenderingKHR(commandBuffer, &render_info);
+
+
 
         VkViewport viewport{};
         viewport.x = 0.0f;
@@ -167,6 +183,7 @@ namespace vov {
             "Can't end render pass on command buffer from a different frame");
         // vkCmdEndRenderPass(commandBuffer);
         vov::vkCmdEndRenderingKHR(commandBuffer);
+
 
         //Transition image to present
         VkImageMemoryBarrier barrier{
@@ -214,6 +231,7 @@ namespace vov {
             1, &barrier
         );
 
+        DebugLabel::EndCmdLabel(commandBuffer);
     }
 
     void Renderer::createCommandBuffers() {
@@ -228,7 +246,12 @@ namespace vov {
         if (vkAllocateCommandBuffers(m_device.device(), &allocInfo, commandBuffers.data()) !=
             VK_SUCCESS) {
             throw std::runtime_error("failed to allocate command buffers!");
-            }
+        }
+
+        for (int index = 0; index < commandBuffers.size(); ++index) {
+            DebugLabel::NameCommandBuffer(commandBuffers[index], "CommandBuffer: " + std::to_string(index));
+        }
+
     }
 
     void Renderer::freeCommandBuffers() {

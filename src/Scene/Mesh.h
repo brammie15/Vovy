@@ -60,6 +60,10 @@ namespace vov {
 
         Transform& getTransform() { return m_transform; }
 
+        [[nodiscard]] VkDescriptorSet getDescriptorSet() const {
+            return m_descriptorSet;
+        }
+
     private:
         void createVertexBuffer(const std::vector<Vertex>& vertices);
         void createIndexBuffer(const std::vector<uint32_t>& indices);

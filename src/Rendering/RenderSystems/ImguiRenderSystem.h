@@ -7,6 +7,7 @@
 #include "Rendering/Pipeline.h"
 #include "Scene/GameObject.h"
 #include "Utils/Camera.h"
+#include "Utils/DebugLabel.h"
 
 namespace vov {
     class ImguiRenderSystem {
@@ -18,6 +19,11 @@ namespace vov {
         void endFrame();
 
         void renderImgui(VkCommandBuffer commandBuffer) {
+            DebugLabel::ScopedCmdLabel label(
+                commandBuffer,
+                "ImguiRenderSystem",
+                {1.0f, 0.0f, 0.0f, 0.5f}
+            );
             ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
         }
 

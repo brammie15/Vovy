@@ -7,6 +7,7 @@
 #include <assimp/scene.h>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "Descriptors/DescriptorWriter.h"
 #include "Rendering/RenderSystems/GameObjectRenderSystem.h"
 
 namespace vov {
@@ -48,6 +49,14 @@ namespace vov {
 
         // Check if the material has an opacity texture
         return material->GetTextureCount(aiTextureType_OPACITY) > 0;
+    }
+
+    void Model::updateShadowMapDescriptorSet(VkDescriptorImageInfo shadowMapDescriptorInfo) {
+        for (auto& mesh : m_meshes) {
+            DescriptorWriter(*m_descriptorSetLayout, *m_descriptorPool)
+                .writeImage(1, &shadowMapDescriptorInfo)
+                .overwrite(mesh->getDescriptorSet());
+        }
     }
 
     void Model::loadModel(std::string path) {
@@ -167,9 +176,11 @@ namespace vov {
                 .build();
 
         m_descriptorSetLayout = DescriptorSetLayout::Builder(m_device)
-                .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+                .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // Model Texture
+                // .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // ShadowMap Texture
                 .build();
 
+        //TODO: fix the above to just have 1 DescriptorSetLayout and not one here and in VApp.cpp
         //Stupid stupid fix
 
         for (auto& builder: m_builders) {

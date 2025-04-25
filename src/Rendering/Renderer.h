@@ -21,7 +21,6 @@ namespace vov {
         Renderer(const Renderer& other) = delete;
         Renderer(Renderer&& other) noexcept = delete;
 
-        [[nodiscard]] VkRenderPass GetSwapChainRenderPass() const { return m_swapChain->GetRenderPass(); }
         [[nodiscard]] float GetAspectRatio() const { return m_swapChain->ExtentAspectRatio(); }
         [[nodiscard]] bool IsFrameInProgress() const { return m_isFrameStarted; }
 

@@ -1,6 +1,5 @@
 #include "VApp.h"
 
-
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_FORCE_ALIGNED_GENTYPES
@@ -18,7 +17,9 @@
 #include "Rendering/RenderSystems/GameObjectRenderSystem.h"
 #include "Rendering/RenderSystems/ImguiRenderSystem.h"
 #include "Rendering/RenderSystems/LineRenderSystem.h"
+#include "Rendering/RenderSystems/ShadowRenderSystem.h"
 #include "Resources/Buffer.h"
+#include "Scene/DirectionalLight.h"
 #include "Scene/Mesh.h"
 #include "Utils/BezierCurves.h"
 #include "Utils/Camera.h"
@@ -28,14 +29,16 @@
 struct GlobalUBO {
     glm::mat4 view;
     glm::mat4 proj;
+
+    glm::mat4 lightSpaceMatrix;
 };
 
 VApp::VApp() {
     m_globalPool =
             vov::DescriptorPool::Builder(m_device)
-            .setMaxSets(vov::Swapchain::MAX_FRAMES_IN_FLIGHT)
-            .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, vov::Swapchain::MAX_FRAMES_IN_FLIGHT)
-            .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, vov::Swapchain::MAX_FRAMES_IN_FLIGHT)
+            .setMaxSets(vov::Swapchain::MAX_FRAMES_IN_FLIGHT * 3)
+            .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, vov::Swapchain::MAX_FRAMES_IN_FLIGHT * 3)
+            .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, vov::Swapchain::MAX_FRAMES_IN_FLIGHT * 3)
             .build();
 
     m_sigmaVanniScene = std::make_unique<vov::Scene>("SigmaVanniScene");
@@ -56,9 +59,9 @@ VApp::VApp() {
     };
     //
     m_sigmaVanniScene->addBezierCurve(BezierCurve{
-    controlPoints,
-    glm::vec3(1.0f, 0.0f, 0.0f),  // Red color
-    100
+        controlPoints,
+        glm::vec3(1.0f, 0.0f, 0.0f), // Red color
+        100
     });
 }
 
@@ -66,6 +69,8 @@ VApp::~VApp() = default;
 
 void VApp::run() {
     std::vector<std::unique_ptr<vov::Buffer>> uboBuffers(vov::Swapchain::MAX_FRAMES_IN_FLIGHT);
+    std::vector<std::unique_ptr<vov::Buffer>> shadowUboBuffers(vov::Swapchain::MAX_FRAMES_IN_FLIGHT);
+
     for (int i = 0; i < uboBuffers.size(); i++) {
         uboBuffers[i] = std::make_unique<vov::Buffer>(
             m_device,
@@ -73,17 +78,28 @@ void VApp::run() {
             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
             VMA_MEMORY_USAGE_CPU_TO_GPU);
         uboBuffers[i]->map();
+
+        shadowUboBuffers[i] = std::make_unique<vov::Buffer>(
+            m_device,
+            sizeof(GlobalUBO),
+            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            VMA_MEMORY_USAGE_CPU_TO_GPU);
+        shadowUboBuffers[i]->map();
     }
 
     auto globalSetLayout = vov::DescriptorSetLayout::Builder(m_device)
             .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)
+            .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) //ShadowMap Texture
             .build();
+            // .addBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT) //Directional light ubo
 
     auto modelSetLayout = vov::DescriptorSetLayout::Builder(m_device)
-            .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+            .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) //Model Texture
             .build();
 
     std::vector<VkDescriptorSet> globalDescriptorSets(vov::Swapchain::MAX_FRAMES_IN_FLIGHT);
+    std::vector<VkDescriptorSet> shadowDescriptorSets(vov::Swapchain::MAX_FRAMES_IN_FLIGHT);
+
     for (int i = 0; i < globalDescriptorSets.size(); i++) {
         auto bufferInfo = uboBuffers[i]->descriptorInfo();
         auto success = vov::DescriptorWriter(*globalSetLayout, *m_globalPool)
@@ -93,11 +109,21 @@ void VApp::run() {
         if (!success) {
             throw std::runtime_error("failed to write descriptor sets!");
         }
+
+        auto shadowBufferInfo = shadowUboBuffers[i]->descriptorInfo();
+        auto shadowSuccess = vov::DescriptorWriter(*globalSetLayout, *m_globalPool)
+                .writeBuffer(0, &shadowBufferInfo)
+                .build(shadowDescriptorSets[i]);
+
+        if (!shadowSuccess) {
+            throw std::runtime_error("failed to write shadow descriptor sets!");
+        }
     }
+
+    vov::DirectionalLight directionalLight{};
 
     vov::GameObjectRenderSystem renderSystem{
         m_device,
-        m_renderPass.GetSwapChainRenderPass(),
         {globalSetLayout->getDescriptorSetLayout(), modelSetLayout->getDescriptorSetLayout()}
     };
 
@@ -110,17 +136,22 @@ void VApp::run() {
 
     vov::LineRenderSystem lineRenderSystem{
         m_device,
-        m_renderPass.GetSwapChainRenderPass(),
-        { globalSetLayout->getDescriptorSetLayout(), modelSetLayout->getDescriptorSetLayout() }
+        {globalSetLayout->getDescriptorSetLayout(), modelSetLayout->getDescriptorSetLayout()}
+    };
+
+    vov::ShadowRenderSystem shadowRenderSystem{
+        m_device,
+        {globalSetLayout->getDescriptorSetLayout(), modelSetLayout->getDescriptorSetLayout()}
     };
 
     vov::Camera camera{{-2.0f, 1.0f, 0}, {0.0f, 1.0f, 0.0f}};
-    camera.setAspectRatio(m_renderPass.GetAspectRatio());
+    camera.setAspectRatio(m_renderer.GetAspectRatio());
 
     while (!m_window.ShouldClose()) {
         vov::DeltaTime::GetInstance().Update();
+
+#pragma region INPUT
         m_window.PollInput();
-        //
         imguiRenderSystem.beginFrame();
 
         this->imGui();
@@ -158,13 +189,13 @@ void VApp::run() {
         }
 
 
-        auto& curves = m_currentScene->getBezierCurves();
-        for (auto & curve : curves) {
-            for (int j = 0; j < curve.nodes.size(); j++) {
-                std::string id = "BezierNode" + std::to_string(j);
-                imguiRenderSystem.drawGizmos(&camera, curve.nodes[j].position, id);
-            }
-        }
+        // auto& curves = m_currentScene->getBezierCurves();
+        // for (auto& curve: curves) {
+        //     for (int j = 0; j < curve.nodes.size(); j++) {
+        //         std::string id = "BezierNode" + std::to_string(j);
+        //         imguiRenderSystem.drawGizmos(&camera, curve.nodes[j].position, id);
+        //     }
+        // }
 
         imguiRenderSystem.endFrame();
 
@@ -179,36 +210,73 @@ void VApp::run() {
         if (m_window.isKeyPressed(GLFW_KEY_F)) {
             if (m_selectedTransform) {
                 const glm::vec3 focusPos = m_selectedTransform->GetWorldPosition();
-                constexpr auto offset = glm::vec3(0.0f, 0.0f, 5.0f);  // could be camera forward
+                constexpr auto offset = glm::vec3(0.0f, 0.0f, 5.0f); // could be camera forward
                 camera.m_position = focusPos + offset;
 
                 camera.Target(focusPos);
                 camera.CalculateViewMatrix();
             }
         }
+#pragma endregion
 
         camera.Update(static_cast<float>(vov::DeltaTime::GetInstance().GetDeltaTime()));
 
         camera.CalculateProjectionMatrix();
         camera.CalculateViewMatrix();
 
-        if (auto commandBuffer = m_renderPass.BeginFrame()) {
-            int frameIndex = m_renderPass.GetFrameIndex();
-            vov::FrameContext frameInfo{frameIndex, static_cast<float>(vov::DeltaTime::GetInstance().GetDeltaTime()), commandBuffer, globalDescriptorSets[frameIndex], camera};
+        glm::vec3 lightDirection = {0.0f, -0.5f, 0.5f};
+        float near_plane = 1.0f, far_plane = 35.5f;
+        glm::mat4 lightProjection = glm::orthoZO(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
+        // lightProjection = glm::perspectiveZO(glm::radians(45.0f), m_renderer.GetAspectRatio(), near_plane, far_plane);
+        lightProjection[1][1] *= -1; // Invert Y axis for OpenGL compatibility
+        glm::mat4 lightView = glm::lookAt(
+            -glm::normalize(lightDirection) * 10.0f,
+            glm::vec3(0.0f, 0.0f, 0.0f),
+            glm::vec3(0.0f, 1.0f, 0.0f)
+        );
 
+        glm::mat4 lightSpaceMatrix = lightProjection * lightView;
+
+
+        if (auto commandBuffer = m_renderer.BeginFrame()) {
+            int frameIndex = m_renderer.GetFrameIndex();
+            vov::FrameContext shadowFrameInfo{frameIndex, static_cast<float>(vov::DeltaTime::GetInstance().GetDeltaTime()), commandBuffer, shadowDescriptorSets[frameIndex], camera};
+
+            GlobalUBO ShadowUbo{};
+
+            camera.CalculateViewMatrix();
+            camera.CalculateProjectionMatrix();
+            ShadowUbo.view = lightView;
+            ShadowUbo.proj = lightProjection;
+            ShadowUbo.lightSpaceMatrix = lightProjection * lightView;
+
+            ShadowUbo.proj[1][1] *= -1;
+
+            shadowUboBuffers[frameIndex]->copyTo(&ShadowUbo, sizeof(ShadowUbo));
+            shadowUboBuffers[frameIndex]->flush();
+
+            shadowRenderSystem.render(shadowFrameInfo, *m_currentScene);
+
+            auto shadowMapDescriptorInfo = shadowRenderSystem.getShadowMapDescriptorInfo();
+
+            vov::DescriptorWriter(*globalSetLayout, *m_globalPool)
+                    .writeImage(1, &shadowMapDescriptorInfo)
+                    .overwrite(globalDescriptorSets[frameIndex]);
+
+            vov::FrameContext frameInfo{frameIndex, static_cast<float>(vov::DeltaTime::GetInstance().GetDeltaTime()), commandBuffer, globalDescriptorSets[frameIndex], camera};
             GlobalUBO ubo{};
 
             camera.CalculateViewMatrix();
             ubo.view = camera.GetViewMatrix();
-
             ubo.proj = camera.GetProjectionMatrix();
+            ubo.lightSpaceMatrix =  lightProjection * lightView;;
 
             ubo.proj[1][1] *= -1;
 
             uboBuffers[frameIndex]->copyTo(&ubo, sizeof(ubo));
             uboBuffers[frameIndex]->flush();
 
-            m_renderPass.beginSwapChainRenderPass(commandBuffer);
+            m_renderer.beginSwapChainRenderPass(commandBuffer);
 
             if (m_currentScene->getLineSegments().size() > 2) {
                 lineRenderSystem.renderLines(frameInfo, m_currentScene->getLineSegments());
@@ -219,8 +287,8 @@ void VApp::run() {
             renderSystem.renderGameObjects(frameInfo, m_currentScene->getGameObjects());
 
             imguiRenderSystem.renderImgui(commandBuffer);
-            m_renderPass.endSwapChainRenderPass(commandBuffer);
-            m_renderPass.endFrame();
+            m_renderer.endSwapChainRenderPass(commandBuffer);
+            m_renderer.endFrame();
         }
 
         // FPS limiter
@@ -233,12 +301,9 @@ void VApp::run() {
 }
 
 void VApp::imGui() {
-    if (ImGui::BeginMainMenuBar())
-    {
-        if (ImGui::BeginMenu("Tools"))
-        {
-            if (ImGui::MenuItem("New"))
-            {
+    if (ImGui::BeginMainMenuBar()) {
+        if (ImGui::BeginMenu("Tools")) {
+            if (ImGui::MenuItem("New")) {
                 // Action for New
             }
             ImGui::EndMenu();
@@ -275,7 +340,7 @@ void VApp::imGui() {
     ImGui::Begin("Bezier Segments");
     ImGui::Text("Bezier Segments: %d", m_currentScene->getBezierCurves().size());
 
-    static char filenameBuffer[256] = "curves.bez"; // Default filename
+    static char filenameBuffer[256] = "resources/curves.bram"; // Default filename
 
     ImGui::Separator();
     ImGui::InputText("File", filenameBuffer, IM_ARRAYSIZE(filenameBuffer));
@@ -373,8 +438,8 @@ void VApp::imGui() {
     ImGui::End();
 
     const auto& objects = m_currentScene->getGameObjects();
-    int id{ 0 };
-    std::function<void(vov::Transform*)> RenderObject = [&](vov::Transform* object) {
+    int id{0};
+    std::function<void(vov::Transform*)> RenderObject = [&] (vov::Transform* object) {
         ImGui::PushID(++id);
         const bool treeOpen = ImGui::TreeNodeEx(std::to_string(++id).c_str(), ImGuiTreeNodeFlags_AllowOverlap);
 
@@ -385,7 +450,7 @@ void VApp::imGui() {
 
         if (treeOpen) {
             ImGui::SeparatorText("Children");
-            for (const auto child : object->GetChildren()) {
+            for (const auto child: object->GetChildren()) {
                 //TODO: check if i can do with VGameobjects because with just transform i don't
                 //Know exactly what the owner is
                 RenderObject(child);
@@ -400,11 +465,12 @@ void VApp::imGui() {
         m_selectedTransform = nullptr;
     }
     if (ImGui::TreeNode("ROOT")) {
-            for (auto& object : objects) {
-                if (!object->transform.GetParent()) { //Only do root one
-                    RenderObject(&object->transform);
-                }
+        for (auto& object: objects) {
+            if (!object->transform.GetParent()) {
+                //Only do root one
+                RenderObject(&object->transform);
             }
+        }
         ImGui::TreePop();
     }
     ImGui::End();
@@ -426,8 +492,7 @@ void VApp::imGui() {
 }
 
 void VApp::loadGameObjects() {
-
-    auto sigmaVanniSceneLoadFunction = [&](vov::Scene* scene) {
+    auto sigmaVanniSceneLoadFunction = [&] (vov::Scene* scene) {
         auto sigmaVanni = vov::GameObject::createGameObject();
 
         const auto mainSigmaVanniModel = std::make_shared<vov::Model>(m_device, "resources/sigmavanni/SigmaVanni.gltf", sigmaVanni.get());
@@ -444,7 +509,7 @@ void VApp::loadGameObjects() {
 
     m_sigmaVanniScene->setSceneLoadFunction(sigmaVanniSceneLoadFunction);
 
-    auto sponzaSceneLoadFunction = [&](vov::Scene* scene) {
+    auto sponzaSceneLoadFunction = [&] (vov::Scene* scene) {
         auto sponza = vov::GameObject::createGameObject();
         const auto mainSponzaModel = std::make_shared<vov::Model>(m_device, "resources/sponza/sponza.obj", sponza.get());
         sponza->model = std::move(mainSponzaModel);
@@ -453,7 +518,7 @@ void VApp::loadGameObjects() {
     m_sponzaScene->setSceneLoadFunction(sponzaSceneLoadFunction);
 
 
-    auto vikingRoomSceneLoadFunction = [&](vov::Scene* scene) {
+    auto vikingRoomSceneLoadFunction = [&] (vov::Scene* scene) {
         auto vikingRoom = vov::GameObject::createGameObject();
         const auto mainVikingRoomModel = std::make_shared<vov::Model>(m_device, "resources/viking_room.obj", vikingRoom.get());
         vikingRoom->model = std::move(mainVikingRoomModel);
@@ -462,7 +527,7 @@ void VApp::loadGameObjects() {
 
     m_vikingRoomScene->setSceneLoadFunction(vikingRoomSceneLoadFunction);
 
-    auto bezierTestSceneLoadFunction = [&](vov::Scene* scene) {
+    auto bezierTestSceneLoadFunction = [&] (vov::Scene* scene) {
         auto bezierTestObject = vov::GameObject::createGameObject();
         const auto bezierTestModel = std::make_shared<vov::Model>(m_device, "resources/XYZaxis.obj", bezierTestObject.get());
         bezierTestObject->model = std::move(bezierTestModel);
