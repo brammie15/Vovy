@@ -14,8 +14,8 @@
 
 namespace vov {
     Image::Image(Device& device, uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage)
-        : m_device(device), m_image(VK_NULL_HANDLE), m_allocation(VK_NULL_HANDLE), m_imageView(VK_NULL_HANDLE) {
-        //TODO: fix miplevels in parameter list
+    : m_device(device), m_image(VK_NULL_HANDLE), m_allocation(VK_NULL_HANDLE),
+      m_imageView(VK_NULL_HANDLE), m_mipLevels(1) {  // Initialize m_mipLevels here
         createImage(width, height, 1, format, usage, memoryUsage);
         createImageView(format);
         createSampler(VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT);
