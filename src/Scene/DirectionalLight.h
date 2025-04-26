@@ -48,6 +48,7 @@ namespace vov {
 
         [[nodiscard]] glm::mat4 getLightProjection();
         [[nodiscard]] glm::mat4 getLightView();
+        glm::vec3& getDirection() { return m_direction; }
 
     private:
         void updateLightSpaceMatrix();
@@ -60,11 +61,11 @@ namespace vov {
         glm::mat4 m_lightSpaceMatrix;
 
         float m_orthoSize = 10.0f;
-        float m_lightDistance = 10.0f;
+        float m_lightDistance = 30.0f;
         glm::vec3 m_lookAtPoint{ 0.0f, 0.0f, 0.0f };
 
-        glm::mat4 m_lightProjection;
-        glm::mat4 m_lightView;
+        glm::mat4 m_lightProjection{};
+        glm::mat4 m_lightView{};
 
         bool m_viewDirty{ true };
         bool m_projDirty{ true };

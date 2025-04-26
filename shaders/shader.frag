@@ -27,9 +27,9 @@ float ShadowCalculation(vec4 fragPosLightSpace, vec3 normal, vec3 lightDir) {
     vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
 
     projCoords.xy = projCoords.xy * 0.5 + 0.5;
-    vec2 samplePos = vec2(projCoords.x,  1 - projCoords.y);
+    vec2 samplePos = vec2(projCoords.x,  projCoords.y);
     if(samplePos.x < 0.0 || samplePos.x > 1.0 || samplePos.y < 0.0 || samplePos.y > 1.0) {
-        return 0.0;
+        return 0;
     }
 
     float closestDepth = texture(shadowSampler, samplePos).r;

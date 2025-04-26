@@ -236,7 +236,7 @@ void VApp::run() {
             ShadowUbo.proj = m_currentScene->getDirectionalLight().getLightProjection();
             ShadowUbo.lightSpaceMatrix = m_currentScene->getDirectionalLight().getLightSpaceMatrix();
 
-            ShadowUbo.proj[1][1] *= -1;
+            // ShadowUbo.proj[1][1] *= -1;
 
             shadowUboBuffers[frameIndex]->copyTo(&ShadowUbo, sizeof(ShadowUbo));
             shadowUboBuffers[frameIndex]->flush();
@@ -296,6 +296,18 @@ void VApp::imGui() {
         }
         ImGui::EndMainMenuBar();
     }
+
+    ImGui::Begin("SceneLight");
+    ImGui::Text("Light Direction: ");
+    if (ImGui::DragFloat3("Light Direction", glm::value_ptr(m_currentScene->getDirectionalLight().getDirection()), 0.1f)) {
+        m_currentScene->getDirectionalLight().setDirection(m_currentScene->getDirectionalLight().getDirection());
+    }
+    ImGui::Text("Light Color: ");
+    // ImGui::ColorEdit3("Light Color", &m_currentScene->getDirectionalLight().getColor().x);
+    ImGui::Text("Light Intensity: ");
+    // ImGui::DragFloat("Light Intensity", &m_currentScene->getDirectionalLight().getIntensity(), 0.1f);
+
+    ImGui::End();
 
     ImGui::Begin("Stats");
     ImGui::Text("FPS: %.1f", 1.0f / vov::DeltaTime::GetInstance().GetDeltaTime());
@@ -493,7 +505,7 @@ void VApp::loadGameObjects() {
         scene->addGameObject(std::move(testObject));
 
         auto& directionalLight = scene->getDirectionalLight();
-        directionalLight.setDirection(glm::vec3(0.0f, -0.5f, 0.5f));
+        // directionalLight.setDirection(glm::vec3(0.0f, -0.5f, 0.5f));
         directionalLight.setColor(glm::vec3(1.0f, 1.0f, 1.0f));
         directionalLight.setIntensity(1.0f);
     };
