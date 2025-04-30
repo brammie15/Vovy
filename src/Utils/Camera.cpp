@@ -173,6 +173,10 @@ namespace vov {
         m_up = glm::normalize(glm::cross(m_right, m_forward));
     }
 
+    glm::vec3 Camera::GetPosition() const {
+        return m_position;
+    }
+
     void Camera::SetTarget(const glm::vec3& target) {
         m_target = target;
         m_useTarget = true;
@@ -190,5 +194,21 @@ namespace vov {
 
         m_viewMatrix = glm::lookAt(m_position, m_position + m_forward, m_up);
         m_invMatrix = glm::inverse(m_viewMatrix);
+    }
+
+    glm::vec3 Camera::ScreenPosToWorldRay(glm::vec2 mousePos) const {
+        const auto MyWindow = static_cast<Window*>(glfwGetWindowUserPointer(Window::gWindow));
+        const float x = (2.0f * mousePos.x) / MyWindow->getWidth() - 1.0f;
+        const float y = 1.0f - (2.0f * mousePos.y) / MyWindow->getHeight();
+
+        const auto rayClip = glm::vec4(x, y, -1.0f, 1.0f);
+
+        auto rayEye = glm::inverse(m_projectionMatrix) * rayClip;
+        rayEye = glm::vec4(rayEye.x, rayEye.y, -1.0f, 0.0f);
+
+        glm::vec3 rayWorld = glm::vec3(glm::inverse(m_viewMatrix) * rayEye);
+        rayWorld = glm::normalize(rayWorld);
+
+        return rayWorld;
     }
 }

@@ -25,6 +25,7 @@
 #include "Utils/Camera.h"
 #include "Utils/DeltaTime.h"
 #include "Utils/FrameContext.h"
+#include "Utils/AABB.h"
 
 struct GlobalUBO {
     glm::mat4 view;
@@ -144,8 +145,7 @@ void VApp::run() {
         {globalSetLayout->getDescriptorSetLayout(), modelSetLayout->getDescriptorSetLayout()}
     };
 
-    vov::Camera camera{{-2.0f, 1.0f, 0}, {0.0f, 1.0f, 0.0f}};
-    camera.setAspectRatio(m_renderer.GetAspectRatio());
+    m_camera.setAspectRatio(m_renderer.GetAspectRatio());
 
     while (!m_window.ShouldClose()) {
         vov::DeltaTime::GetInstance().Update();
@@ -154,9 +154,56 @@ void VApp::run() {
         m_window.PollInput();
         imguiRenderSystem.beginFrame();
 
+        //Get mouse pos
+        auto mousePos = m_window.getMousePosition();
+        if (m_window.isMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT)) {
+            this->HandleMouseClick(mousePos.x, mousePos.y);
+        }
+
         this->imGui();
         if (!m_currentScene->getGameObjects().empty() && m_selectedTransform) {
-            imguiRenderSystem.drawGizmos(&camera, m_selectedTransform, "Maintransform");
+            imguiRenderSystem.drawGizmos(&m_camera, m_selectedTransform, "Maintransform");
+
+            //Visualize the AABB of the selected object
+            auto& gameObject = m_currentScene->getGameObjects()[0];
+            auto mesh = gameObject->model->getAABB();
+
+            // Create line segments for the AABB edges
+            std::vector<vov::LineSegment> aabbLines;
+            aabbLines.reserve(12); // AABB has 12 edges
+
+            // Get all 8 corners of the AABB
+            glm::vec3 corners[8] = {
+                {mesh.min.x, mesh.min.y, mesh.min.z},
+                {mesh.max.x, mesh.min.y, mesh.min.z},
+                {mesh.max.x, mesh.max.y, mesh.min.z},
+                {mesh.min.x, mesh.max.y, mesh.min.z},
+                {mesh.min.x, mesh.min.y, mesh.max.z},
+                {mesh.max.x, mesh.min.y, mesh.max.z},
+                {mesh.max.x, mesh.max.y, mesh.max.z},
+                {mesh.min.x, mesh.max.y, mesh.max.z}
+            };
+
+            // Define the 12 edges of the AABB
+            const int edges[12][2] = {
+                {0, 1}, {1, 2}, {2, 3}, {3, 0}, // Bottom face
+                {4, 5}, {5, 6}, {6, 7}, {7, 4}, // Top face
+                {0, 4}, {1, 5}, {2, 6}, {3, 7}  // Vertical edges
+            };
+
+            // Create line segments for each edge
+            glm::vec3 aabbColor(0.0f, 1.0f, 1.0f); // Green color for AABB
+            for (const auto& edge : edges) {
+                aabbLines.push_back({
+                    corners[edge[0]],
+                    corners[edge[1]],
+                    aabbColor
+                });
+            }
+
+            m_lineSegments = aabbLines;
+
+
         }
 
         if (m_bezierFollowerTransform && !m_currentScene->getBezierCurves().empty()) {
@@ -211,32 +258,30 @@ void VApp::run() {
             if (m_selectedTransform) {
                 const glm::vec3 focusPos = m_selectedTransform->GetWorldPosition();
                 constexpr auto offset = glm::vec3(0.0f, 0.0f, 5.0f); // could be camera forward
-                camera.m_position = focusPos + offset;
+                m_camera.m_position = focusPos + offset;
 
-                camera.Target(focusPos);
-                camera.CalculateViewMatrix();
+                m_camera.Target(focusPos);
+                m_camera.CalculateViewMatrix();
             }
         }
 #pragma endregion
 
-        camera.Update(static_cast<float>(vov::DeltaTime::GetInstance().GetDeltaTime()));
+        m_camera.Update(static_cast<float>(vov::DeltaTime::GetInstance().GetDeltaTime()));
 
-        camera.CalculateProjectionMatrix();
-        camera.CalculateViewMatrix();
+        m_camera.CalculateProjectionMatrix();
+        m_camera.CalculateViewMatrix();
 
         if (auto commandBuffer = m_renderer.BeginFrame()) {
             int frameIndex = m_renderer.GetFrameIndex();
-            vov::FrameContext shadowFrameInfo{frameIndex, static_cast<float>(vov::DeltaTime::GetInstance().GetDeltaTime()), commandBuffer, shadowDescriptorSets[frameIndex], camera};
+            vov::FrameContext shadowFrameInfo{frameIndex, static_cast<float>(vov::DeltaTime::GetInstance().GetDeltaTime()), commandBuffer, shadowDescriptorSets[frameIndex], m_camera};
 
             GlobalUBO ShadowUbo{};
 
-            camera.CalculateViewMatrix();
-            camera.CalculateProjectionMatrix();
+            m_camera.CalculateViewMatrix();
+            m_camera.CalculateProjectionMatrix();
             ShadowUbo.view = m_currentScene->getDirectionalLight().getLightView();
             ShadowUbo.proj = m_currentScene->getDirectionalLight().getLightProjection();
             ShadowUbo.lightSpaceMatrix = m_currentScene->getDirectionalLight().getLightSpaceMatrix();
-
-            // ShadowUbo.proj[1][1] *= -1;
 
             shadowUboBuffers[frameIndex]->copyTo(&ShadowUbo, sizeof(ShadowUbo));
             shadowUboBuffers[frameIndex]->flush();
@@ -249,12 +294,12 @@ void VApp::run() {
                     .writeImage(1, &shadowMapDescriptorInfo)
                     .overwrite(globalDescriptorSets[frameIndex]);
 
-            vov::FrameContext frameInfo{frameIndex, static_cast<float>(vov::DeltaTime::GetInstance().GetDeltaTime()), commandBuffer, globalDescriptorSets[frameIndex], camera};
+            vov::FrameContext frameInfo{frameIndex, static_cast<float>(vov::DeltaTime::GetInstance().GetDeltaTime()), commandBuffer, globalDescriptorSets[frameIndex], m_camera};
             GlobalUBO ubo{};
 
-            camera.CalculateViewMatrix();
-            ubo.view = camera.GetViewMatrix();
-            ubo.proj = camera.GetProjectionMatrix();
+            m_camera.CalculateViewMatrix();
+            ubo.view = m_camera.GetViewMatrix();
+            ubo.proj = m_camera.GetProjectionMatrix();
             ubo.lightSpaceMatrix = m_currentScene->getDirectionalLight().getLightSpaceMatrix();
 
             ubo.proj[1][1] *= -1;
@@ -268,7 +313,12 @@ void VApp::run() {
                 lineRenderSystem.renderLines(frameInfo, m_currentScene->getLineSegments());
             }
 
+            if (m_lineSegments.size() > 2) {
+                lineRenderSystem.renderLines(frameInfo, m_lineSegments);
+            }
+
             lineRenderSystem.renderBezier(frameInfo, m_currentScene->getBezierCurves());
+            // lineRenderSystem.renderLines(frameInfo
 
             renderSystem.renderGameObjects(frameInfo, m_currentScene->getGameObjects());
 
@@ -284,6 +334,38 @@ void VApp::run() {
         }
     }
     vkDeviceWaitIdle(m_device.device());
+}
+
+void VApp::HandleMouseClick(int x, int y) {
+    // Get camera matrices
+    glm::mat4 view = m_camera.GetViewMatrix();
+    glm::mat4 proj = m_camera.GetProjectionMatrix();
+
+    // Get ray from mouse position
+    glm::vec3 rayOrigin = m_camera.GetPosition();
+    glm::vec3 rayDir = m_camera.ScreenPosToWorldRay(glm::vec2(x, y));
+
+    // Test against all objects
+    vov::GameObject* selectedObject = nullptr;
+    float closestDistance = FLT_MAX;
+
+    for (auto& obj : m_currentScene->getGameObjects()) {
+        // Transform AABB to world space if needed
+        vov::AABB worldAABB = vov::TransformAABB(obj->model->getAABB(), obj->transform.GetWorldMatrix());
+
+        float distance;
+        if (RayAABBIntersection(rayOrigin, rayDir, worldAABB, distance)) {
+            if (distance < closestDistance) {
+                closestDistance = distance;
+                selectedObject = obj.get();
+            }
+        }
+    }
+
+    if (selectedObject) {
+        // Handle selection
+        m_selectedTransform = &selectedObject->transform;
+    }
 }
 
 void VApp::imGui() {

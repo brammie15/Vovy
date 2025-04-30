@@ -1,7 +1,7 @@
 #include "DeltaTime.h"
 
 namespace vov {
-    double DeltaTime::GetFixedDeltaTime() const {
+    double DeltaTime::GetFixedDeltaTime() {
         return m_FixedDeltaTime;
     }
 

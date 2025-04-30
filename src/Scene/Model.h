@@ -6,6 +6,7 @@
 #include "assimp/scene.h"
 #include "Descriptors/DescriptorPool.h"
 #include "Scene/Mesh.h"
+#include "Utils/AABB.h"
 
 
 namespace vov {
@@ -20,7 +21,9 @@ namespace vov {
 
         [[nodiscard]] std::vector<std::unique_ptr<Mesh>>& getMeshes() { return m_meshes; }
 
-        void updateShadowMapDescriptorSet(VkDescriptorImageInfo descriptorSet);
+        void updateShadowMapDescriptorSet(VkDescriptorImageInfo descriptorSet) const;
+
+        [[nodiscard]] AABB getAABB() const { return m_aabb; };
 
     private:
         void loadModel(std::string path);
@@ -30,6 +33,8 @@ namespace vov {
         //Using nullptr so we can use the same function for with and wihtout GameObject
         void generateMeshes(GameObject* parent = nullptr);
 
+        void calculateAABB();
+
         std::string m_directory{};
         Device& m_device;
         std::vector<std::unique_ptr<Mesh>> m_meshes;
@@ -37,6 +42,8 @@ namespace vov {
         std::vector<Mesh::Builder> m_builders;
         std::unique_ptr<DescriptorPool> m_descriptorPool;
         std::unique_ptr<DescriptorSetLayout> m_descriptorSetLayout;
+
+        AABB m_aabb{};
     };
 }
 

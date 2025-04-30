@@ -3,8 +3,8 @@
 #include <filesystem>
 
 void BezierSerializer::writeBezierCurves(const std::string& filename, const std::vector<BezierCurve>& curves) {
-    std::filesystem::path filePath(filename);
-    std::string extension = filePath.extension().string();
+    const std::filesystem::path filePath(filename);
+    const std::string extension = filePath.extension().string();
     if (extension != ".bram") {
         throw std::runtime_error("Invalid file extension. Expected .bram");
     }
@@ -15,11 +15,11 @@ void BezierSerializer::writeBezierCurves(const std::string& filename, const std:
     FileHeader header;
     out.write(reinterpret_cast<const char*>(&header), sizeof(FileHeader));
 
-    int curveCount = static_cast<int>(curves.size());
+    const int curveCount = static_cast<int>(curves.size());
     out.write(reinterpret_cast<const char*>(&curveCount), sizeof(int));
 
     for (const auto& curve : curves) {
-        int nodeCount = static_cast<int>(curve.nodes.size());
+        const int nodeCount = static_cast<int>(curve.nodes.size());
         out.write(reinterpret_cast<const char*>(&nodeCount), sizeof(int));
 
         for (const auto& node : curve.nodes) {

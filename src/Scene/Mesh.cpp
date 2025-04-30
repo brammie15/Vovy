@@ -50,7 +50,7 @@ namespace vov {
         m_indexCount = static_cast<uint32_t>(builder.indices.size());
         m_vertexCount = static_cast<uint32_t>(builder.vertices.size());
 
-        std::string texturePath = builder.modelPath + builder.texturePath;
+        const std::string texturePath = builder.modelPath + builder.texturePath;
         std::cout << "Loading texture: " << texturePath << std::endl;
         loadTexture(texturePath, builder.descriptorSetLayout, builder.descriptorPool);
     }
@@ -69,8 +69,8 @@ namespace vov {
             nullptr
         );
 
-        VkBuffer buffers[] = {m_vertexBuffer->getBuffer()};
-        VkDeviceSize offsets[] = {0};
+        const VkBuffer buffers[] = {m_vertexBuffer->getBuffer()};
+        constexpr VkDeviceSize offsets[] = {0};
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
 
         if (m_usingIndexBuffer) {
@@ -97,7 +97,7 @@ namespace vov {
         VkDeviceSize bufferSize = sizeof(vertices[0]) * m_vertexCount;
 
         // Create staging buffer (CPU-accessible)
-        auto stagingBuffer = std::make_unique<Buffer>(
+        const auto stagingBuffer = std::make_unique<Buffer>(
             m_device, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY
         );
 
@@ -116,7 +116,7 @@ namespace vov {
 
     void Mesh::createIndexBuffer(const std::vector<uint32_t>& indices) {
         m_indexCount = static_cast<uint32_t>(indices.size());
-        VkDeviceSize bufferSize = sizeof(indices[0]) * m_indexCount;
+        const VkDeviceSize bufferSize = sizeof(indices[0]) * m_indexCount;
 
         auto stagingBuffer = std::make_unique<Buffer>(
             m_device, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY
@@ -138,8 +138,7 @@ namespace vov {
     void Mesh::loadTexture(const std::string& path, DescriptorSetLayout* descriptorSetLayout, DescriptorPool* descriptorPool) {
         m_textureImage = ResourceManager::GetInstance().loadImage(m_device, path, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
 
-
-        auto imageInfo = m_textureImage->descriptorInfo();
+        const auto imageInfo = m_textureImage->descriptorInfo();
         DescriptorWriter(*descriptorSetLayout, *descriptorPool)
                 .writeImage(0, &imageInfo)
                 .build(m_descriptorSet);

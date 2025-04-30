@@ -53,7 +53,7 @@ namespace vov {
             .clearValue = clearValues[1]
         };
 
-        VkRenderingInfo renderingInfo{
+        const VkRenderingInfo renderingInfo{
             .sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
             .renderArea = {{0, 0}, {m_width, m_height}},
             .layerCount = 1,
@@ -64,8 +64,8 @@ namespace vov {
 
         vkCmdBeginRendering(cmd, &renderingInfo);
 
-        VkViewport viewport{0.0f, 0.0f, static_cast<float>(m_width), static_cast<float>(m_height), 0.0f, 1.0f};
-        VkRect2D scissor{{0, 0}, {m_width, m_height}};
+        const VkViewport viewport{0.0f, 0.0f, static_cast<float>(m_width), static_cast<float>(m_height), 0.0f, 1.0f};
+        const VkRect2D scissor{{0, 0}, {m_width, m_height}};
         vkCmdSetViewport(cmd, 0, 1, &viewport);
         vkCmdSetScissor(cmd, 0, 1, &scissor);
     }

@@ -18,6 +18,7 @@ namespace vov {
         [[nodiscard]] glm::mat4 GetViewProjectionMatrix() const { return m_projectionMatrix * m_viewMatrix; }
 
         void setAspectRatio(float aspectRatio) { m_aspectRatio = aspectRatio; }
+        [[nodiscard]] glm::vec3 GetPosition() const;
         glm::vec3 m_position{2.f, 0, 0 };
 
         void Translate(const glm::vec3& translation) {
@@ -26,9 +27,11 @@ namespace vov {
 
         void SetTarget(const glm::vec3& target);
         [[nodiscard]] glm::vec3 GetTarget() const { return m_target; }
+        [[nodiscard]] bool IsTargetting() const { return m_useTarget; }
         void ClearTarget();
-        bool IsTargetting() const { return m_useTarget; }
         void Target(const glm::vec3& target);
+
+        glm::vec3 ScreenPosToWorldRay(glm::vec2 mousePos) const;
 
     private:
 

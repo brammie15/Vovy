@@ -39,6 +39,7 @@ public:
 
     void run();
     void imGui();
+    void HandleMouseClick(int x, int y);
 
 private:
     void loadGameObjects();
@@ -60,6 +61,10 @@ private:
 
     vov::Scene* m_currentScene{ nullptr };
     std::unique_ptr<vov::DescriptorPool> m_globalPool{};
+
+    std::vector<vov::LineSegment> m_lineSegments{};
+
+    vov::Camera m_camera{{-2.0f, 1.0f, 0}, {0.0f, 1.0f, 0.0f}};
 
 };
 

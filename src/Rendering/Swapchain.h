@@ -26,7 +26,7 @@ namespace vov {
         Swapchain(const Swapchain&) = delete;
         void operator=(const Swapchain&) = delete;
 
-        VkFormat findDepthFormat() const;
+        [[nodiscard]] VkFormat findDepthFormat() const;
         [[nodiscard]] VkExtent2D GetSwapChainExtent() const { return m_swapChainExtent; }
         [[nodiscard]] size_t imageCount() const { return m_swapChainImages.size(); }
         [[nodiscard]] VkFormat GetSwapChainImageFormat() const { return m_swapChainImageFormat; }

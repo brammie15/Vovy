@@ -1,11 +1,10 @@
 #ifndef VGAMEOBJECT_H
 #define VGAMEOBJECT_H
-#include <cstdint>
 
 #include <memory>
 
-#include "Transform.h"
 #include "Model.h"
+#include "Transform.h"
 
 namespace vov {
     class GameObject {

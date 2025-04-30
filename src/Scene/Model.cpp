@@ -45,16 +45,16 @@ namespace vov {
         }
 
         // Get the material associated with the mesh
-        aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+        const aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
         // Check if the material has an opacity texture
         return material->GetTextureCount(aiTextureType_OPACITY) > 0;
     }
 
-    void Model::updateShadowMapDescriptorSet(VkDescriptorImageInfo shadowMapDescriptorInfo) {
-        for (auto& mesh : m_meshes) {
+    void Model::updateShadowMapDescriptorSet(VkDescriptorImageInfo descriptorSet) const {
+        for (const auto& mesh : m_meshes) {
             DescriptorWriter(*m_descriptorSetLayout, *m_descriptorPool)
-                .writeImage(1, &shadowMapDescriptorInfo)
+                .writeImage(1, &descriptorSet)
                 .overwrite(mesh->getDescriptorSet());
         }
     }
@@ -78,11 +78,9 @@ namespace vov {
     }
 
     void Model::processNode(aiNode* node, const aiScene* scene, glm::mat4 parentTransform) {
-        // Compute the current node's transform
-        glm::mat4 nodeTransform = convertMatrix(node->mTransformation);
-        glm::mat4 worldTransform = parentTransform * nodeTransform;
+        const glm::mat4 nodeTransform = convertMatrix(node->mTransformation);
+        const glm::mat4 worldTransform = parentTransform * nodeTransform;
 
-        // Process meshes for this nodes
         for (unsigned int i = 0; i < node->mNumMeshes; i++) {
             aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
             Mesh::Builder builder = processMesh(mesh, scene);
@@ -90,7 +88,6 @@ namespace vov {
             m_builders.emplace_back(std::move(builder));
         }
 
-        // Recursively process child nodes
         for (unsigned int i = 0; i < node->mNumChildren; i++) {
             processNode(node->mChildren[i], scene, worldTransform);
         }
@@ -100,7 +97,7 @@ namespace vov {
     Mesh::Builder Model::processMesh(aiMesh* mesh, const aiScene* scene) {
         std::vector<Mesh::Vertex> vertices;
         std::vector<uint32_t> indices;
-        std::string texturePath{""};
+        std::string texturePath{};
 
         //TODO: Fuck transparency
         if (std::string(mesh->mName.C_Str()).find("decals") != std::string::npos) {
@@ -123,6 +120,7 @@ namespace vov {
                 mesh->mVertices[i].y,
                 mesh->mVertices[i].z
             };
+
             if (mesh->HasVertexColors(0)) {
                 vertex.color = {
                     mesh->mColors[0][i].r,
@@ -199,10 +197,33 @@ namespace vov {
             m_meshes.push_back(std::move(mesh));
         }
 
+        calculateAABB();
+
         // std::for_each(std::execution::par_unseq, m_builders.begin(), m_builders.end(), [this](VMesh::Builder& builder) {
         //     std::unique_ptr<VMesh> mesh = std::make_unique<VMesh>(m_device, builder);
         //     mesh->getTransform().SetWorldMatrix(builder.transform); // Apply transform
         //     m_meshes.push_back(std::move(mesh));
         // });
+    }
+
+    void Model::calculateAABB() {
+        if (m_meshes.empty()) {
+            return;
+        }
+
+        glm::vec3 minPos{std::numeric_limits<float>::max()};
+        glm::vec3 maxPos{std::numeric_limits<float>::lowest()};
+
+        for (const auto& builder : m_builders) {
+            for (const auto& vertex : builder.vertices) {
+                glm::vec4 worldPosition = builder.transform * glm::vec4(vertex.position, 1.0f);
+
+                minPos = glm::min(minPos, glm::vec3(worldPosition));
+                maxPos = glm::max(maxPos, glm::vec3(worldPosition));
+            }
+        }
+
+        m_aabb.max = maxPos;
+        m_aabb.min = minPos;
     }
 }

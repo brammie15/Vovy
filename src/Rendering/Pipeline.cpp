@@ -1,6 +1,5 @@
 #include "Pipeline.h"
 
-#include <array>
 #include <cassert>
 #include <filesystem>
 #include <fstream>
@@ -111,7 +110,7 @@ namespace vov {
             throw std::runtime_error("Failed to open file: " + filename);
         }
 
-        size_t fileSize = (size_t)file.tellg();
+        const size_t fileSize = (size_t)file.tellg();
         std::vector<char> buffer(fileSize);
 
         file.seekg(0);
@@ -127,11 +126,11 @@ namespace vov {
         assert(configInfo.pipelineLayout != VK_NULL_HANDLE && "no pipelineLayout provided in configInfo");
         // assert(configInfo.renderPass != VK_NULL_HANDLE && "no renderPass provided in configInfo");
 
-        std::string VertFileName = std::filesystem::path(vertPath).filename().string();
-        std::string FragFileName = std::filesystem::path(fragPath).filename().string();
+        const std::string VertFileName = std::filesystem::path(vertPath).filename().string();
+        const std::string FragFileName = std::filesystem::path(fragPath).filename().string();
 
-        auto vertCode = readFile(vertPath);
-        auto fragCode = readFile(fragPath);
+        const auto vertCode = readFile(vertPath);
+        const auto fragCode = readFile(fragPath);
 
         std::cout << "Vert file: " << Chalk::Green << VertFileName << Chalk::Reset << std::endl;
         std::cout << "Frag file: " << Chalk::Blue << FragFileName << Chalk::Reset << std::endl;

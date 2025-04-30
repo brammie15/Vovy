@@ -37,7 +37,7 @@ namespace vov {
         const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
         const VkAllocationCallbacks* pAllocator,
         VkDebugUtilsMessengerEXT* pDebugMessenger) {
-        auto func = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(
+        const auto func = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(
             instance,
             "vkCreateDebugUtilsMessengerEXT"));
         if (func != nullptr) {
@@ -88,7 +88,7 @@ namespace vov {
 
     //TODO: ask if this could be improved to not pass pointers but something else
     void Device::copyBuffer(Buffer* srcBuffer, Buffer* destBuffer, uint32_t size) {
-        VkCommandBuffer commandBuffer = beginSingleTimeCommands();
+        const VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 
         VkBufferCopy copyRegion{};
         copyRegion.size = size;
@@ -162,7 +162,7 @@ namespace vov {
     }
 
     VkFormat Device::FindSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) const {
-        for (VkFormat format: candidates) {
+        for (const VkFormat format: candidates) {
             VkFormatProperties props;
             vkGetPhysicalDeviceFormatProperties(m_physicalDevice, format, &props);
 
@@ -209,7 +209,7 @@ namespace vov {
     }
 
     void Device::TransitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels) {
-        VkCommandBuffer commandBuffer = beginSingleTimeCommands();
+        const VkCommandBuffer commandBuffer = beginSingleTimeCommands();
         VkImageMemoryBarrier barrier{};
         barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
         barrier.oldLayout = oldLayout;
@@ -239,7 +239,7 @@ namespace vov {
     }
 
     void Device::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height) {
-        VkCommandBuffer commandBuffer = beginSingleTimeCommands();
+        const VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 
         VkBufferImageCopy region{};
         region.bufferOffset = 0;
@@ -287,7 +287,7 @@ namespace vov {
         createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
         createInfo.pApplicationInfo = &appInfo;
 
-        auto extensions = GetRequiredExtensions();
+        const auto extensions = GetRequiredExtensions();
         createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
         createInfo.ppEnabledExtensionNames = extensions.data();
 
@@ -431,7 +431,7 @@ namespace vov {
     }
 
     void Device::CreateCommandPool() {
-        QueueFamilyIndices queueFamilyIndices = FindQueueFamilies(m_physicalDevice);
+        const QueueFamilyIndices queueFamilyIndices = FindQueueFamilies(m_physicalDevice);
 
         VkCommandPoolCreateInfo poolInfo = {};
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -472,8 +472,6 @@ namespace vov {
 
         VkPhysicalDeviceProperties properties;
         vkGetPhysicalDeviceProperties(device, &properties);
-
-        bool isDiscreteGPU = properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
 
         return indices.isComplete() && extensionsSupported && swapChainAdequate &&
                supportedFeatures.samplerAnisotropy;

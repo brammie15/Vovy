@@ -46,6 +46,7 @@ add_executable(${PROJECT_NAME}
         ${SRC_ROOT}/Utils/DeltaTime.h ${SRC_ROOT}/Utils/DeltaTime.cpp
         ${SRC_ROOT}/Utils/BezierCurves.h ${SRC_ROOT}/Utils/BezierCurves.cpp
         ${SRC_ROOT}/Utils/DebugLabel.h ${SRC_ROOT}/Utils/DebugLabel.cpp
+        ${SRC_ROOT}/Utils/AABB.h ${SRC_ROOT}/Utils/AABB.cpp
 )
 
 if (MSVC AND CMAKE_BUILD_TYPE STREQUAL "Debug")

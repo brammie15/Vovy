@@ -28,7 +28,7 @@ namespace vov {
         glfwMaximizeWindow(gWindow);
 
         GLFWimage images[1];
-        images[0].pixels = stbi_load("resources/vovy_logo.png", &images[0].width, &images[0].height, 0, 4); //rgba channels
+        images[0].pixels = stbi_load("resources/vovy_logo.png", &images[0].width, &images[0].height, nullptr, 4); //rgba channels
         glfwSetWindowIcon(gWindow, 1, images);
         stbi_image_free(images[0].pixels);
 
@@ -72,6 +72,19 @@ namespace vov {
         m_cursorLocked = false;
         glfwSetInputMode(gWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     }
+
+    bool Window::isMouseButtonDown(int button) const {
+        return glfwGetMouseButton(gWindow, button);
+    }
+
+    bool Window::isMouseButtonUp(int button) const {
+        return false;
+    }
+
+    bool Window::isMouseButtonPressed(int button) {
+        return false;
+    }
+
 
 
     glm::vec2 Window::getMousePosition() const {

@@ -28,6 +28,10 @@ namespace vov {
         void UnlockCursor();
         [[nodiscard]] bool isCursorLocked() const { return m_cursorLocked; }
 
+        [[nodiscard]] bool isMouseButtonDown(int button) const;
+        [[nodiscard]] bool isMouseButtonUp(int button) const;
+        [[nodiscard]] bool isMouseButtonPressed(int button);
+
         static GLFWwindow* gWindow;
 
         [[nodiscard]] glm::vec2 getMousePosition() const;
@@ -50,7 +54,7 @@ namespace vov {
         uint32_t m_width;
         uint32_t m_height;
 
-        glm::vec2 m_lastMousePos;
+        glm::vec2 m_lastMousePos{};
         glm::vec2 m_currentMousePos;
 
         bool m_resized = false;

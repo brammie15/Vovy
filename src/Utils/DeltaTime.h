@@ -13,7 +13,7 @@ namespace vov {
         DeltaTime& operator=(const DeltaTime& other) = delete;
         DeltaTime& operator=(DeltaTime&& other) = delete;
 
-        [[nodiscard]] double GetFixedDeltaTime() const;
+        [[nodiscard]] static double GetFixedDeltaTime() ;
         [[nodiscard]] double GetDeltaTime() const;
 
         [[nodiscard]] std::chrono::nanoseconds SleepDuration() const;

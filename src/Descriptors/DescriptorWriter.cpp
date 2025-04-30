@@ -8,7 +8,7 @@ namespace vov {
     DescriptorWriter& DescriptorWriter::writeBuffer(uint32_t binding, const VkDescriptorBufferInfo* bufferInfo) {
         assert(m_setLayout.m_bindings.count(binding) == 1 && "Layout does not contain specified binding");
 
-        auto &bindingDescription = m_setLayout.m_bindings[binding];
+        const auto &bindingDescription = m_setLayout.m_bindings[binding];
 
         assert(
             bindingDescription.descriptorCount == 1 &&
@@ -28,7 +28,7 @@ namespace vov {
     DescriptorWriter& DescriptorWriter::writeImage(uint32_t binding, const VkDescriptorImageInfo* imageInfo) {
         assert(m_setLayout.m_bindings.count(binding) == 1 && "Layout does not contain specified binding");
 
-        auto &bindingDescription = m_setLayout.m_bindings[binding];
+        const auto &bindingDescription = m_setLayout.m_bindings[binding];
 
         assert(
             bindingDescription.descriptorCount == 1 &&
