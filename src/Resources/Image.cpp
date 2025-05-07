@@ -6,8 +6,6 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <iostream>
 #include <stdexcept>
-#include <Utils/Timer.h>
-
 #include "Utils/DebugLabel.h"
 #include "Utils/stb_image.h"
 
@@ -15,15 +13,15 @@
 namespace vov {
     Image::Image(Device& device, uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage)
     : m_device(device), m_image(VK_NULL_HANDLE), m_allocation(VK_NULL_HANDLE),
-      m_imageView(VK_NULL_HANDLE), m_mipLevels(1) {  // Initialize m_mipLevels here
+      m_imageView(VK_NULL_HANDLE), m_mipLevels(1), m_format{format} {  // Initialize m_mipLevels here
         createImage(width, height, 1, format, usage, memoryUsage);
         createImageView(format);
         createSampler(VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT);
+        m_extent = VkExtent2D{width, height};
     }
 
     Image::Image(Device& device, const std::string& filename, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage)
-        : m_device(device), m_image(VK_NULL_HANDLE), m_allocation(VK_NULL_HANDLE), m_imageView(VK_NULL_HANDLE), m_filename{filename} {
-        Timer timer{"Loading image with stb"};
+        : m_device(device), m_image(VK_NULL_HANDLE), m_allocation(VK_NULL_HANDLE), m_imageView(VK_NULL_HANDLE), m_filename{filename}, m_format{format} {
         int texWidth, texHeight, texChannels;
         stbi_uc* pixels = stbi_load(filename.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
         if (!pixels) {
@@ -31,50 +29,51 @@ namespace vov {
             pixels = stbi_load("resources/TextureNotFound.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
         }
         m_mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
-
-        timer.stop();
+        m_extent = VkExtent2D{static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight)};
 
         VkDeviceSize imageSize = texWidth * texHeight * 4;
 
         // Create a staging buffer
-        Timer stagingTimer{"Creating staging buffer"};
         Buffer stagingBuffer(device, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
-        stagingTimer.stop();
 
         //TODO: should prob actually use the VMA auto mapper, o well :p
-        Timer copyTimer{"Copying to staging buffer"};
         stagingBuffer.copyTo(pixels, imageSize);
-        copyTimer.stop();
 
         stbi_image_free(pixels);
 
-        // Create the Vulkan image
         createImage(texWidth, texHeight, m_mipLevels, format, usage | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, memoryUsage);
         createImageView(format);
 
-        Timer transitionTimer{"Transitioning image layout"};
-        // Transition and copy buffer to image
         device.TransitionImageLayout(m_image, format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, m_mipLevels);
         device.copyBufferToImage(stagingBuffer.getBuffer(), m_image, texWidth, texHeight);
         generateMipmaps(format, texWidth, texHeight);
         // device.TransitionImageLayout(m_image, format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_mipLevels);
-
-        transitionTimer.stop();
 
         createSampler(VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT);
 
         DebugLabel::NameImage(m_image, filename);
     }
 
+    Image::Image(Device& device, uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage, VkImage existingImage)
+    : m_device(device), m_image(existingImage), m_allocation(VK_NULL_HANDLE),
+      m_imageView(VK_NULL_HANDLE), m_mipLevels(1), m_format(format) {
+        createImageView(format);
+        m_extent = VkExtent2D{width, height};
+        m_isSwapchainImage = true; // Mark this image as a swapchain image
+    }
+
     Image::~Image() {
         if (m_imageView != VK_NULL_HANDLE) {
             vkDestroyImageView(m_device.device(), m_imageView, nullptr);
         }
-        if (m_sampler != VK_NULL_HANDLE) {
-            vkDestroySampler(m_device.device(), m_sampler, nullptr);
-        }
-        if (m_image != VK_NULL_HANDLE) {
-            vmaDestroyImage(m_device.allocator(), m_image, m_allocation);
+        if (!m_isSwapchainImage) {
+            
+            if (m_sampler != VK_NULL_HANDLE) {
+                vkDestroySampler(m_device.device(), m_sampler, nullptr);
+            }
+            if (m_image != VK_NULL_HANDLE) {
+                vmaDestroyImage(m_device.allocator(), m_image, m_allocation);
+            }
         }
     }
 
@@ -87,7 +86,9 @@ namespace vov {
         return imageInfo;
     }
 
-    void Image::transitionImageLayout(VkCommandBuffer commandBuffer, VkImageLayout oldLayout, VkImageLayout newLayout) const {
+    void Image::transitionImageLayout(VkCommandBuffer commandBuffer,
+                                VkImageLayout oldLayout,
+                                VkImageLayout newLayout) const {
         VkImageMemoryBarrier barrier{};
         barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
         barrier.oldLayout = oldLayout;
@@ -95,7 +96,15 @@ namespace vov {
         barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         barrier.image = m_image;
-        barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+
+        barrier.subresourceRange.aspectMask = 0;
+        if (HasDepth())
+        {
+            barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+            if (HasStencil()) barrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+        }
+        else barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+
         barrier.subresourceRange.baseMipLevel = 0;
         barrier.subresourceRange.levelCount = m_mipLevels;
         barrier.subresourceRange.baseArrayLayer = 0;
@@ -114,9 +123,44 @@ namespace vov {
         );
     }
 
-    void Image::createImage(uint32_t width, uint32_t height, uint32_t miplevels, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage) {
-        Timer timer{"Creating image"};
+    void Image::TransitionImageLayout(VkCommandBuffer commandBuffer, VkImageLayout newLayout) {
+        VkImageMemoryBarrier barrier{};
+        barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        barrier.oldLayout = m_imageLayout;
+        barrier.newLayout = newLayout;
+        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.image = m_image;
 
+        barrier.subresourceRange.aspectMask = 0;
+        if (HasDepth())
+        {
+            barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+            if (HasStencil()) barrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+        }
+        else barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+
+        barrier.subresourceRange.baseMipLevel = 0;
+        barrier.subresourceRange.levelCount = m_mipLevels;
+        barrier.subresourceRange.baseArrayLayer = 0;
+        barrier.subresourceRange.layerCount = 1;
+        barrier.srcAccessMask = 0;
+        barrier.dstAccessMask = 0;
+
+        vkCmdPipelineBarrier(
+            commandBuffer,
+            VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+            VK_PIPELINE_STAGE_TRANSFER_BIT,
+            0,
+            0, nullptr,
+            0, nullptr,
+            1, &barrier
+        );
+
+        m_imageLayout = newLayout;
+    }
+
+    void Image::createImage(uint32_t width, uint32_t height, uint32_t miplevels, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage) {
         VkImageCreateInfo imageInfo{};
         imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
         imageInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -141,7 +185,6 @@ namespace vov {
     }
 
     void Image::createImageView(VkFormat format) {
-        Timer timer{"Creating image view"};
         VkImageViewCreateInfo viewInfo{};
         viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
         viewInfo.image = m_image;
@@ -159,7 +202,6 @@ namespace vov {
     }
 
     void Image::createSampler(const VkFilter filter, const VkSamplerAddressMode addressMode) {
-        Timer timer{"Creating sampler"};
         VkSamplerCreateInfo samplerInfo{};
         samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
 

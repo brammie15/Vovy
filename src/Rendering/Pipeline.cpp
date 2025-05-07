@@ -11,8 +11,7 @@
 
 namespace vov {
     Pipeline::Pipeline(Device& device, const std::string& vertPath, const std::string& fragPath,
-                         const PipelineConfigInfo& configInfo): m_device(device) {
-
+                       const PipelineConfigInfo& configInfo): m_device(device) {
         CreateGraphicsPipeline(vertPath, fragPath, configInfo);
     }
 
@@ -27,6 +26,8 @@ namespace vov {
     }
 
     void Pipeline::DefaultPipelineConfigInfo(PipelineConfigInfo& configInfo) {
+        configInfo.name = "DefaultPipelineConfigInfo";
+
         configInfo.inputAssemblyInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
         configInfo.inputAssemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
         configInfo.inputAssemblyInfo.primitiveRestartEnable = VK_FALSE;
@@ -95,10 +96,8 @@ namespace vov {
         configInfo.dynamicStateInfo.dynamicStateCount = static_cast<uint32_t>(configInfo.dynamicStateEnables.size());
         configInfo.dynamicStateInfo.flags = 0;
 
-        configInfo.renderingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
-        configInfo.renderingInfo.depthAttachmentFormat = VK_FORMAT_D32_SFLOAT;
-
         configInfo.colorAttachments = {VK_FORMAT_B8G8R8A8_SRGB};
+        configInfo.depthAttachment = VK_FORMAT_D32_SFLOAT;
 
         configInfo.vertexAttributeDescriptions = std::move(Mesh::Vertex::getAttributeDescriptions());
         configInfo.vertexBindingDescriptions = std::move(Mesh::Vertex::getBindingDescriptions());
@@ -123,41 +122,52 @@ namespace vov {
     }
 
     void Pipeline::CreateGraphicsPipeline(const std::string& vertPath, const std::string& fragPath,
-                                           const PipelineConfigInfo& configInfo) {
+                                          const PipelineConfigInfo& configInfo) {
         assert(configInfo.pipelineLayout != VK_NULL_HANDLE && "no pipelineLayout provided in configInfo");
-        // assert(configInfo.renderPass != VK_NULL_HANDLE && "no renderPass provided in configInfo");
 
-        std::string VertFileName = std::filesystem::path(vertPath).filename().string();
-        std::string FragFileName = std::filesystem::path(fragPath).filename().string();
+        std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
 
-        auto vertCode = readFile(vertPath);
-        auto fragCode = readFile(fragPath);
+        if (!vertPath.empty()) {
+            std::string VertFileName = std::filesystem::path(vertPath).filename().string();
+            auto vertCode = readFile(vertPath);
+            std::cout << "Vert file: " << Chalk::Green << VertFileName << Chalk::Reset << std::endl;
+            std::cout << "Vert code size: " << Chalk::Green << vertCode.size() << Chalk::Reset << std::endl;
 
-        std::cout << "Vert file: " << Chalk::Green << VertFileName << Chalk::Reset << std::endl;
-        std::cout << "Frag file: " << Chalk::Blue << FragFileName << Chalk::Reset << std::endl;
-        std::cout << "Vert code size: " << Chalk::Green << vertCode.size() << Chalk::Reset << std::endl;
-        std::cout << "Frag code size: " << Chalk::Blue << fragCode.size() << Chalk::Reset << std::endl;
+            CreateShaderModule(vertCode, &m_vertShaderModule);
+
+            VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
+            vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+            vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+            vertShaderStageInfo.module = m_vertShaderModule;
+            vertShaderStageInfo.pName = "main";
+            vertShaderStageInfo.flags = 0;
+            vertShaderStageInfo.pSpecializationInfo = nullptr;
+            vertShaderStageInfo.pNext = nullptr;
+
+            shaderStages.push_back(vertShaderStageInfo);
+        }
+
+        if (!fragPath.empty()) {
+            std::string FragFileName = std::filesystem::path(fragPath).filename().string();
+            auto fragCode = readFile(fragPath);
+            std::cout << "Frag file: " << Chalk::Blue << FragFileName << Chalk::Reset << std::endl;
+            std::cout << "Frag code size: " << Chalk::Blue << fragCode.size() << Chalk::Reset << std::endl;
+
+            CreateShaderModule(fragCode, &m_fragShaderModule);
+
+            VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
+            fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+            fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+            fragShaderStageInfo.module = m_fragShaderModule;
+            fragShaderStageInfo.pName = "main";
+            fragShaderStageInfo.flags = 0;
+            fragShaderStageInfo.pSpecializationInfo = nullptr;
+            fragShaderStageInfo.pNext = nullptr;
+
+            shaderStages.push_back(fragShaderStageInfo);
+        }
+
         std::cout << std::endl;
-
-        CreateShaderModule(vertCode, &m_vertShaderModule);
-        CreateShaderModule(fragCode, &m_fragShaderModule);
-
-        VkPipelineShaderStageCreateInfo shaderStages[2];
-        shaderStages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        shaderStages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-        shaderStages[0].module = m_vertShaderModule;
-        shaderStages[0].pName = "main";
-        shaderStages[0].flags = 0;
-        shaderStages[0].pSpecializationInfo = nullptr;
-        shaderStages[0].pNext = nullptr;
-
-        shaderStages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        shaderStages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-        shaderStages[1].module = m_fragShaderModule;
-        shaderStages[1].pName = "main";
-        shaderStages[1].flags = 0;
-        shaderStages[1].pSpecializationInfo = nullptr;
-        shaderStages[1].pNext = nullptr;
 
 
         VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
@@ -170,8 +180,8 @@ namespace vov {
 
         VkGraphicsPipelineCreateInfo pipelineInfo{};
         pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-        pipelineInfo.stageCount = 2;
-        pipelineInfo.pStages = shaderStages;
+        pipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
+        pipelineInfo.pStages = shaderStages.data();
         pipelineInfo.pVertexInputState = &vertexInputInfo;
         pipelineInfo.pInputAssemblyState = &configInfo.inputAssemblyInfo;
         pipelineInfo.pViewportState = &configInfo.viewportInfo;
@@ -183,10 +193,9 @@ namespace vov {
 
         VkPipelineRenderingCreateInfoKHR renderingInfo{};
         renderingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
-        //TODO: make this also a array
-        renderingInfo.depthAttachmentFormat = configInfo.renderingInfo.depthAttachmentFormat;
         renderingInfo.colorAttachmentCount = static_cast<uint32_t>(configInfo.colorAttachments.size());
         renderingInfo.pColorAttachmentFormats = configInfo.colorAttachments.data();
+        renderingInfo.depthAttachmentFormat = configInfo.depthAttachment;
 
         pipelineInfo.pNext = &renderingInfo;
 

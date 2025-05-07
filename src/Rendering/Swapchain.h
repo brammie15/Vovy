@@ -3,6 +3,7 @@
 
 #include <memory>
 #include "Core/Device.h"
+#include "Resources/Image.h"
 
 namespace vov {
     class Swapchain {
@@ -14,19 +15,10 @@ namespace vov {
 
         ~Swapchain();
 
-        [[nodiscard]] VkFramebuffer GetFrameBuffer(int index) const {
-            return m_swapChainFramebuffers[index];
-        }
-
-        VkImageView GetImageView(int index);
-        VkImage GetImage(int index);
-        VkImage GetDepthImage(int index);
-        VkImageView GetDepthImageView(int index);
-
         Swapchain(const Swapchain&) = delete;
         void operator=(const Swapchain&) = delete;
 
-        VkFormat findDepthFormat() const;
+        [[nodiscard]] VkFormat findDepthFormat() const;
         [[nodiscard]] VkExtent2D GetSwapChainExtent() const { return m_swapChainExtent; }
         [[nodiscard]] size_t imageCount() const { return m_swapChainImages.size(); }
         [[nodiscard]] VkFormat GetSwapChainImageFormat() const { return m_swapChainImageFormat; }
@@ -34,23 +26,26 @@ namespace vov {
         [[nodiscard]] uint32_t GetHeight() const { return m_swapChainExtent.height; }
         [[nodiscard]] float ExtentAspectRatio() const;
 
-        [[nodiscard]] VkRenderPass GetRenderPass() const { return m_renderPass; }
+        [[nodiscard]] VkImageView GetImageView(int index) const {
+            return m_swapChainImages[index]->getImageView();
+        }
 
         VkResult acquireNextImage(uint32_t* imageIndex) const;
         VkResult submitCommandBuffers(const VkCommandBuffer* buffers, const uint32_t* imageIndex);
 
+        [[nodiscard]] Image& GetImage(int index) const;
+        [[nodiscard]] Image& GetDepthImage(int index) const;
+
     private:
         void init();
         void createSwapChain();
-        void createRenderPass();
         void createImageViews();
         void createDepthResources();
-        void createFramebuffers();
         void createSyncObjects();
 
         VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
         VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
-        VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) const;
+        [[nodiscard]] VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) const;
 
         Device& m_device;
         VkExtent2D m_windowExtent;
@@ -62,15 +57,11 @@ namespace vov {
         VkFormat m_swapChainImageFormat;
         VkFormat m_swapChainDepthFormat;
 
-        std::vector<VkFramebuffer> m_swapChainFramebuffers;
-
 
         //TODO: replace with vov::image
-        std::vector<VkImage> m_depthImages;
-        std::vector<VkDeviceMemory> m_depthImageMemorys;
-        std::vector<VkImageView> m_depthImageViews;
-        std::vector<VkImage> m_swapChainImages;
-        std::vector<VkImageView> m_swapChainImageViews;
+        std::vector<std::unique_ptr<vov::Image>> m_swapChainImages;
+        std::vector<std::unique_ptr<vov::Image>> m_depthImages;
+
 
         std::vector<VkSemaphore> m_imageAvailableSemaphores;
         std::vector<VkSemaphore> m_renderFinishedSemaphores;

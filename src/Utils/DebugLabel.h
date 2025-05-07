@@ -24,6 +24,7 @@ public:
         ScopedCmdLabel(const ScopedCmdLabel&) = delete;
         ScopedCmdLabel& operator=(const ScopedCmdLabel&) = delete;
 
+
     private:
         VkCommandBuffer cmdBuffer;
     };

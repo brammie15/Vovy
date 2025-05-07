@@ -27,6 +27,8 @@ add_executable(${PROJECT_NAME}
         ${SRC_ROOT}/Rendering/RenderSystems/LineRenderSystem.h ${SRC_ROOT}/Rendering/RenderSystems/LineRenderSystem.cpp
         ${SRC_ROOT}/Rendering/RenderSystems/ShadowRenderSystem.h ${SRC_ROOT}/Rendering/RenderSystems/ShadowRenderSystem.cpp
 
+        ${SRC_ROOT}/Rendering/Passes/DepthPrePass.h ${SRC_ROOT}/Rendering/Passes/DepthPrePass.cpp
+
         ${SRC_ROOT}/Resources/Buffer.h ${SRC_ROOT}/Resources/Buffer.cpp
         ${SRC_ROOT}/Resources/Image.h ${SRC_ROOT}/Resources/Image.cpp
 

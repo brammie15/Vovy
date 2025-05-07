@@ -17,6 +17,8 @@ namespace vov {
         explicit Model(Device& deviceRef, const std::string& path, GameObject* parent = nullptr);
         Model(Device& deviceRef, const std::vector<Mesh::Builder>& builders);
         void draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout) const;
+        void bind(VkCommandBuffer commandBuffer, VkPipelineLayout layout);
+
 
         [[nodiscard]] std::vector<std::unique_ptr<Mesh>>& getMeshes() { return m_meshes; }
 

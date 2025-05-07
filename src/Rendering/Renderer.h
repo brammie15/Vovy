@@ -18,6 +18,7 @@ namespace vov {
         Renderer(Window& windowRef, Device& deviceRef);
         ~Renderer();
 
+
         Renderer(const Renderer& other) = delete;
         Renderer(Renderer&& other) noexcept = delete;
 
@@ -38,6 +39,16 @@ namespace vov {
         void endFrame();
         void beginSwapChainRenderPass(VkCommandBuffer commandBuffer) const;
         void endSwapChainRenderPass(VkCommandBuffer commandBuffer) const;
+
+        [[nodiscard]] Image& GetCurrentImage() const {
+            assert(m_isFrameStarted && "Cannot get current image when frame not in progress");
+            return m_swapChain->GetImage(static_cast<int>(m_currentImageIndex));
+        }
+
+        [[nodiscard]] Image& GetCurrentDepthImage() const {
+            assert(m_isFrameStarted && "Cannot get current image when frame not in progress");
+            return m_swapChain->GetDepthImage(static_cast<int>(m_currentImageIndex));
+        }
 
     private:
         void createCommandBuffers();

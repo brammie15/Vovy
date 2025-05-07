@@ -39,6 +39,12 @@ namespace vov {
         }
     }
 
+    void Model::bind(VkCommandBuffer commandBuffer, VkPipelineLayout layout) {
+        for (const auto& mesh: m_meshes) {
+            mesh->bind(commandBuffer, layout);
+        }
+    }
+
     bool MeshHasOpacityMap(const aiScene* scene, const aiMesh* mesh) {
         if (!scene || !mesh || mesh->mMaterialIndex < 0) {
             return false; // Invalid scene or mesh

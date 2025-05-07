@@ -8,6 +8,7 @@
 #include "Descriptors/DescriptorPool.h"
 #include "Rendering/Pipeline.h"
 #include "Rendering/Renderer.h"
+#include "Rendering/Passes/DepthPrePass.h"
 #include "Scene/GameObject.h"
 #include "Scene/Scene.h"
 
@@ -60,6 +61,8 @@ private:
 
     vov::Scene* m_currentScene{ nullptr };
     std::unique_ptr<vov::DescriptorPool> m_globalPool{};
+
+    std::unique_ptr<vov::DepthPrePass> m_depthPrePass{};
 
 };
 

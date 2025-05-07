@@ -50,26 +50,12 @@ VApp::VApp() {
     loadGameObjects();
     m_currentScene = m_sigmaVanniScene.get();
     m_currentScene->sceneLoad();
-
-    const std::vector<BezierNode> controlPoints = {
-        BezierNode{glm::vec3(0.0f, 0.0f, 0.0f)},
-        BezierNode{glm::vec3(1.0f, 2.0f, 0.0f)},
-        BezierNode{glm::vec3(2.0f, -1.0f, 0.0f)},
-        BezierNode{glm::vec3(3.0f, 0.0f, 0.0f)}
-    };
-    //
-    m_sigmaVanniScene->addBezierCurve(BezierCurve{
-        controlPoints,
-        glm::vec3(1.0f, 0.0f, 0.0f), // Red color
-        100
-    });
 }
 
 VApp::~VApp() = default;
 
 void VApp::run() {
     std::vector<std::unique_ptr<vov::Buffer>> uboBuffers(vov::Swapchain::MAX_FRAMES_IN_FLIGHT);
-    std::vector<std::unique_ptr<vov::Buffer>> shadowUboBuffers(vov::Swapchain::MAX_FRAMES_IN_FLIGHT);
 
     for (int i = 0; i < uboBuffers.size(); i++) {
         uboBuffers[i] = std::make_unique<vov::Buffer>(
@@ -79,26 +65,19 @@ void VApp::run() {
             VMA_MEMORY_USAGE_CPU_TO_GPU);
         uboBuffers[i]->map();
 
-        shadowUboBuffers[i] = std::make_unique<vov::Buffer>(
-            m_device,
-            sizeof(GlobalUBO),
-            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-            VMA_MEMORY_USAGE_CPU_TO_GPU);
-        shadowUboBuffers[i]->map();
     }
 
-    auto globalSetLayout = vov::DescriptorSetLayout::Builder(m_device)
-            .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)
-            .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) //ShadowMap Texture
-            .build();
-            // .addBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT) //Directional light ubo
+    //auto globalSetLayout = vov::DescriptorSetLayout::Builder(m_device)
+    //        .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)
+    //        .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) //ShadowMap Texture
+    //        .build();
+    //        // .addBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT) //Directional light ubo
 
-    auto modelSetLayout = vov::DescriptorSetLayout::Builder(m_device)
-            .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) //Model Texture
-            .build();
+    //auto modelSetLayout = vov::DescriptorSetLayout::Builder(m_device)
+    //        .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) //Model Texture
+    //        .build();
 
-    std::vector<VkDescriptorSet> globalDescriptorSets(vov::Swapchain::MAX_FRAMES_IN_FLIGHT);
-    std::vector<VkDescriptorSet> shadowDescriptorSets(vov::Swapchain::MAX_FRAMES_IN_FLIGHT);
+    /*std::vector<VkDescriptorSet> globalDescriptorSets(vov::Swapchain::MAX_FRAMES_IN_FLIGHT);
 
     for (int i = 0; i < globalDescriptorSets.size(); i++) {
         auto bufferInfo = uboBuffers[i]->descriptorInfo();
@@ -109,40 +88,36 @@ void VApp::run() {
         if (!success) {
             throw std::runtime_error("failed to write descriptor sets!");
         }
+    }*/
 
-        auto shadowBufferInfo = shadowUboBuffers[i]->descriptorInfo();
-        auto shadowSuccess = vov::DescriptorWriter(*globalSetLayout, *m_globalPool)
-                .writeBuffer(0, &shadowBufferInfo)
-                .build(shadowDescriptorSets[i]);
+    m_depthPrePass = std::make_unique<vov::DepthPrePass>(
+        m_device
+    );
 
-        if (!shadowSuccess) {
-            throw std::runtime_error("failed to write shadow descriptor sets!");
-        }
-    }
+    m_depthPrePass->Init(VK_FORMAT_D32_SFLOAT, vov::Swapchain::MAX_FRAMES_IN_FLIGHT);
 
-    vov::DirectionalLight directionalLight{};
-
-    vov::GameObjectRenderSystem renderSystem{
-        m_device,
-        {globalSetLayout->getDescriptorSetLayout(), modelSetLayout->getDescriptorSetLayout()}
-    };
-
-    vov::ImguiRenderSystem imguiRenderSystem{
-        m_device,
-        VK_FORMAT_B8G8R8A8_SRGB, //TODO: this should really be a global
-        static_cast<int>(m_window.getWidth()),
-        static_cast<int>(m_window.getHeight())
-    };
-
-    vov::LineRenderSystem lineRenderSystem{
-        m_device,
-        {globalSetLayout->getDescriptorSetLayout(), modelSetLayout->getDescriptorSetLayout()}
-    };
-
-    vov::ShadowRenderSystem shadowRenderSystem{
-        m_device,
-        {globalSetLayout->getDescriptorSetLayout(), modelSetLayout->getDescriptorSetLayout()}
-    };
+    //
+    // vov::GameObjectRenderSystem renderSystem{
+    //     m_device,
+    //     {globalSetLayout->getDescriptorSetLayout(), modelSetLayout->getDescriptorSetLayout()}
+    // };
+    //
+    // vov::ImguiRenderSystem imguiRenderSystem{
+    //     m_device,
+    //     VK_FORMAT_B8G8R8A8_SRGB, //TODO: this should really be a global
+    //     static_cast<int>(m_window.getWidth()),
+    //     static_cast<int>(m_window.getHeight())
+    // };
+    //
+    // vov::LineRenderSystem lineRenderSystem{
+    //     m_device,
+    //     {globalSetLayout->getDescriptorSetLayout(), modelSetLayout->getDescriptorSetLayout()}
+    // };
+    //
+    // vov::ShadowRenderSystem shadowRenderSystem{
+    //     m_device,
+    //     {globalSetLayout->getDescriptorSetLayout(), modelSetLayout->getDescriptorSetLayout()}
+    // };
 
     vov::Camera camera{{-2.0f, 1.0f, 0}, {0.0f, 1.0f, 0.0f}};
     camera.setAspectRatio(m_renderer.GetAspectRatio());
@@ -152,52 +127,52 @@ void VApp::run() {
 
 #pragma region INPUT
         m_window.PollInput();
-        imguiRenderSystem.beginFrame();
-
-        this->imGui();
-        if (!m_currentScene->getGameObjects().empty() && m_selectedTransform) {
-            imguiRenderSystem.drawGizmos(&camera, m_selectedTransform, "Maintransform");
-        }
-
-        if (m_bezierFollowerTransform && !m_currentScene->getBezierCurves().empty()) {
-            const auto& curve = m_currentScene->getBezierCurves()[0]; // Using first curve for now
-            m_bezierProgress += m_bezierSpeed * static_cast<float>(vov::DeltaTime::GetInstance().GetDeltaTime());
-            if (m_bezierProgress > 1.0f) m_bezierProgress = 0.0f;
-
-            glm::vec3 position = lineRenderSystem.deCasteljau(curve.nodes, m_bezierProgress);
-            m_bezierFollowerTransform->SetLocalPosition(position);
-
-            if (m_shouldRotate) {
-                float nextT = m_bezierProgress + 0.01f;
-                if (nextT > 1.0f) nextT = 0.0f;
-                glm::vec3 nextPosition = lineRenderSystem.deCasteljau(curve.nodes, nextT);
-
-                glm::vec3 direction = glm::normalize(nextPosition - position);
-
-                glm::vec3 up(0.0f, 1.0f, 0.0f); // Y is up
-                glm::vec3 right = glm::normalize(glm::cross(up, direction));
-                up = glm::normalize(glm::cross(direction, right));
-
-                glm::mat4 rotationMatrix(1.0f);
-                rotationMatrix[0] = glm::vec4(right, 0.0f);
-                rotationMatrix[1] = glm::vec4(up, 0.0f);
-                rotationMatrix[2] = glm::vec4(-direction, 0.0f); //-Z forward
-
-                glm::quat rotation = glm::quat_cast(rotationMatrix);
-                m_bezierFollowerTransform->SetLocalRotation(rotation);
-            }
-        }
-
-
-        // auto& curves = m_currentScene->getBezierCurves();
-        // for (auto& curve: curves) {
-        //     for (int j = 0; j < curve.nodes.size(); j++) {
-        //         std::string id = "BezierNode" + std::to_string(j);
-        //         imguiRenderSystem.drawGizmos(&camera, curve.nodes[j].position, id);
+        // imguiRenderSystem.beginFrame();
+        //
+        // this->imGui();
+        // if (!m_currentScene->getGameObjects().empty() && m_selectedTransform) {
+        //     imguiRenderSystem.drawGizmos(&camera, m_selectedTransform, "Maintransform");
+        // }
+        //
+        // if (m_bezierFollowerTransform && !m_currentScene->getBezierCurves().empty()) {
+        //     const auto& curve = m_currentScene->getBezierCurves()[0]; // Using first curve for now
+        //     m_bezierProgress += m_bezierSpeed * static_cast<float>(vov::DeltaTime::GetInstance().GetDeltaTime());
+        //     if (m_bezierProgress > 1.0f) m_bezierProgress = 0.0f;
+        //
+        //     glm::vec3 position = lineRenderSystem.deCasteljau(curve.nodes, m_bezierProgress);
+        //     m_bezierFollowerTransform->SetLocalPosition(position);
+        //
+        //     if (m_shouldRotate) {
+        //         float nextT = m_bezierProgress + 0.01f;
+        //         if (nextT > 1.0f) nextT = 0.0f;
+        //         glm::vec3 nextPosition = lineRenderSystem.deCasteljau(curve.nodes, nextT);
+        //
+        //         glm::vec3 direction = glm::normalize(nextPosition - position);
+        //
+        //         glm::vec3 up(0.0f, 1.0f, 0.0f); // Y is up
+        //         glm::vec3 right = glm::normalize(glm::cross(up, direction));
+        //         up = glm::normalize(glm::cross(direction, right));
+        //
+        //         glm::mat4 rotationMatrix(1.0f);
+        //         rotationMatrix[0] = glm::vec4(right, 0.0f);
+        //         rotationMatrix[1] = glm::vec4(up, 0.0f);
+        //         rotationMatrix[2] = glm::vec4(-direction, 0.0f); //-Z forward
+        //
+        //         glm::quat rotation = glm::quat_cast(rotationMatrix);
+        //         m_bezierFollowerTransform->SetLocalRotation(rotation);
         //     }
         // }
-
-        imguiRenderSystem.endFrame();
+        //
+        //
+        // // auto& curves = m_currentScene->getBezierCurves();
+        // // for (auto& curve: curves) {
+        // //     for (int j = 0; j < curve.nodes.size(); j++) {
+        // //         std::string id = "BezierNode" + std::to_string(j);
+        // //         imguiRenderSystem.drawGizmos(&camera, curve.nodes[j].position, id);
+        // //     }
+        // // }
+        //
+        // imguiRenderSystem.endFrame();
 
         if (m_window.isKeyPressed(GLFW_KEY_GRAVE_ACCENT)) {
             if (m_window.isCursorLocked()) {
@@ -206,17 +181,17 @@ void VApp::run() {
                 m_window.LockCursor();
             }
         }
-
-        if (m_window.isKeyPressed(GLFW_KEY_F)) {
-            if (m_selectedTransform) {
-                const glm::vec3 focusPos = m_selectedTransform->GetWorldPosition();
-                constexpr auto offset = glm::vec3(0.0f, 0.0f, 5.0f); // could be camera forward
-                camera.m_position = focusPos + offset;
-
-                camera.Target(focusPos);
-                camera.CalculateViewMatrix();
-            }
-        }
+        //
+        // if (m_window.isKeyPressed(GLFW_KEY_F)) {
+        //     if (m_selectedTransform) {
+        //         const glm::vec3 focusPos = m_selectedTransform->GetWorldPosition();
+        //         constexpr auto offset = glm::vec3(0.0f, 0.0f, 5.0f); // could be camera forward
+        //         camera.m_position = focusPos + offset;
+        //
+        //         camera.Target(focusPos);
+        //         camera.CalculateViewMatrix();
+        //     }
+        // }
 #pragma endregion
 
         camera.Update(static_cast<float>(vov::DeltaTime::GetInstance().GetDeltaTime()));
@@ -226,53 +201,24 @@ void VApp::run() {
 
         if (auto commandBuffer = m_renderer.BeginFrame()) {
             int frameIndex = m_renderer.GetFrameIndex();
-            vov::FrameContext shadowFrameInfo{frameIndex, static_cast<float>(vov::DeltaTime::GetInstance().GetDeltaTime()), commandBuffer, shadowDescriptorSets[frameIndex], camera};
+            vov::FrameContext shadowFrameInfo{frameIndex, static_cast<float>(vov::DeltaTime::GetInstance().GetDeltaTime()), commandBuffer, nullptr, camera};
 
-            GlobalUBO ShadowUbo{};
+            auto& depthImage = m_renderer.GetCurrentDepthImage();
+            m_depthPrePass->Record(shadowFrameInfo, commandBuffer, frameIndex, depthImage, m_currentScene, &camera);
 
-            camera.CalculateViewMatrix();
-            camera.CalculateProjectionMatrix();
-            ShadowUbo.view = m_currentScene->getDirectionalLight().getLightView();
-            ShadowUbo.proj = m_currentScene->getDirectionalLight().getLightProjection();
-            ShadowUbo.lightSpaceMatrix = m_currentScene->getDirectionalLight().getLightSpaceMatrix();
 
-            // ShadowUbo.proj[1][1] *= -1;
-
-            shadowUboBuffers[frameIndex]->copyTo(&ShadowUbo, sizeof(ShadowUbo));
-            shadowUboBuffers[frameIndex]->flush();
-
-            shadowRenderSystem.render(shadowFrameInfo, *m_currentScene);
-
-            auto shadowMapDescriptorInfo = shadowRenderSystem.getShadowMapDescriptorInfo();
-
-            vov::DescriptorWriter(*globalSetLayout, *m_globalPool)
-                    .writeImage(1, &shadowMapDescriptorInfo)
-                    .overwrite(globalDescriptorSets[frameIndex]);
-
-            vov::FrameContext frameInfo{frameIndex, static_cast<float>(vov::DeltaTime::GetInstance().GetDeltaTime()), commandBuffer, globalDescriptorSets[frameIndex], camera};
-            GlobalUBO ubo{};
-
-            camera.CalculateViewMatrix();
-            ubo.view = camera.GetViewMatrix();
-            ubo.proj = camera.GetProjectionMatrix();
-            ubo.lightSpaceMatrix = m_currentScene->getDirectionalLight().getLightSpaceMatrix();
-
-            ubo.proj[1][1] *= -1;
-
-            uboBuffers[frameIndex]->copyTo(&ubo, sizeof(ubo));
-            uboBuffers[frameIndex]->flush();
 
             m_renderer.beginSwapChainRenderPass(commandBuffer);
-
-            if (m_currentScene->getLineSegments().size() > 2) {
-                lineRenderSystem.renderLines(frameInfo, m_currentScene->getLineSegments());
-            }
-
-            lineRenderSystem.renderBezier(frameInfo, m_currentScene->getBezierCurves());
-
-            renderSystem.renderGameObjects(frameInfo, m_currentScene->getGameObjects());
-
-            imguiRenderSystem.renderImgui(commandBuffer);
+            //
+            // if (m_currentScene->getLineSegments().size() > 2) {
+            //     lineRenderSystem.renderLines(frameInfo, m_currentScene->getLineSegments());
+            // }
+            //
+            // lineRenderSystem.renderBezier(frameInfo, m_currentScene->getBezierCurves());
+            //
+            // renderSystem.renderGameObjects(frameInfo, m_currentScene->getGameObjects());
+            //
+            // imguiRenderSystem.renderImgui(commandBuffer);
             m_renderer.endSwapChainRenderPass(commandBuffer);
             m_renderer.endFrame();
         }
@@ -282,6 +228,7 @@ void VApp::run() {
         if (sleepTime > std::chrono::nanoseconds(0)) {
             std::this_thread::sleep_for(sleepTime);
         }
+
     }
     vkDeviceWaitIdle(m_device.device());
 }

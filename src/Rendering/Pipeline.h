@@ -8,18 +8,20 @@
 
 namespace vov {
     struct PipelineConfigInfo {
+        std::string name;
         VkPipelineViewportStateCreateInfo viewportInfo{};
-        VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo;
-        VkPipelineRasterizationStateCreateInfo rasterizationInfo;
-        VkPipelineMultisampleStateCreateInfo multisampleInfo;
-        VkPipelineColorBlendAttachmentState colorBlendAttachment;
-        VkPipelineColorBlendStateCreateInfo colorBlendInfo;
-        VkPipelineDepthStencilStateCreateInfo depthStencilInfo;
-        std::vector<VkDynamicState> dynamicStateEnables;
-        VkPipelineDynamicStateCreateInfo dynamicStateInfo;
+        VkPipelineInputAssemblyStateCreateInfo inputAssemblyInfo{};
+        VkPipelineRasterizationStateCreateInfo rasterizationInfo{};
+        VkPipelineMultisampleStateCreateInfo multisampleInfo{};
+        VkPipelineColorBlendAttachmentState colorBlendAttachment{};
+        VkPipelineColorBlendStateCreateInfo colorBlendInfo{};
+        VkPipelineDepthStencilStateCreateInfo depthStencilInfo{};
+        std::vector<VkDynamicState> dynamicStateEnables{};
+        VkPipelineDynamicStateCreateInfo dynamicStateInfo{};
 
-        VkPipelineRenderingCreateInfoKHR renderingInfo{};
         std::vector<VkFormat> colorAttachments{};
+        VkFormat depthAttachment{VK_FORMAT_UNDEFINED};
+
 
         std::vector<VkVertexInputBindingDescription> vertexBindingDescriptions{};
         std::vector<VkVertexInputAttributeDescription> vertexAttributeDescriptions{};
