@@ -28,9 +28,11 @@ add_executable(${PROJECT_NAME}
         ${SRC_ROOT}/Rendering/RenderSystems/ShadowRenderSystem.h ${SRC_ROOT}/Rendering/RenderSystems/ShadowRenderSystem.cpp
 
         ${SRC_ROOT}/Rendering/Passes/DepthPrePass.h ${SRC_ROOT}/Rendering/Passes/DepthPrePass.cpp
+        ${SRC_ROOT}/Rendering/Passes/GeometryPass.h ${SRC_ROOT}/Rendering/Passes/GeometryPass.cpp
 
         ${SRC_ROOT}/Resources/Buffer.h ${SRC_ROOT}/Resources/Buffer.cpp
         ${SRC_ROOT}/Resources/Image.h ${SRC_ROOT}/Resources/Image.cpp
+        ${SRC_ROOT}/Resources/GeoBuffer.h ${SRC_ROOT}/Resources/GeoBuffer.cpp
 
         ${SRC_ROOT}/Scene/Mesh.h ${SRC_ROOT}/Scene/Mesh.cpp
         ${SRC_ROOT}/Scene/Model.h ${SRC_ROOT}/Scene/Model.cpp

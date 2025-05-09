@@ -16,7 +16,7 @@ namespace vov {
     public:
         explicit Model(Device& deviceRef, const std::string& path, GameObject* parent = nullptr);
         Model(Device& deviceRef, const std::vector<Mesh::Builder>& builders);
-        void draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout) const;
+        void draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, bool isDepthPass = false) const;
         void bind(VkCommandBuffer commandBuffer, VkPipelineLayout layout);
 
 

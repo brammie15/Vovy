@@ -22,7 +22,6 @@ void vov::DepthPrePass::Init(VkFormat depthFormat, uint32_t framesInFlight) {
     m_depthFormat = depthFormat;
     m_framesInFlight = framesInFlight;
 
-
     m_descriptorPool = DescriptorPool::Builder(m_device)
         .setMaxSets(framesInFlight * 2)
         .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, framesInFlight * 2)
@@ -61,6 +60,8 @@ void vov::DepthPrePass::Init(VkFormat depthFormat, uint32_t framesInFlight) {
             .build(m_descriptorSets[i]);
     }
 
+
+
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.setLayoutCount = static_cast<uint32_t>(descriptorSetLayouts.size());
@@ -92,9 +93,10 @@ void vov::DepthPrePass::Init(VkFormat depthFormat, uint32_t framesInFlight) {
 }
 
 void vov::DepthPrePass::Record(const FrameContext& context, VkCommandBuffer commandBuffer, uint32_t imageIndex, Image& depthImage, Scene* scene, Camera* camera) {
-    UniformBuffer ubo;
+    UniformBuffer ubo{};
     ubo.view = camera->GetViewMatrix();
     ubo.proj = camera->GetProjectionMatrix();
+    ubo.proj[1][1] *= -1;
 
     m_uniformBuffers[imageIndex]->copyTo(&ubo, sizeof(ubo));
     m_uniformBuffers[imageIndex]->flush();
@@ -146,7 +148,7 @@ void vov::DepthPrePass::Record(const FrameContext& context, VkCommandBuffer comm
     m_pipeline->bind(commandBuffer);
 
     for (const auto& object : scene->getGameObjects()) {
-        object->model->draw(commandBuffer, m_pipelineLayout);
+        object->model->draw(commandBuffer, m_pipelineLayout, true);
     }
 
     vkCmdEndRendering(commandBuffer);

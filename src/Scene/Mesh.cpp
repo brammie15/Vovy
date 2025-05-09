@@ -57,17 +57,19 @@ namespace vov {
 
     Mesh::~Mesh() = default;
 
-    void Mesh::bind(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout) const {
-        // vkCmdBindDescriptorSets(
-        //     commandBuffer,
-        //     VK_PIPELINE_BIND_POINT_GRAPHICS,
-        //     pipelineLayout,
-        //     1,
-        //     1,
-        //     &m_descriptorSet,
-        //     0,
-        //     nullptr
-        // );
+    void Mesh::bind(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, bool isDepthPass) const {
+        if (!isDepthPass) {
+            vkCmdBindDescriptorSets(
+                commandBuffer,
+                VK_PIPELINE_BIND_POINT_GRAPHICS,
+                pipelineLayout,
+                1,
+                1,
+                &m_descriptorSet,
+                0,
+                nullptr
+            );
+        }
 
         VkBuffer buffers[] = {m_vertexBuffer->getBuffer()};
         VkDeviceSize offsets[] = {0};

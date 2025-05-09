@@ -58,9 +58,9 @@ namespace vov {
             m_window.wasWindowResized()) {
             m_window.resetWindowResized();
             recreateSwapChain();
-            } else if (result != VK_SUCCESS) {
-                throw std::runtime_error("failed to present swap chain image!");
-            }
+        } else if (result != VK_SUCCESS) {
+            throw std::runtime_error("failed to present swap chain image!");
+        }
 
         m_isFrameStarted = false;
         m_currentFrameIndex = (m_currentFrameIndex + 1) % Swapchain::MAX_FRAMES_IN_FLIGHT;
@@ -72,8 +72,10 @@ namespace vov {
             commandBuffer == GetCurrentCommandBuffer() &&
             "Can't begin render pass on command buffer from a different frame");
 
-        //Transition image to color attachment
-        m_swapChain->GetImage(static_cast<int>(m_currentImageIndex)).TransitionImageLayout(commandBuffer, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        m_swapChain->GetImage(static_cast<int>(m_currentImageIndex)).TransitionImageLayout(
+            commandBuffer,
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+        );
 
         m_swapChain->GetDepthImage(static_cast<int>(m_currentImageIndex)).TransitionImageLayout(
             commandBuffer,
@@ -84,7 +86,7 @@ namespace vov {
         clearValues[0].color = {0.01f, 0.01f, 0.01f, 1.0f};
         clearValues[1].depthStencil = {1.0f, 0};
 
-        const VkRenderingAttachmentInfoKHR color_attachment_info {
+        const VkRenderingAttachmentInfoKHR color_attachment_info{
             .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,
             .imageView = m_swapChain->GetImageView(static_cast<int>(m_currentImageIndex)),
             .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
@@ -102,7 +104,7 @@ namespace vov {
             .clearValue = clearValues[1],
         };
 
-        const VkRenderingInfoKHR render_info {
+        const VkRenderingInfoKHR render_info{
             .sType = VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
             .renderArea = {
                 .offset = {0, 0},
@@ -115,13 +117,12 @@ namespace vov {
         };
 
         DebugLabel::BeginCmdLabel(
-           commandBuffer,
-           "RenderPass",
-           {1.f, 1.0f, 0.0f, 1.0f}
-       );
+            commandBuffer,
+            "RenderPass",
+            {1.f, 1.0f, 0.0f, 1.0f}
+        );
 
         vov::vkCmdBeginRenderingKHR(commandBuffer, &render_info);
-
 
         VkViewport viewport{};
         viewport.x = 0.0f;
@@ -142,7 +143,6 @@ namespace vov {
             "Can't end render pass on command buffer from a different frame");
         // vkCmdEndRenderPass(commandBuffer);
         vov::vkCmdEndRenderingKHR(commandBuffer);
-
 
         m_swapChain->GetImage(static_cast<int>(m_currentImageIndex)).TransitionImageLayout(
             commandBuffer, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
@@ -172,15 +172,14 @@ namespace vov {
         for (int index = 0; index < commandBuffers.size(); ++index) {
             DebugLabel::NameCommandBuffer(commandBuffers[index], "CommandBuffer: " + std::to_string(index));
         }
-
     }
 
     void Renderer::freeCommandBuffers() {
         vkFreeCommandBuffers(
-        m_device.device(),
-        m_device.getCommandPool(),
-        static_cast<uint32_t>(commandBuffers.size()),
-        commandBuffers.data());
+            m_device.device(),
+            m_device.getCommandPool(),
+            static_cast<uint32_t>(commandBuffers.size()),
+            commandBuffers.data());
         commandBuffers.clear();
     }
 

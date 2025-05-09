@@ -96,18 +96,25 @@ void VApp::run() {
 
     m_depthPrePass->Init(VK_FORMAT_D32_SFLOAT, vov::Swapchain::MAX_FRAMES_IN_FLIGHT);
 
+    vov::GeometryPass::CreateInfo createInfo = {
+        vov::Swapchain::MAX_FRAMES_IN_FLIGHT, m_currentScene, m_window.getExtent(), VK_FORMAT_D32_SFLOAT
+    };
+
+    m_geoPass = std::make_unique<vov::GeometryPass>(m_device, createInfo);
+
+
     //
     // vov::GameObjectRenderSystem renderSystem{
     //     m_device,
     //     {globalSetLayout->getDescriptorSetLayout(), modelSetLayout->getDescriptorSetLayout()}
     // };
     //
-    // vov::ImguiRenderSystem imguiRenderSystem{
-    //     m_device,
-    //     VK_FORMAT_B8G8R8A8_SRGB, //TODO: this should really be a global
-    //     static_cast<int>(m_window.getWidth()),
-    //     static_cast<int>(m_window.getHeight())
-    // };
+    vov::ImguiRenderSystem imguiRenderSystem{
+        m_device,
+        VK_FORMAT_B8G8R8A8_SRGB, //TODO: this should really be a global
+        static_cast<int>(m_window.getWidth()),
+        static_cast<int>(m_window.getHeight())
+    };
     //
     // vov::LineRenderSystem lineRenderSystem{
     //     m_device,
@@ -127,9 +134,9 @@ void VApp::run() {
 
 #pragma region INPUT
         m_window.PollInput();
-        // imguiRenderSystem.beginFrame();
-        //
-        // this->imGui();
+        imguiRenderSystem.beginFrame();
+
+        this->imGui();
         // if (!m_currentScene->getGameObjects().empty() && m_selectedTransform) {
         //     imguiRenderSystem.drawGizmos(&camera, m_selectedTransform, "Maintransform");
         // }
@@ -172,7 +179,7 @@ void VApp::run() {
         // //     }
         // // }
         //
-        // imguiRenderSystem.endFrame();
+        imguiRenderSystem.endFrame();
 
         if (m_window.isKeyPressed(GLFW_KEY_GRAVE_ACCENT)) {
             if (m_window.isCursorLocked()) {
@@ -206,6 +213,10 @@ void VApp::run() {
             auto& depthImage = m_renderer.GetCurrentDepthImage();
             m_depthPrePass->Record(shadowFrameInfo, commandBuffer, frameIndex, depthImage, m_currentScene, &camera);
 
+            m_geoPass->Record(shadowFrameInfo, commandBuffer, frameIndex, depthImage, m_currentScene, &camera);
+
+
+
 
 
             m_renderer.beginSwapChainRenderPass(commandBuffer);
@@ -218,7 +229,7 @@ void VApp::run() {
             //
             // renderSystem.renderGameObjects(frameInfo, m_currentScene->getGameObjects());
             //
-            // imguiRenderSystem.renderImgui(commandBuffer);
+            imguiRenderSystem.renderImgui(commandBuffer);
             m_renderer.endSwapChainRenderPass(commandBuffer);
             m_renderer.endFrame();
         }

@@ -9,6 +9,7 @@
 #include "Rendering/Pipeline.h"
 #include "Rendering/Renderer.h"
 #include "Rendering/Passes/DepthPrePass.h"
+#include "Rendering/Passes/GeometryPass.h"
 #include "Scene/GameObject.h"
 #include "Scene/Scene.h"
 
@@ -63,6 +64,7 @@ private:
     std::unique_ptr<vov::DescriptorPool> m_globalPool{};
 
     std::unique_ptr<vov::DepthPrePass> m_depthPrePass{};
+    std::unique_ptr<vov::GeometryPass> m_geoPass{};
 
 };
 

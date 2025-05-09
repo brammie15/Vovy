@@ -160,6 +160,10 @@ namespace vov {
         m_imageLayout = newLayout;
     }
 
+    void Image::SetName(const std::string& name) {
+        DebugLabel::SetObjectName(reinterpret_cast<uint64_t>(m_image), VK_OBJECT_TYPE_IMAGE, name.c_str());
+    }
+
     void Image::createImage(uint32_t width, uint32_t height, uint32_t miplevels, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage) {
         VkImageCreateInfo imageInfo{};
         imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;

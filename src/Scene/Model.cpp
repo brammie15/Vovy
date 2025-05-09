@@ -20,7 +20,7 @@ namespace vov {
         generateMeshes();
     }
 
-    void Model::draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout) const {
+    void Model::draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout,bool isDepthPass) const {
         for (const auto& mesh: m_meshes) {
             PushConstantData push{};
             push.modelMatrix = mesh->getTransform().GetWorldMatrix();
@@ -34,7 +34,7 @@ namespace vov {
                 &push
             );
 
-            mesh->bind(commandBuffer, pipelineLayout);
+            mesh->bind(commandBuffer, pipelineLayout, isDepthPass);
             mesh->draw(commandBuffer);
         }
     }

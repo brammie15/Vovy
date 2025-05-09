@@ -52,7 +52,7 @@ namespace vov {
         [[nodiscard]] uint32_t getVertexCount() const { return m_vertexCount; }
         [[nodiscard]] uint32_t getIndexCount() const { return m_indexCount; }
 
-        void bind(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout) const;
+        void bind(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, bool isDepthPass = false) const;
         void draw(VkCommandBuffer commandBuffer) const;
 
         static std::unique_ptr<Mesh> createModelFromFile(
