@@ -42,6 +42,8 @@ public:
     void run();
     void imGui();
 
+    void ResizeScreen(VkExtent2D newSize);
+
 private:
     void loadGameObjects();
 

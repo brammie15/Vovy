@@ -50,6 +50,10 @@ VApp::VApp() {
     loadGameObjects();
     m_currentScene = m_sigmaVanniScene.get();
     m_currentScene->sceneLoad();
+
+    m_renderer.SetResizeCallback([&](VkExtent2D newSize) {
+        this->ResizeScreen(newSize);
+    });
 }
 
 VApp::~VApp() = default;
@@ -214,9 +218,6 @@ void VApp::run() {
             m_depthPrePass->Record(shadowFrameInfo, commandBuffer, frameIndex, depthImage, m_currentScene, &camera);
 
             m_geoPass->Record(shadowFrameInfo, commandBuffer, frameIndex, depthImage, m_currentScene, &camera);
-
-
-
 
 
             m_renderer.beginSwapChainRenderPass(commandBuffer);
@@ -445,6 +446,11 @@ void VApp::imGui() {
         ImGui::Checkbox("Should Rotate", &m_shouldRotate);
     }
     ImGui::End();
+}
+
+void VApp::ResizeScreen(VkExtent2D newSize) {
+    m_depthPrePass->Resize(newSize);
+    m_geoPass->Resize(newSize);
 }
 
 void VApp::loadGameObjects() {

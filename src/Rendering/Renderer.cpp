@@ -191,6 +191,10 @@ namespace vov {
         }
         vkDeviceWaitIdle(m_device.device());
 
+        if (m_resizeCallback != nullptr) {
+            m_resizeCallback(extent);
+        }
+
         if (m_swapChain == nullptr) {
             m_swapChain = std::make_unique<Swapchain>(m_device, extent);
         } else {

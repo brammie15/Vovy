@@ -1,6 +1,7 @@
 #ifndef VRENDERPASS_H
 #define VRENDERPASS_H
 #include <cassert>
+#include <functional>
 #include <memory>
 
 #include "Swapchain.h"
@@ -50,6 +51,8 @@ namespace vov {
             return m_swapChain->GetDepthImage(static_cast<int>(m_currentImageIndex));
         }
 
+        void SetResizeCallback(const std::function<void(VkExtent2D)>& func) { m_resizeCallback = func; }
+
     private:
         void createCommandBuffers();
         void freeCommandBuffers();
@@ -63,6 +66,8 @@ namespace vov {
         uint32_t m_currentImageIndex{};
         int m_currentFrameIndex{0};
         bool m_isFrameStarted{false};
+
+        std::function<void(VkExtent2D)> m_resizeCallback{};
     };
 }
 

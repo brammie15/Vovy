@@ -37,7 +37,7 @@ void vov::DepthPrePass::Init(VkFormat depthFormat, uint32_t framesInFlight) {
     pushConstantRange.offset = 0;
     pushConstantRange.size = sizeof(PushConstant);
 
-    std::array<VkDescriptorSetLayout, 1> descriptorSetLayouts = {
+    const std::array<VkDescriptorSetLayout, 1> descriptorSetLayouts = {
         m_descriptorSetLayout->getDescriptorSetLayout()
     };
 
@@ -106,7 +106,7 @@ void vov::DepthPrePass::Record(const FrameContext& context, VkCommandBuffer comm
     VkRenderingAttachmentInfo depthAttachment{};
     depthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
     depthAttachment.imageView = depthImage.getImageView();
-    depthAttachment.imageLayout = depthImage.getCurrentLayout();; //God this bad
+    depthAttachment.imageLayout = depthImage.getCurrentLayout(); //God this bad
     depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
     depthAttachment.clearValue.depthStencil = { .depth = 1.0f, .stencil = 0 };
@@ -142,8 +142,7 @@ void vov::DepthPrePass::Record(const FrameContext& context, VkCommandBuffer comm
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
     DebugLabel::EndCmdLabel(commandBuffer);
 
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-        m_pipelineLayout, 0, 1, &m_descriptorSets[imageIndex], 0, nullptr);
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorSets[imageIndex], 0, nullptr);
 
     m_pipeline->bind(commandBuffer);
 
@@ -155,4 +154,7 @@ void vov::DepthPrePass::Record(const FrameContext& context, VkCommandBuffer comm
 
     depthImage.TransitionImageLayout(commandBuffer, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
     DebugLabel::EndCmdLabel(commandBuffer);
+}
+
+void vov::DepthPrePass::Resize(VkExtent2D newSize) {
 }

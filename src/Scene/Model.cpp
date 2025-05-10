@@ -164,8 +164,40 @@ namespace vov {
         Mesh::Builder builder{};
         builder.vertices = std::move(vertices);
         builder.indices = std::move(indices);
-        builder.texturePath = texturePath;
         builder.modelPath = m_directory + "/";
+
+
+        Mesh::TextureInfo textureInfo{};
+
+        if (scene->mNumMaterials > 0 && mesh->mMaterialIndex >= 0) {
+            aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+            aiString path;
+
+            if (material->GetTexture(aiTextureType_DIFFUSE, 0, &path) == AI_SUCCESS)
+                textureInfo.albedoPath = path.C_Str();
+            else
+                textureInfo.albedoPath = "";
+
+            if (material->GetTexture(aiTextureType_NORMALS, 0, &path) == AI_SUCCESS)
+                textureInfo.normalPath = path.C_Str();
+            else
+                textureInfo.normalPath = "";
+
+            if (material->GetTexture(aiTextureType_SPECULAR, 0, &path) == AI_SUCCESS)
+                textureInfo.specularPath = path.C_Str();
+            else
+                textureInfo.specularPath = "";
+
+            if (material->GetTexture(aiTextureType_HEIGHT, 0, &path) == AI_SUCCESS)
+                textureInfo.bumpPath = path.C_Str();
+            else
+                textureInfo.bumpPath = "";
+        }
+
+        textureInfo.basePath = builder.modelPath;
+
+        builder.textureInfo = textureInfo;
+
         return builder;
     }
 
@@ -178,12 +210,14 @@ namespace vov {
         m_descriptorPool = DescriptorPool::Builder(m_device)
                 .setMaxSets(static_cast<uint32_t>(m_builders.size()))
                 .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, static_cast<uint32_t>(m_builders.size()))
-                .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(m_builders.size()))
+                .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, static_cast<uint32_t>(m_builders.size()) * 4)
                 .build();
 
         m_descriptorSetLayout = DescriptorSetLayout::Builder(m_device)
-                .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // Model Texture
-                // .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // ShadowMap Texture
+                .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // Albedo
+                .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // Normal
+                .addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // Specular
+                .addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // Bump
                 .build();
 
         //TODO: fix the above to just have 1 DescriptorSetLayout and not one here and in VApp.cpp

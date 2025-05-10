@@ -11,7 +11,10 @@ layout(push_constant) uniform constants
     mat4 model;
 } modelData;
 
-layout(set = 1, binding = 0) uniform sampler2D textureSampler;
+layout(set = 1, binding = 0) uniform sampler2D albedoSampler;
+layout(set = 1, binding = 1) uniform sampler2D normalSampler;
+layout(set = 1, binding = 2) uniform sampler2D specularSampler;
+layout(set = 1, binding = 3) uniform sampler2D bumpSampler;
 
 layout(location = 0) in vec3 fragColor;
 layout(location = 1) in vec3 fragNormal;
@@ -28,7 +31,7 @@ layout(location = 3) out float outSpecularity;
 void main(){
     outAlbedo_Opacity = vec4(1.0, 0.0, 1.0, 1.0);
 
-    outAlbedo_Opacity.rgb = texture(textureSampler, fragTexCoord).rgb;
+    outAlbedo_Opacity.rgb = texture(albedoSampler, fragTexCoord).rgb;
 
     outWorldPos.rgb = fragWorldPos.xyz;
 

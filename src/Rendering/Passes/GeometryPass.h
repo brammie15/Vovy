@@ -31,8 +31,9 @@ namespace vov {
 
         void Record(const FrameContext& context, VkCommandBuffer commandBuffer, int imageIndex, Image& depthImage, Scene* scene, Camera* Camera);
 
-    private:
+        void Resize(VkExtent2D newSize) const;
 
+    private:
         Device& m_device;
 
         VkFormat m_depthFormat{VK_FORMAT_UNDEFINED};
@@ -40,7 +41,7 @@ namespace vov {
 
         std::unique_ptr<DescriptorPool> m_descriptorPool{};
 
-        std::unique_ptr<DescriptorSetLayout> m_descriptorSetLayout;
+        std::unique_ptr<DescriptorSetLayout> m_descriptorSetLayout{};
         VkPipelineLayout m_pipelineLayout{VK_NULL_HANDLE};
 
         std::unique_ptr<Pipeline> m_pipeline{};
@@ -48,12 +49,10 @@ namespace vov {
         std::vector<std::unique_ptr<Buffer>> m_uniformBuffers{};
         std::vector<VkDescriptorSet> m_descriptorSets{};
 
-        std::unique_ptr<DescriptorSetLayout> m_textureSetLayout;
-        VkDescriptorSet m_textureSet;
+        std::unique_ptr<DescriptorSetLayout> m_textureSetLayout{};
+        VkDescriptorSet m_textureSet{};
 
         std::vector<std::unique_ptr<GeoBuffer>> m_geoBuffers{};
-
-        VkSampler m_TextureSampler;
     };
 }
 

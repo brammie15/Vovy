@@ -50,9 +50,9 @@ namespace vov {
         m_indexCount = static_cast<uint32_t>(builder.indices.size());
         m_vertexCount = static_cast<uint32_t>(builder.vertices.size());
 
-        std::string texturePath = builder.modelPath + builder.texturePath;
-        std::cout << "Loading texture: " << texturePath << std::endl;
-        loadTexture(texturePath, builder.descriptorSetLayout, builder.descriptorPool);
+        // std::string texturePath = builder.modelPath + builder.texturePath;
+        // std::cout << "Loading texture: " << texturePath << std::endl;
+        loadTexture(builder.textureInfo, builder.descriptorSetLayout, builder.descriptorPool);
     }
 
     Mesh::~Mesh() = default;
@@ -71,8 +71,8 @@ namespace vov {
             );
         }
 
-        VkBuffer buffers[] = {m_vertexBuffer->getBuffer()};
-        VkDeviceSize offsets[] = {0};
+        const VkBuffer buffers[] = {m_vertexBuffer->getBuffer()};
+        const VkDeviceSize offsets[] = {0};
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
 
         if (m_usingIndexBuffer) {
@@ -137,13 +137,28 @@ namespace vov {
         m_device.copyBuffer(stagingBuffer.get(), m_indexBuffer.get(), bufferSize);
     }
 
-    void Mesh::loadTexture(const std::string& path, DescriptorSetLayout* descriptorSetLayout, DescriptorPool* descriptorPool) {
-        m_textureImage = ResourceManager::GetInstance().loadImage(m_device, path, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
+    void Mesh::loadTexture(const TextureInfo& textureInfo, DescriptorSetLayout* descriptorSetLayout, DescriptorPool* descriptorPool) {
+        m_albedoTexture =   ResourceManager::GetInstance().loadImage(m_device, textureInfo.basePath + textureInfo.albedoPath, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
+        m_normalTexture =   ResourceManager::GetInstance().loadImage(m_device, textureInfo.basePath + textureInfo.normalPath, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
+        m_specularTexture = ResourceManager::GetInstance().loadImage(m_device, textureInfo.basePath + textureInfo.specularPath, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
+        m_bumpTexture =     ResourceManager::GetInstance().loadImage(m_device, textureInfo.basePath + textureInfo.bumpPath, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
 
+        //Order is
+        //Albedo
+        //Normal
+        //Spec
+        //Bump
 
-        auto imageInfo = m_textureImage->descriptorInfo();
+        const auto albedoInfo = m_albedoTexture->descriptorInfo();
+        const auto normalInfo = m_normalTexture->descriptorInfo();
+        const auto specularInfo = m_specularTexture->descriptorInfo();
+        const auto bumpInfo = m_bumpTexture->descriptorInfo();
+
         DescriptorWriter(*descriptorSetLayout, *descriptorPool)
-                .writeImage(0, &imageInfo)
+                .writeImage(0, &albedoInfo)
+                .writeImage(1, &normalInfo)
+                .writeImage(2, &specularInfo)
+                .writeImage(3, &bumpInfo)
                 .build(m_descriptorSet);
     }
 }

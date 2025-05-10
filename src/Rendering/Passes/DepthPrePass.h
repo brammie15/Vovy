@@ -22,6 +22,8 @@ namespace vov {
         void Init(VkFormat depthFormat, uint32_t framesInFlight);
         void Record(const FrameContext& context, VkCommandBuffer commandBuffer, uint32_t imageIndex, Image& depthImage, Scene* scene, Camera* camera);
 
+        void Resize(VkExtent2D newSize);
+
         struct alignas(16) UniformBuffer
         {
             glm::mat4 view;

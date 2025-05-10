@@ -6,6 +6,7 @@ vov::GeoBuffer::GeoBuffer(vov::Device& deviceRef, VkExtent2D size): m_device{dev
 
 void vov::GeoBuffer::Resize(VkExtent2D size) {
     DestroyImages();
+    m_extent = size;
     CreateImages();
 }
 

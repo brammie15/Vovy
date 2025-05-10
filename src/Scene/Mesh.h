@@ -2,10 +2,10 @@
 #define VMESH_H
 
 #include <vector>
+#include <memory>
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <memory>
 #include <glm/glm.hpp>
 
 #include "Transform.h"
@@ -28,12 +28,22 @@ namespace vov {
             static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions();
         };
 
+        struct TextureInfo {
+            std::string basePath;
+
+            std::string albedoPath;
+            std::string normalPath;
+            std::string bumpPath;
+            std::string specularPath;
+        };
+
         struct Builder {
             std::vector<Vertex> vertices{};
             std::vector<uint32_t> indices{};
             glm::mat4 transform = glm::mat4(1.0f);
             std::string modelPath;
-            std::string texturePath;
+
+            TextureInfo textureInfo;
 
             //TODO: ask if this is properly done
             DescriptorSetLayout* descriptorSetLayout;
@@ -67,7 +77,7 @@ namespace vov {
     private:
         void createVertexBuffer(const std::vector<Vertex>& vertices);
         void createIndexBuffer(const std::vector<uint32_t>& indices);
-        void loadTexture(const std::string& path, DescriptorSetLayout* descriptorSetLayout, DescriptorPool* descriptorPool);
+        void loadTexture(const TextureInfo& textureInfo, DescriptorSetLayout* descriptorSetLayout, DescriptorPool* descriptorPool);
 
         Device& m_device;
         uint32_t m_vertexCount;
@@ -77,7 +87,10 @@ namespace vov {
         uint32_t m_indexCount;
         std::unique_ptr<Buffer> m_indexBuffer;
 
-        Image* m_textureImage{};
+        Image* m_albedoTexture{};
+        Image* m_bumpTexture{};
+        Image* m_normalTexture{};
+        Image* m_specularTexture{};
 
         Transform m_transform;
 

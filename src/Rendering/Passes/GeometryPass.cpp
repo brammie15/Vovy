@@ -27,8 +27,11 @@ vov::GeometryPass::GeometryPass(vov::Device& deviceRef, const CreateInfo& create
 
     //TODO: make it so this is like more global ish since i now manually match the models / mesh defintion
     m_textureSetLayout = DescriptorSetLayout::Builder(m_device)
-        .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) //Albedo texture
-        .build();
+            .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // Albedo
+           .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // Normal
+           .addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // Specular
+           .addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // Bump
+           .build();
 
     VkPushConstantRange pushConstantRange{};
     pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -107,49 +110,14 @@ vov::GeometryPass::GeometryPass(vov::Device& deviceRef, const CreateInfo& create
         "shaders/deferred.frag.spv",
         pipelineConfig
     );
-
-    VkSamplerCreateInfo samplerInfo{};
-    samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-    samplerInfo.magFilter = VK_FILTER_LINEAR;
-    samplerInfo.minFilter = VK_FILTER_LINEAR;
-    samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    samplerInfo.anisotropyEnable = VK_TRUE;
-    samplerInfo.maxAnisotropy = deviceRef.getProperties().limits.maxSamplerAnisotropy;
-    samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-    samplerInfo.mipLodBias = 0.0f;
-    samplerInfo.minLod = 0.0f;
-    samplerInfo.maxLod = VK_LOD_CLAMP_NONE;
-    samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-    samplerInfo.unnormalizedCoordinates = VK_FALSE;
-    samplerInfo.compareEnable = VK_FALSE;
-    samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
-
-    VkResult result = vkCreateSampler(deviceRef.device(), &samplerInfo, nullptr, &m_TextureSampler);
-    if (result != VK_SUCCESS) {
-        throw std::runtime_error("Failed to create texture sampler!");
-    }
-    //
-    // VkDescriptorImageInfo imageInfo{};
-    // imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    // imageInfo.imageView = testImg->getImageView();
-    // imageInfo.sampler = m_TextureSampler;
-    //
-    // DescriptorWriter(*m_textureSetLayout, *m_descriptorPool)
-    //     .writeImage(0, &imageInfo)
-    //     .build(m_textureSet);
-
-
 }
 
 vov::GeometryPass::~GeometryPass() {
     vkDestroyPipelineLayout(m_device.device(), m_pipelineLayout, nullptr);
-    vkDestroySampler(m_device.device(), m_TextureSampler, nullptr);
 }
 
 void vov::GeometryPass::Record(const FrameContext& context, VkCommandBuffer commandBuffer, int imageIndex, Image& depthImage, Scene* scene, Camera* Camera) {
-    UniformBuffer ubo;
+    UniformBuffer ubo{};
     ubo.view = Camera->GetViewMatrix();
     ubo.proj = Camera->GetProjectionMatrix();
     ubo.proj[1][1] *= -1;
@@ -159,8 +127,8 @@ void vov::GeometryPass::Record(const FrameContext& context, VkCommandBuffer comm
 
     m_geoBuffers[imageIndex]->TransitionWriting(commandBuffer);
 
-    auto& gBufferAttachments = m_geoBuffers[imageIndex]->GetRenderingAttachments();
-    uint32_t gBufferAttachmentCount = m_geoBuffers[imageIndex]->GetRenderAttachmentCount();
+    const auto& gBufferAttachments = m_geoBuffers[imageIndex]->GetRenderingAttachments();
+    const uint32_t gBufferAttachmentCount = m_geoBuffers[imageIndex]->GetRenderAttachmentCount();
     VkRenderingAttachmentInfo depthAttachment{};
     depthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
     depthAttachment.imageView = depthImage.getImageView();
@@ -169,7 +137,7 @@ void vov::GeometryPass::Record(const FrameContext& context, VkCommandBuffer comm
     depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 
     // Render Info
-    VkExtent2D extent = m_geoBuffers[imageIndex]->GetExtent();
+    const VkExtent2D extent = m_geoBuffers[imageIndex]->GetExtent();
     VkRenderingInfo renderingInfo{};
     renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
     renderingInfo.renderArea = VkRect2D{ VkOffset2D{0, 0}, extent };
@@ -198,8 +166,6 @@ void vov::GeometryPass::Record(const FrameContext& context, VkCommandBuffer comm
 
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorSets[imageIndex], 0, nullptr);
 
-    // vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 1, 1, &m_textureSet, 0, nullptr);
-
     m_pipeline->bind(commandBuffer);
 
     for (const auto& object : scene->getGameObjects()) {
@@ -209,4 +175,10 @@ void vov::GeometryPass::Record(const FrameContext& context, VkCommandBuffer comm
 
     vkCmdEndRendering(commandBuffer);
     DebugLabel::EndCmdLabel(commandBuffer);
+}
+
+void vov::GeometryPass::Resize(VkExtent2D newSize) const {
+    for (auto & buffer : m_geoBuffers) {
+        buffer->Resize(newSize);
+    }
 }
