@@ -14,10 +14,10 @@ namespace vov {
         void TransitionWriting(VkCommandBuffer commandBuffer);
         void TransitionSampling(VkCommandBuffer commandBuffer);
 
-        [[nodiscard]] const Image& GetAlbedo() const { return *m_Albedo; }
-        [[nodiscard]] const Image& GetNormal() const { return *m_Normal; }
-        [[nodiscard]] const Image& GetWorldPos() const { return *m_WorldPos; }
-        [[nodiscard]] const Image& GetSpecular() const { return *m_Specularity; }
+        [[nodiscard]] Image& GetAlbedo() const { return *m_Albedo; }
+        [[nodiscard]] Image& GetNormal() const { return *m_Normal; }
+        [[nodiscard]] Image& GetWorldPos() const { return *m_WorldPos; }
+        [[nodiscard]] Image& GetSpecular() const { return *m_Specularity; }
 
         [[nodiscard]] VkExtent2D GetExtent() const { return m_extent; }
 

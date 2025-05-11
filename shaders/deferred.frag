@@ -57,19 +57,27 @@ void main(){
     vec3 normal = normalize(inNormal);
     vec3 tangent = normalize(inTangent);
     vec3 bitTangent = normalize(inBitTangent);
-    outNormal = vec4(normal * 0.5 + 0.5, 1.0f);
 
-    if(textureBindingInfo.hasBump){
-        vec2 texelSize = 1.0 / textureSize(bumpSampler, 0);
-        mat3x3 tbn = mat3x3(tangent, bitTangent, normal);
-        float scale = 1.0f;
+    if(textureBindingInfo.hasBump) {
+        mat3 tbn = mat3(tangent, bitTangent, normal);
 
-        float height = texture(bumpSampler, inTexCoord).r;
-        float deltaX = -scale * (height - texture(bumpSampler, inTexCoord + vec2(texelSize.x, 0.0)).r);
-        float deltaY = -scale * (height - texture(bumpSampler, inTexCoord + vec2(0.0, texelSize.y)).r);
-        vec3 bumpNormal = normalize(tbn * vec3(deltaX, deltaY, 1));
-        outNormal = vec4(bumpNormal * 0.5 + 0.5, 1.0f);
+        vec2 texCoord = clamp(inTexCoord, vec2(0.001), vec2(0.999));
+        float height = texture(bumpSampler, texCoord).r;
+
+        vec2 texelSize = vec2(1.0) / textureSize(bumpSampler, 0);
+        float h1 = texture(bumpSampler, texCoord + vec2(texelSize.x, 0.0)).r;
+        float h2 = texture(bumpSampler, texCoord - vec2(texelSize.x, 0.0)).r;
+        float h3 = texture(bumpSampler, texCoord + vec2(0.0, texelSize.y)).r;
+        float h4 = texture(bumpSampler, texCoord - vec2(0.0, texelSize.y)).r;
+
+        float deltaX = (h1 - h2) * 0.5;
+        float deltaY = (h3 - h4) * 0.5;
+
+        vec3 bumpNormal = normalize(tbn * vec3(-deltaX, -deltaY, 1.0));
+        normal = bumpNormal;
     }
+
+    outNormal = vec4(clamp(normal * 0.5 + 0.5, vec3(0.0), vec3(1.0)), 1.0);
 
     outSpecularity.r = 0.0f;
     if(textureBindingInfo.hasSpecular){

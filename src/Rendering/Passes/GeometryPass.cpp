@@ -176,6 +176,8 @@ void vov::GeometryPass::Record(const FrameContext& context, VkCommandBuffer comm
 
     vkCmdEndRendering(commandBuffer);
     DebugLabel::EndCmdLabel(commandBuffer);
+
+    m_geoBuffers[imageIndex]->TransitionSampling(commandBuffer);
 }
 
 void vov::GeometryPass::Resize(VkExtent2D newSize) const {

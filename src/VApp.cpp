@@ -103,6 +103,11 @@ void VApp::run() {
 
     m_geoPass = std::make_unique<vov::GeometryPass>(m_device, createInfo);
 
+    m_compositePass = std::make_unique<vov::CompositePass>(m_device);
+    m_compositePass->Init(vov::Swapchain::MAX_FRAMES_IN_FLIGHT, m_renderer.getSwapchain());
+
+
+
 
     //
     // vov::GameObjectRenderSystem renderSystem{
@@ -216,6 +221,10 @@ void VApp::run() {
 
             m_geoPass->Record(shadowFrameInfo, commandBuffer, frameIndex, depthImage, m_currentScene, &camera);
 
+            m_compositePass->UpdateDescriptors(
+                frameIndex, m_geoPass->GetAlbedo(frameIndex), m_geoPass->GetNormal(frameIndex), m_geoPass->GetSpecualar(frameIndex), m_geoPass->GetWorldPos(frameIndex)
+            );
+
 
             m_renderer.beginSwapChainRenderPass(commandBuffer);
             //
@@ -224,6 +233,7 @@ void VApp::run() {
             // }
             //
             // lineRenderSystem.renderBezier(frameInfo, m_currentScene->getBezierCurves());
+            m_compositePass->Record(shadowFrameInfo, commandBuffer, frameIndex, *m_geoPass, m_renderer.getSwapchain());
             //
             // renderSystem.renderGameObjects(frameInfo, m_currentScene->getGameObjects());
             //

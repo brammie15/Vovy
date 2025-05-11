@@ -53,6 +53,8 @@ namespace vov {
 
         void SetResizeCallback(const std::function<void(VkExtent2D)>& func) { m_resizeCallback = func; }
 
+        Swapchain& getSwapchain(){ return *m_swapChain; }
+
     private:
         void createCommandBuffers();
         void freeCommandBuffers();

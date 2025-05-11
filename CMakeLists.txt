@@ -29,6 +29,7 @@ add_executable(${PROJECT_NAME}
 
         ${SRC_ROOT}/Rendering/Passes/DepthPrePass.h ${SRC_ROOT}/Rendering/Passes/DepthPrePass.cpp
         ${SRC_ROOT}/Rendering/Passes/GeometryPass.h ${SRC_ROOT}/Rendering/Passes/GeometryPass.cpp
+        ${SRC_ROOT}/Rendering/Passes/CompositePass.h ${SRC_ROOT}/Rendering/Passes/CompositePass.cpp
 
         ${SRC_ROOT}/Resources/Buffer.h ${SRC_ROOT}/Resources/Buffer.cpp
         ${SRC_ROOT}/Resources/Image.h ${SRC_ROOT}/Resources/Image.cpp

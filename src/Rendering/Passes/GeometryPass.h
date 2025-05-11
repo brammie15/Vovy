@@ -33,6 +33,11 @@ namespace vov {
 
         void Resize(VkExtent2D newSize) const;
 
+        [[nodiscard]] Image& GetAlbedo(uint32_t imageIndex) const { return m_geoBuffers[imageIndex]->GetAlbedo(); }
+        [[nodiscard]] Image& GetNormal(uint32_t imageIndex) const { return m_geoBuffers[imageIndex]->GetNormal(); }
+        [[nodiscard]] Image& GetSpecualar(uint32_t imageIndex) const { return m_geoBuffers[imageIndex]->GetSpecular(); }
+        [[nodiscard]] Image& GetWorldPos(uint32_t imageIndex) const { return m_geoBuffers[imageIndex]->GetWorldPos(); }
+
     private:
         Device& m_device;
 
