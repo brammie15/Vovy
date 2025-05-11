@@ -12,12 +12,9 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/string_cast.hpp>
 
-#include "Descriptors/DescriptorSetLayout.h"
 #include "Descriptors/DescriptorWriter.h"
-#include "Rendering/RenderSystems/GameObjectRenderSystem.h"
 #include "Rendering/RenderSystems/ImguiRenderSystem.h"
 #include "Rendering/RenderSystems/LineRenderSystem.h"
-#include "Rendering/RenderSystems/ShadowRenderSystem.h"
 #include "Resources/Buffer.h"
 #include "Scene/DirectionalLight.h"
 #include "Scene/Mesh.h"
@@ -48,7 +45,7 @@ VApp::VApp() {
 
 
     loadGameObjects();
-    m_currentScene = m_sigmaVanniScene.get();
+    m_currentScene = m_sponzaScene.get();
     m_currentScene->sceneLoad();
 
     m_renderer.SetResizeCallback([&](VkExtent2D newSize) {

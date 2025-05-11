@@ -27,6 +27,8 @@ namespace vov {
         attributeDescriptions.push_back({1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color)});
         attributeDescriptions.push_back({2, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, texCoord)});
         attributeDescriptions.push_back({3, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal)});
+        attributeDescriptions.push_back({4, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, tangent)});
+        attributeDescriptions.push_back({5, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, bitTangent)});
 
         return attributeDescriptions;
     }
@@ -154,11 +156,37 @@ namespace vov {
         const auto specularInfo = m_specularTexture->descriptorInfo();
         const auto bumpInfo = m_bumpTexture->descriptorInfo();
 
+        Mesh::TextureBindingInfo info{};
+        info.hasAlbedo = !textureInfo.albedoPath.empty();
+        info.hasNormal = !textureInfo.normalPath.empty();
+        info.hasSpecular = !textureInfo.specularPath.empty();
+        info.hasBump = !textureInfo.bumpPath.empty();
+
+
+        auto stagingBuffer = std::make_unique<Buffer>(
+            m_device, sizeof(Mesh::TextureBindingInfo), VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY
+        );
+
+        stagingBuffer->map();
+        stagingBuffer->copyTo(&info, sizeof(Mesh::TextureBindingInfo));
+        stagingBuffer->unmap();
+
+        m_textureBindingInfoBuffer = std::make_unique<Buffer>(
+            m_device,
+            sizeof(Mesh::TextureBindingInfo),
+            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+            VMA_MEMORY_USAGE_GPU_ONLY
+        );
+
+        m_device.copyBuffer(stagingBuffer.get(), m_textureBindingInfoBuffer.get(), sizeof(Mesh::TextureBindingInfo));
+
+        auto bufferDescription = m_textureBindingInfoBuffer->descriptorInfo();
         DescriptorWriter(*descriptorSetLayout, *descriptorPool)
-                .writeImage(0, &albedoInfo)
-                .writeImage(1, &normalInfo)
-                .writeImage(2, &specularInfo)
-                .writeImage(3, &bumpInfo)
+                .writeBuffer(0, &bufferDescription)
+                .writeImage(1, &albedoInfo)
+                .writeImage(2, &normalInfo)
+                .writeImage(3, &specularInfo)
+                .writeImage(4, &bumpInfo)
                 .build(m_descriptorSet);
     }
 }

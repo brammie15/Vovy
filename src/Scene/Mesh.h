@@ -23,6 +23,8 @@ namespace vov {
             glm::vec3 color{};
             glm::vec2 texCoord{};
             glm::vec3 normal{};
+            glm::vec3 tangent{};
+            glm::vec3 bitTangent{};
 
             static std::vector<VkVertexInputBindingDescription> getBindingDescriptions();
             static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions();
@@ -48,6 +50,13 @@ namespace vov {
             //TODO: ask if this is properly done
             DescriptorSetLayout* descriptorSetLayout;
             DescriptorPool* descriptorPool;
+        };
+
+        struct TextureBindingInfo {
+            int hasAlbedo{true};
+            int hasNormal{false};
+            int hasSpecular{false};
+            int hasBump{false};
         };
 
         Mesh(Device& device, const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices);
@@ -91,6 +100,8 @@ namespace vov {
         Image* m_bumpTexture{};
         Image* m_normalTexture{};
         Image* m_specularTexture{};
+
+        std::unique_ptr<Buffer> m_textureBindingInfoBuffer{};
 
         Transform m_transform;
 
