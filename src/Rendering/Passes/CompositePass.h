@@ -13,10 +13,8 @@ namespace vov {
             glm::mat4 model;
         };
 
-        explicit CompositePass(Device& deviceRef) : m_device{deviceRef} {}
+        explicit CompositePass(Device& deviceRef,uint32_t framesInFlight, const Swapchain& swapchain);
         ~CompositePass();
-
-        void Init(uint32_t framesInFlight, const Swapchain& swapchain);
 
         void Record(const FrameContext& context, VkCommandBuffer commandBuffer, uint32_t imageIndex, const GeometryPass& geoPass, const Swapchain& swapchain);
 

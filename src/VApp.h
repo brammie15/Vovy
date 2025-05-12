@@ -48,6 +48,10 @@ public:
 private:
     void loadGameObjects();
 
+    double m_fpsAccumulated = 0.0;
+    int m_fpsFrameCount = 0;
+    double m_avgFps = 0.0;
+
     vov::Window m_window{WIDTH, HEIGHT, "Hello Vulkan!"};
     vov::Device m_device{m_window};
     vov::Renderer m_renderer{m_window, m_device};

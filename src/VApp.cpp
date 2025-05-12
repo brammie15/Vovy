@@ -103,40 +103,30 @@ void VApp::run() {
 
     m_geoPass = std::make_unique<vov::GeometryPass>(m_device, createInfo);
 
-    m_compositePass = std::make_unique<vov::CompositePass>(m_device);
-    m_compositePass->Init(vov::Swapchain::MAX_FRAMES_IN_FLIGHT, m_renderer.getSwapchain());
+    m_compositePass = std::make_unique<vov::CompositePass>(m_device, vov::Swapchain::MAX_FRAMES_IN_FLIGHT, m_renderer.getSwapchain());
 
 
-
-
-    //
-    // vov::GameObjectRenderSystem renderSystem{
-    //     m_device,
-    //     {globalSetLayout->getDescriptorSetLayout(), modelSetLayout->getDescriptorSetLayout()}
-    // };
-    //
     vov::ImguiRenderSystem imguiRenderSystem{
         m_device,
         VK_FORMAT_B8G8R8A8_SRGB, //TODO: this should really be a global
         static_cast<int>(m_window.getWidth()),
         static_cast<int>(m_window.getHeight())
     };
-    //
-    // vov::LineRenderSystem lineRenderSystem{
-    //     m_device,
-    //     {globalSetLayout->getDescriptorSetLayout(), modelSetLayout->getDescriptorSetLayout()}
-    // };
-    //
-    // vov::ShadowRenderSystem shadowRenderSystem{
-    //     m_device,
-    //     {globalSetLayout->getDescriptorSetLayout(), modelSetLayout->getDescriptorSetLayout()}
-    // };
 
     vov::Camera camera{{-2.0f, 1.0f, 0}, {0.0f, 1.0f, 0.0f}};
     camera.setAspectRatio(m_renderer.GetAspectRatio());
 
     while (!m_window.ShouldClose()) {
         vov::DeltaTime::GetInstance().Update();
+        double currentFps = 1.0 / vov::DeltaTime::GetInstance().GetDeltaTime();
+        m_fpsAccumulated += currentFps;
+        m_fpsFrameCount++;
+
+        if (m_fpsFrameCount >= 100) {  // Average over 100 frames
+            m_avgFps = m_fpsAccumulated / m_fpsFrameCount;
+            m_fpsAccumulated = 0.0;
+            m_fpsFrameCount = 0;
+        }
 
 #pragma region INPUT
         m_window.PollInput();
@@ -277,6 +267,7 @@ void VApp::imGui() {
 
     ImGui::Begin("Stats");
     ImGui::Text("FPS: %.1f", 1.0f / vov::DeltaTime::GetInstance().GetDeltaTime());
+    ImGui::Text("Avg FPS: %.1f", m_avgFps);
     ImGui::Text("Frame Time: %.3f ms", vov::DeltaTime::GetInstance().GetDeltaTime() * 1000.0f);
     ImGui::Text("Window Size: %d x %d", m_window.getWidth(), m_window.getHeight());
     ImGui::End();

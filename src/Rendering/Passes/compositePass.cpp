@@ -7,12 +7,8 @@
 #include "Utils/DebugLabel.h"
 #include "Utils/ResourceManager.h"
 
-vov::CompositePass::~CompositePass() {
-    vkDestroyPipelineLayout(m_device.device(), m_pipelineLayout, nullptr);
-}
-
-void vov::CompositePass::Init(uint32_t framesInFlight, const Swapchain& swapchain) {
-    m_descriptorPool = DescriptorPool::Builder(m_device)
+vov::CompositePass::CompositePass(Device& deviceRef, uint32_t framesInFlight, const Swapchain& swapchain): m_device{deviceRef} {
+      m_descriptorPool = DescriptorPool::Builder(m_device)
             .setMaxSets(framesInFlight * 2)
             .addPoolSize(VK_DESCRIPTOR_TYPE_SAMPLER, framesInFlight)
             .build();
@@ -92,6 +88,10 @@ void vov::CompositePass::Init(uint32_t framesInFlight, const Swapchain& swapchai
         }
 
     }
+}
+
+vov::CompositePass::~CompositePass() {
+    vkDestroyPipelineLayout(m_device.device(), m_pipelineLayout, nullptr);
 }
 
 void vov::CompositePass::Record(const FrameContext& context, VkCommandBuffer commandBuffer, uint32_t imageIndex, const GeometryPass& geoPass, const Swapchain& swapchain) {

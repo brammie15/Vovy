@@ -40,7 +40,7 @@ void main() {
 
     // Uncomment to debug specific components:
     // outColor.rgb = albedo; // Show just albedo
-    // outColor.rgb = normal * 0.5 + 0.5; // Show normals (mapped back to [0,1])
+     outColor.rgb = normal * 0.5 + 0.5; // Show normals (mapped back to [0,1])
     // outColor.rgb = vec3(specularIntensity); // Show specular map
     // outColor.rgb = worldPos; // Show world positions (may need scaling)
     // outColor.rgb = vec3(inTexcoord.x, inTexcoord.y, 0); // Show UV coordinates

@@ -52,6 +52,8 @@ vec3 boolsToColor(bool hasNormal, bool hasSpecular, bool hasBump) {
 void main(){
     if(textureBindingInfo.hasAlbedo){
         outColor.rgb = inColor * texture(albedoSampler, inTexCoord).rgb;
+    } else {
+        outColor.rbg = vec3(1.0f, 0.0f, 1.0f);
     }
 
     vec3 normal = normalize(inNormal);
