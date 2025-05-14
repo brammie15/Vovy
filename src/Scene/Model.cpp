@@ -9,6 +9,7 @@
 
 #include "Descriptors/DescriptorWriter.h"
 #include "Rendering/RenderSystems/GameObjectRenderSystem.h"
+#include "Utils/Timer.h"
 
 namespace vov {
     Model::Model(Device& deviceRef, const std::string& path, GameObject* parent): m_device{deviceRef} {
@@ -20,7 +21,7 @@ namespace vov {
         generateMeshes();
     }
 
-    void Model::draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout,bool isDepthPass) const {
+    void Model::draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, bool isDepthPass) const {
         for (const auto& mesh: m_meshes) {
             PushConstantData push{};
             push.modelMatrix = mesh->getTransform().GetWorldMatrix();
@@ -58,16 +59,17 @@ namespace vov {
     }
 
     void Model::updateShadowMapDescriptorSet(VkDescriptorImageInfo shadowMapDescriptorInfo) {
-        for (auto& mesh : m_meshes) {
+        for (auto& mesh: m_meshes) {
             DescriptorWriter(*m_descriptorSetLayout, *m_descriptorPool)
-                .writeImage(1, &shadowMapDescriptorInfo)
-                .overwrite(mesh->getDescriptorSet());
+                    .writeImage(1, &shadowMapDescriptorInfo)
+                    .overwrite(mesh->getDescriptorSet());
         }
     }
 
     void Model::loadModel(std::string path) {
+        Timer loadModelTimer("path");
         Assimp::Importer import;
-        const aiScene* scene = import.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
+        const aiScene* scene = import.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace | aiProcess_GenNormals);
 
         if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
             std::cout << "ERROR::ASSIMP::" << import.GetErrorString() << std::endl;
@@ -77,6 +79,7 @@ namespace vov {
 
         // PrintMaterials(scene);
         processNode(scene->mRootNode, scene);
+        loadModelTimer.stop();
     }
 
     static glm::mat4 convertMatrix(const aiMatrix4x4& m) {

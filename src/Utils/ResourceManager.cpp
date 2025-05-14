@@ -1,14 +1,17 @@
 #include "ResourceManager.h"
 
+#include <filesystem>
 #include <iostream>
 
 #include "Utils/Timer.h"
 
 namespace vov {
     Image *ResourceManager::loadImage(Device& deviceRef, const std::string& filename, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage) {
-        auto it = m_images.find(filename);
+        const auto it = m_images.find(filename);
         if (it != m_images.end()) {
-            std::cout << "Image already loaded: " << filename << std::endl;
+            if (!filename.empty() && (std::filesystem::exists(filename) && std::filesystem::is_regular_file(filename))) {
+                std::cout << "Image already loaded: " << filename << std::endl;
+            }
             return it->second.get();
         }
 

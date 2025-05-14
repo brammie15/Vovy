@@ -22,6 +22,7 @@
 #include "Utils/Camera.h"
 #include "Utils/DeltaTime.h"
 #include "Utils/FrameContext.h"
+#include "Utils/Timer.h"
 
 struct GlobalUBO {
     glm::mat4 view;
@@ -45,7 +46,7 @@ VApp::VApp() {
 
 
     loadGameObjects();
-    m_currentScene = m_sponzaScene.get();
+    m_currentScene = m_bezierTestScene.get();
     m_currentScene->sceneLoad();
 
     m_renderer.SetResizeCallback([&](VkExtent2D newSize) {
@@ -133,9 +134,9 @@ void VApp::run() {
         imguiRenderSystem.beginFrame();
 
         this->imGui();
-        // if (!m_currentScene->getGameObjects().empty() && m_selectedTransform) {
-        //     imguiRenderSystem.drawGizmos(&camera, m_selectedTransform, "Maintransform");
-        // }
+        if (!m_currentScene->getGameObjects().empty() && m_selectedTransform) {
+            imguiRenderSystem.drawGizmos(&camera, m_selectedTransform, "Maintransform");
+        }
         //
         // if (m_bezierFollowerTransform && !m_currentScene->getBezierCurves().empty()) {
         //     const auto& curve = m_currentScene->getBezierCurves()[0]; // Using first curve for now
@@ -476,10 +477,12 @@ void VApp::loadGameObjects() {
 
     auto sponzaSceneLoadFunction = [&] (vov::Scene* scene) {
         auto sponza = vov::GameObject::createGameObject();
-        const auto mainSponzaModel = std::make_shared<vov::Model>(m_device, "resources/sponza/sponza.obj", sponza.get());
+        const auto mainSponzaModel = std::make_shared<vov::Model>(m_device, "resources/NewSponza/Sponza/glTF/Sponza.gltf", sponza.get());
         sponza->model = std::move(mainSponzaModel);
         scene->addGameObject(std::move(sponza));
     };
+
+
     m_sponzaScene->setSceneLoadFunction(sponzaSceneLoadFunction);
 
 
@@ -497,6 +500,12 @@ void VApp::loadGameObjects() {
         const auto bezierTestModel = std::make_shared<vov::Model>(m_device, "resources/XYZaxis.obj", bezierTestObject.get());
         bezierTestObject->model = std::move(bezierTestModel);
         scene->addGameObject(std::move(bezierTestObject));
+
+        auto normalTest = vov::GameObject::createGameObject();
+        // const auto normalTestModel = std::make_shared<vov::Model>(m_device, "resources/normalTest/normalTest.gltf", normalTest.get());
+        const auto normalTestModel = std::make_shared<vov::Model>(m_device, "resources/mc/vokselia_spawn.obj", normalTest.get());
+        normalTest->model = std::move(normalTestModel);
+        scene->addGameObject(std::move(normalTest));
     };
 
     m_bezierTestScene->setSceneLoadFunction(bezierTestSceneLoadFunction);

@@ -1,4 +1,7 @@
 #version 450
+#extension GL_GOOGLE_include_directive : enable
+
+#include "lighting.glsl"
 
 layout(set = 0, binding = 0) uniform MatrixUBO
 {
@@ -31,10 +34,13 @@ layout(location = 3) in vec3 inNormal;
 layout(location = 4) in vec3 inTangent;
 layout(location = 5) in vec3 inBitTangent;
 
+
 layout(location = 0) out vec4 outColor;
 layout(location = 1) out vec4 outNormal;
 layout(location = 2) out vec4 outWorldPos;
 layout(location = 3) out float outSpecularity;
+
+const bool USE_BUMP_MAP = true;
 
 vec3 boolsToColor(bool hasNormal, bool hasSpecular, bool hasBump) {
 
@@ -49,20 +55,22 @@ vec3 boolsToColor(bool hasNormal, bool hasSpecular, bool hasBump) {
     return vec3(r, g, b);
 }
 
+
+
 void main(){
     if(textureBindingInfo.hasAlbedo){
         outColor.rgb = inColor * texture(albedoSampler, inTexCoord).rgb;
     } else {
-        outColor.rbg = vec3(1.0f, 0.0f, 1.0f);
+        outColor.rbg = vec3(1.0f, 1.0f, 1.0f);
     }
 
     vec3 normal = normalize(inNormal);
     vec3 tangent = normalize(inTangent);
     vec3 bitTangent = normalize(inBitTangent);
 
-    if(textureBindingInfo.hasBump) {
+    if (USE_BUMP_MAP && textureBindingInfo.hasBump) {
+        // Bump mapping code
         mat3 tbn = mat3(tangent, bitTangent, normal);
-
         vec2 texCoord = clamp(inTexCoord, vec2(0.001), vec2(0.999));
         float height = texture(bumpSampler, texCoord).r;
 
@@ -77,6 +85,13 @@ void main(){
 
         vec3 bumpNormal = normalize(tbn * vec3(-deltaX, -deltaY, 1.0));
         normal = bumpNormal;
+    } else if (!USE_BUMP_MAP && textureBindingInfo.hasNormal) {
+        // Normal mapping code
+        vec3 testBitangent = cross(normal, tangent);
+        mat3 tbn = mat3(tangent, testBitangent, normal);
+        vec3 sampledNormal = texture(normalSampler, inTexCoord).rgb;
+        sampledNormal = sampledNormal * 2.0 - 1.0;
+        normal = normalize(tbn * sampledNormal);
     }
 
     outNormal = vec4(clamp(normal * 0.5 + 0.5, vec3(0.0), vec3(1.0)), 1.0);
@@ -87,4 +102,6 @@ void main(){
     }
 
     outWorldPos.rgb = inWorldPos.xyz;
+
+//    outNormal = vec4(boolsToColor(textureBindingInfo.hasNormal, textureBindingInfo.hasSpecular, textureBindingInfo.hasBump), 1.0f);
 }
