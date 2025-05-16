@@ -3,6 +3,7 @@
 #include "Resources/Buffer.h"
 
 #include <chrono>
+#include <filesystem>
 #include <iostream>
 #include <stdexcept>
 
@@ -156,11 +157,15 @@ namespace vov {
         const auto specularInfo = m_specularTexture->descriptorInfo();
         const auto bumpInfo = m_bumpTexture->descriptorInfo();
 
+        auto is_file = [](const std::string& path) {
+            return !path.empty();
+        };
+
         Mesh::TextureBindingInfo info{};
-        info.hasAlbedo = !textureInfo.albedoPath.empty();
-        info.hasNormal = !textureInfo.normalPath.empty();
-        info.hasSpecular = !textureInfo.specularPath.empty();
-        info.hasBump = !textureInfo.bumpPath.empty();
+        info.hasAlbedo = is_file(textureInfo.albedoPath);
+        info.hasNormal = is_file(textureInfo.normalPath);
+        info.hasSpecular = is_file(textureInfo.specularPath);
+        info.hasBump = is_file(textureInfo.bumpPath);
 
 
         auto stagingBuffer = std::make_unique<Buffer>(

@@ -1,41 +1,82 @@
 #version 450
+#extension GL_GOOGLE_include_directive : enable
+#include "lighting.glsl"
 
-layout(set = 0, binding = 0) uniform sampler2D albedoMap;
-layout(set = 0, binding = 1) uniform sampler2D normalMap;
-layout(set = 0, binding = 2) uniform sampler2D specularityMap;
-layout(set = 0, binding = 3) uniform sampler2D worldPosMap;
+layout(set = 0, binding = 0) uniform globalUBO
+{
+    vec4 cameraPos;
+} ubo;
+
+layout(set = 1, binding = 0) uniform sampler2D albedoMap;
+layout(set = 1, binding = 1) uniform sampler2D normalMap;
+layout(set = 1, binding = 2) uniform sampler2D metallicRoughnessMap;
+layout(set = 1, binding = 3) uniform sampler2D worldPosMap;
 
 layout(location = 0) in vec2 inTexcoord;
 
 layout(location = 0) out vec4 outColor;
 
-void main() {
-    // Hardcoded light parameters
-    vec3 lightPosition = vec3(2.0, 5.0, 3.0);  // World space light position
-    vec3 lightColor = vec3(1.0, 1.0, 1.0);      // White light
-    vec3 viewPosition = vec3(0.0, 0.0, 5.0);     // Camera position
-
+void main()
+{
+    // Sample textures
     vec3 albedo = texture(albedoMap, inTexcoord).rgb;
-    vec3 normal = texture(normalMap, inTexcoord).rgb * 2.0 - 1.0;
-    float specularIntensity = texture(specularityMap, inTexcoord).r;
+    vec3 normal = normalize(texture(normalMap, inTexcoord).rgb * 2.0 - 1.0);
     vec3 worldPos = texture(worldPosMap, inTexcoord).rgb;
+    vec2 metallicRoughness = texture(metallicRoughnessMap, inTexcoord).bg;
+    float metallic = metallicRoughness.x;
+    float roughness = metallicRoughness.y;
+    float ao = 1.0; // You might want to sample this from a texture too
 
-    vec3 lightDir = normalize(lightPosition - worldPos);
-    vec3 viewDir = normalize(viewPosition - worldPos);
-    vec3 reflectDir = reflect(-lightDir, normal);
+    // Single directional light parameters
+    vec3 lightDirection = normalize(vec3(0.577f, -0.577f, -0.577f)); // Direction pointing down and slightly forward
+    vec3 lightColor = vec3(1.0, 1.0, 1.0); // White light
+    vec3 camPos = ubo.cameraPos.xyz;
 
-    float diff = max(dot(normal, lightDir), 0.0);
-    vec3 diffuse = diff * lightColor * albedo;
+    vec3 N = normal;
+    vec3 V = normalize(camPos - worldPos);
 
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32.0);
-    vec3 specular = specularIntensity * spec * lightColor;
+    vec3 F0 = vec3(0.04);
+    F0 = mix(F0, albedo, metallic);
 
-    outColor.rgb = diffuse + specular;
+    // reflectance equation
+    vec3 Lo = vec3(0.0);
+
+    // calculate per-light radiance (directional light has no position or attenuation)
+    vec3 L = normalize(-lightDirection);
+    vec3 H = normalize(V + L);
+    vec3 radiance = lightColor;
+
+    // cook-torrance brdf
+    float NDF = NormalDistributionGGX(N, H, roughness);
+    float G = GeometrySmith(N, V, L, roughness);
+    vec3 F = fresnelSchlick(max(dot(H, V), 0.0), F0);
+
+    vec3 kS = F;
+    vec3 kD = vec3(1.0) - kS;
+    kD *= 1.0 - metallic;
+
+    vec3 numerator = NDF * G * F;
+    float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001;
+    vec3 specular = numerator / denominator;
+
+    // add to outgoing radiance Lo
+    float NdotL = max(dot(N, L), 0.0);
+    Lo = (kD * albedo / PI + specular) * radiance * NdotL;
+
+    vec3 ambient = vec3(0.03) * albedo * ao;
+    vec3 color = ambient + Lo;
+
+    color = color / (color + vec3(1.0));
+    color = pow(color, vec3(1.0/2.2));
+
+    // Debug outputs (uncomment what you need)
+    // outColor.rgb = albedo; // albedo
+    // outColor.rgb = normal * 0.5 + 0.5; // normal
+//     outColor.rgb = vec3(metallic); // metallic
+//     outColor.rgb = vec3(roughness); // roughness
+    // outColor.rgb = worldPos; // worldpos
+    // outColor.rgb = vec3(inTexcoord.x, inTexcoord.y, 0); // UV
+    outColor.rgb = color; // final color
     outColor.a = 1.0;
 
-     outColor.rgb = albedo; //albedo
-//     outColor.rgb = normal * 0.5 + 0.5; // normal
-//     outColor.rgb = vec3(specularIntensity); // s pecular
-     //outColor.rgb = worldPos; // worldpos
-//     outColor.rgb = vec3(inTexcoord.x, inTexcoord.y, 0); //UV
 }

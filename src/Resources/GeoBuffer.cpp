@@ -67,11 +67,11 @@ void vov::GeoBuffer::CreateImages() {
     m_Specularity = std::make_unique<Image>(
         m_device,
         m_extent.width, m_extent.height,
-        VK_FORMAT_R32_SFLOAT,
+        VK_FORMAT_R32G32B32A32_SFLOAT,
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
         VMA_MEMORY_USAGE_AUTO
     );
-    m_Specularity->SetName("Specularity Buffer");
+    m_Specularity->SetName("MetallicRoughness Buffer");
 
     m_AllImages.push_back(m_Albedo.get());
     m_AllImages.push_back(m_Normal.get());

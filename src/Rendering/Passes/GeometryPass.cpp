@@ -30,7 +30,7 @@ vov::GeometryPass::GeometryPass(vov::Device& deviceRef, const CreateInfo& create
             .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)
             .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // Albedo
             .addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // Normal
-            .addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // Specular
+            .addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // Specular / metalic
             .addBinding(4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) // Bump
             .build();
 
@@ -86,12 +86,12 @@ vov::GeometryPass::GeometryPass(vov::Device& deviceRef, const CreateInfo& create
     //TODO: fix this to not be static
     uint32_t gBufferAttachmentCount = 4;
 
-    VkPipelineColorBlendAttachmentState colorBlendAttachemnt = pipelineConfig.colorBlendAttachment;
+    VkPipelineColorBlendAttachmentState colorBlendAttachment = pipelineConfig.colorBlendAttachment;
     std::array<VkPipelineColorBlendAttachmentState, 4> colorBlendAttachments = {
-        colorBlendAttachemnt,
-        colorBlendAttachemnt,
-        colorBlendAttachemnt,
-        colorBlendAttachemnt
+        colorBlendAttachment,
+        colorBlendAttachment,
+        colorBlendAttachment,
+        colorBlendAttachment
     };
 
     pipelineConfig.depthStencilInfo.depthTestEnable = VK_TRUE;

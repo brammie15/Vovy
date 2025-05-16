@@ -189,25 +189,33 @@ namespace vov {
             aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
             aiString path;
 
-            if (material->GetTexture(aiTextureType_DIFFUSE, 0, &path) == AI_SUCCESS)
+            if (material->GetTexture(aiTextureType_DIFFUSE, 0, &path) == AI_SUCCESS) {
                 textureInfo.albedoPath = path.C_Str();
-            else
+            } else {
                 textureInfo.albedoPath = "";
+            }
 
-            if (material->GetTexture(aiTextureType_NORMALS, 0, &path) == AI_SUCCESS)
+            if (material->GetTexture(aiTextureType_NORMALS, 0, &path) == AI_SUCCESS) {
                 textureInfo.normalPath = path.C_Str();
-            else
+            } else {
                 textureInfo.normalPath = "";
-
-            if (material->GetTexture(aiTextureType_SPECULAR, 0, &path) == AI_SUCCESS)
+            }
+            if (
+                material->GetTexture(aiTextureType_SPECULAR, 0, &path) == AI_SUCCESS ||
+                material->GetTexture(aiTextureType_MAYA_SPECULAR_ROUGHNESS, 0, &path) == AI_SUCCESS ||
+                material->GetTexture(aiTextureType_METALNESS, 0, &path) == AI_SUCCESS
+            ) {
                 textureInfo.specularPath = path.C_Str();
-            else
+                std::cout << path.C_Str() << std::endl;
+            } else {
                 textureInfo.specularPath = "";
+            }
 
-            if (material->GetTexture(aiTextureType_HEIGHT, 0, &path) == AI_SUCCESS)
+            if (material->GetTexture(aiTextureType_HEIGHT, 0, &path) == AI_SUCCESS) {
                 textureInfo.bumpPath = path.C_Str();
-            else
+            } else {
                 textureInfo.bumpPath = "";
+            }
         }
 
         textureInfo.basePath = builder.modelPath;
@@ -255,11 +263,5 @@ namespace vov {
             }
             m_meshes.push_back(std::move(mesh));
         }
-
-        // std::for_each(std::execution::par_unseq, m_builders.begin(), m_builders.end(), [this](VMesh::Builder& builder) {
-        //     std::unique_ptr<VMesh> mesh = std::make_unique<VMesh>(m_device, builder);
-        //     mesh->getTransform().SetWorldMatrix(builder.transform); // Apply transform
-        //     m_meshes.push_back(std::move(mesh));
-        // });
     }
 }

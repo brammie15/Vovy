@@ -50,8 +50,8 @@ namespace vov {
         uint32_t m_width;
         uint32_t m_height;
 
-        glm::vec2 m_lastMousePos;
-        glm::vec2 m_currentMousePos;
+        glm::vec2 m_lastMousePos{};
+        glm::vec2 m_currentMousePos{};
 
         bool m_resized = false;
         std::string m_windowName;

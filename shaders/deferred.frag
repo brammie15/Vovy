@@ -24,7 +24,7 @@ layout(std140, set = 1, binding = 0) uniform bindingInfo{
 
 layout(set = 1, binding = 1) uniform sampler2D albedoSampler;
 layout(set = 1, binding = 2) uniform sampler2D normalSampler;
-layout(set = 1, binding = 3) uniform sampler2D specularSampler;
+layout(set = 1, binding = 3) uniform sampler2D metallicRoughnessSampler;
 layout(set = 1, binding = 4) uniform sampler2D bumpSampler;
 
 layout(location = 0) in vec3 inWorldPos;
@@ -35,12 +35,12 @@ layout(location = 4) in vec3 inTangent;
 layout(location = 5) in vec3 inBitTangent;
 
 
-layout(location = 0) out vec4 outColor;
+layout(location = 0) out vec4 outAlbedo;
 layout(location = 1) out vec4 outNormal;
 layout(location = 2) out vec4 outWorldPos;
-layout(location = 3) out float outSpecularity;
+layout(location = 3) out vec4 outMetallicRoughness;
 
-const bool USE_BUMP_MAP = true;
+const bool USE_BUMP_MAP = false;
 
 vec3 boolsToColor(bool hasNormal, bool hasSpecular, bool hasBump) {
 
@@ -58,11 +58,13 @@ vec3 boolsToColor(bool hasNormal, bool hasSpecular, bool hasBump) {
 
 
 void main(){
-    if(textureBindingInfo.hasAlbedo){
-        outColor.rgb = inColor * texture(albedoSampler, inTexCoord).rgb;
+
+    if(textureBindingInfo.hasAlbedo) {
+        outAlbedo.rgb = pow(texture(albedoSampler, inTexCoord).rgb, vec3(2.2)); // Assume sRGB
     } else {
-        outColor.rbg = vec3(1.0f, 1.0f, 1.0f);
+        outAlbedo.rgb = pow(inColor, vec3(2.2));
     }
+    outAlbedo.a = 1.0;
 
     vec3 normal = normalize(inNormal);
     vec3 tangent = normalize(inTangent);
@@ -96,10 +98,16 @@ void main(){
 
     outNormal = vec4(clamp(normal * 0.5 + 0.5, vec3(0.0), vec3(1.0)), 1.0);
 
-    outSpecularity.r = 0.0f;
-    if(textureBindingInfo.hasSpecular){
-        outSpecularity = texture(specularSampler, inTexCoord).r;
+    outMetallicRoughness = vec4(0.0, 0.5, 1.0, 1.0);
+    if(textureBindingInfo.hasSpecular) {
+        vec3 mr = texture(metallicRoughnessSampler, inTexCoord).rgb;
+        outMetallicRoughness.b = mr.b;  // Metallic in blue channel (common)
+        outMetallicRoughness.g = mr.g;  // Roughness in green channel
     }
+
+//    if(textureBindingInfo.hasAO) {
+//        outMetallicRoughnessAO.b = texture(aoSampler, inTexCoord).r;
+//    }
 
     outWorldPos.rgb = inWorldPos.xyz;
 

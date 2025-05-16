@@ -27,9 +27,9 @@
 struct GlobalUBO {
     glm::mat4 view;
     glm::mat4 proj;
-
-    glm::mat4 lightSpaceMatrix;
 };
+
+
 
 VApp::VApp() {
     m_globalPool =
@@ -95,7 +95,6 @@ void VApp::run() {
     m_depthPrePass = std::make_unique<vov::DepthPrePass>(
         m_device
     );
-
     m_depthPrePass->Init(VK_FORMAT_D32_SFLOAT, vov::Swapchain::MAX_FRAMES_IN_FLIGHT);
 
     vov::GeometryPass::CreateInfo createInfo = {
@@ -104,7 +103,13 @@ void VApp::run() {
 
     m_geoPass = std::make_unique<vov::GeometryPass>(m_device, createInfo);
 
-    m_compositePass = std::make_unique<vov::CompositePass>(m_device, vov::Swapchain::MAX_FRAMES_IN_FLIGHT, m_renderer.getSwapchain());
+    //TODO: figure out format here;
+    m_lightingPass = std::make_unique<vov::LightingPass>(m_device, vov::Swapchain::MAX_FRAMES_IN_FLIGHT, m_renderer.getSwapchain().GetSwapChainImageFormat(), m_renderer.getSwapchain().GetSwapChainExtent());
+
+
+    m_blitPass = std::make_unique<vov::BlitPass>(
+        m_device, vov::Swapchain::MAX_FRAMES_IN_FLIGHT, *m_lightingPass, m_renderer.getSwapchain()
+    );
 
 
     vov::ImguiRenderSystem imguiRenderSystem{
@@ -114,8 +119,7 @@ void VApp::run() {
         static_cast<int>(m_window.getHeight())
     };
 
-    vov::Camera camera{{-2.0f, 1.0f, 0}, {0.0f, 1.0f, 0.0f}};
-    camera.setAspectRatio(m_renderer.GetAspectRatio());
+    m_camera.setAspectRatio(m_renderer.GetAspectRatio());
 
     while (!m_window.ShouldClose()) {
         vov::DeltaTime::GetInstance().Update();
@@ -135,7 +139,7 @@ void VApp::run() {
 
         this->imGui();
         if (!m_currentScene->getGameObjects().empty() && m_selectedTransform) {
-            imguiRenderSystem.drawGizmos(&camera, m_selectedTransform, "Maintransform");
+            imguiRenderSystem.drawGizmos(&m_camera, m_selectedTransform, "Maintransform");
         }
         //
         // if (m_bezierFollowerTransform && !m_currentScene->getBezierCurves().empty()) {
@@ -198,23 +202,25 @@ void VApp::run() {
         // }
 #pragma endregion
 
-        camera.Update(static_cast<float>(vov::DeltaTime::GetInstance().GetDeltaTime()));
+        m_camera.Update(static_cast<float>(vov::DeltaTime::GetInstance().GetDeltaTime()));
 
-        camera.CalculateProjectionMatrix();
-        camera.CalculateViewMatrix();
+        m_camera.CalculateProjectionMatrix();
+        m_camera.CalculateViewMatrix();
 
         if (auto commandBuffer = m_renderer.BeginFrame()) {
             int frameIndex = m_renderer.GetFrameIndex();
-            vov::FrameContext shadowFrameInfo{frameIndex, static_cast<float>(vov::DeltaTime::GetInstance().GetDeltaTime()), commandBuffer, nullptr, camera};
+            vov::FrameContext shadowFrameInfo{frameIndex, static_cast<float>(vov::DeltaTime::GetInstance().GetDeltaTime()), commandBuffer, nullptr, m_camera};
 
             auto& depthImage = m_renderer.GetCurrentDepthImage();
-            m_depthPrePass->Record(shadowFrameInfo, commandBuffer, frameIndex, depthImage, m_currentScene, &camera);
+            m_depthPrePass->Record(shadowFrameInfo, commandBuffer, frameIndex, depthImage, m_currentScene, &m_camera);
 
-            m_geoPass->Record(shadowFrameInfo, commandBuffer, frameIndex, depthImage, m_currentScene, &camera);
+            m_geoPass->Record(shadowFrameInfo, commandBuffer, frameIndex, depthImage, m_currentScene, &m_camera);
 
-            m_compositePass->UpdateDescriptors(
+            m_lightingPass->UpdateDescriptors(
                 frameIndex, m_geoPass->GetAlbedo(frameIndex), m_geoPass->GetNormal(frameIndex), m_geoPass->GetSpecualar(frameIndex), m_geoPass->GetWorldPos(frameIndex)
             );
+
+            m_lightingPass->Record(shadowFrameInfo, commandBuffer, frameIndex, *m_geoPass);
 
 
             m_renderer.beginSwapChainRenderPass(commandBuffer);
@@ -224,10 +230,11 @@ void VApp::run() {
             // }
             //
             // lineRenderSystem.renderBezier(frameInfo, m_currentScene->getBezierCurves());
-            m_compositePass->Record(shadowFrameInfo, commandBuffer, frameIndex, *m_geoPass, m_renderer.getSwapchain());
             //
             // renderSystem.renderGameObjects(frameInfo, m_currentScene->getGameObjects());
             //
+
+            m_blitPass->Record(shadowFrameInfo, commandBuffer, frameIndex, m_renderer.getSwapchain());
             imguiRenderSystem.renderImgui(commandBuffer);
             m_renderer.endSwapChainRenderPass(commandBuffer);
             m_renderer.endFrame();
@@ -448,8 +455,13 @@ void VApp::imGui() {
 }
 
 void VApp::ResizeScreen(VkExtent2D newSize) {
+    vkDeviceWaitIdle(m_device.device());
     m_depthPrePass->Resize(newSize);
     m_geoPass->Resize(newSize);
+    m_lightingPass->Resize(newSize);
+    m_blitPass->Resize(newSize, *m_lightingPass);
+
+    m_camera.setAspectRatio(static_cast<float>(newSize.width) / static_cast<float>(newSize.height));
 }
 
 void VApp::loadGameObjects() {
@@ -496,14 +508,16 @@ void VApp::loadGameObjects() {
     m_vikingRoomScene->setSceneLoadFunction(vikingRoomSceneLoadFunction);
 
     auto bezierTestSceneLoadFunction = [&] (vov::Scene* scene) {
-        auto bezierTestObject = vov::GameObject::createGameObject();
-        const auto bezierTestModel = std::make_shared<vov::Model>(m_device, "resources/XYZaxis.obj", bezierTestObject.get());
-        bezierTestObject->model = std::move(bezierTestModel);
-        scene->addGameObject(std::move(bezierTestObject));
+        // auto bezierTestObject = vov::GameObject::createGameObject();
+        // const auto bezierTestModel = std::make_shared<vov::Model>(m_device, "resources/XYZaxis.obj", bezierTestObject.get());
+        // bezierTestObject->model = std::move(bezierTestModel);
+        // scene->addGameObject(std::move(bezierTestObject));
 
         auto normalTest = vov::GameObject::createGameObject();
         // const auto normalTestModel = std::make_shared<vov::Model>(m_device, "resources/normalTest/normalTest.gltf", normalTest.get());
-        const auto normalTestModel = std::make_shared<vov::Model>(m_device, "resources/mc/vokselia_spawn.obj", normalTest.get());
+        // const auto normalTestModel = std::make_shared<vov::Model>(m_device, "resources/NewSponza/Sponza/glTF/Sponza.gltf", normalTest.get());
+        const auto normalTestModel = std::make_shared<vov::Model>(m_device, "resources/SpaceHelmet/FlightHelmet.gltf", normalTest.get());
+        // const auto normalTestModel = std::make_shared<vov::Model>(m_device, "resources/mc/vokselia_spawn.obj", normalTest.get());
         normalTest->model = std::move(normalTestModel);
         scene->addGameObject(std::move(normalTest));
     };

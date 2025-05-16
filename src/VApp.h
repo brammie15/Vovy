@@ -8,7 +8,8 @@
 #include "Descriptors/DescriptorPool.h"
 #include "Rendering/Pipeline.h"
 #include "Rendering/Renderer.h"
-#include "Rendering/Passes/CompositePass.h"
+#include "Rendering/Passes/BlitPass.h"
+#include "Rendering/Passes/LightingPass.h"
 #include "Rendering/Passes/DepthPrePass.h"
 #include "Rendering/Passes/GeometryPass.h"
 #include "Scene/GameObject.h"
@@ -26,6 +27,17 @@
 //         return std::make_unique<T>(std::forward<Args>(args)...);
 //     }
 // }
+
+enum DebugView {
+    DEBUG_NONE,
+    DEBUG_ALBEDO,
+    DEBUG_NORMAL,
+    DEBUG_SPECULAR,
+    DEBUG_ROUGHNESS,
+    DEBUG_METALNESS,
+    DEBUG_DEPTH,
+    DEBUG_POSITION
+};
 
 class VApp {
 public:
@@ -56,6 +68,8 @@ private:
     vov::Device m_device{m_window};
     vov::Renderer m_renderer{m_window, m_device};
 
+    vov::Camera m_camera{{-2.0f, 1.0f, 0}, {0.0f, 1.0f, 0.0f}};
+
     std::unique_ptr<vov::Scene> m_sigmaVanniScene{};
     std::unique_ptr<vov::Scene> m_sponzaScene{};
     std::unique_ptr<vov::Scene> m_vikingRoomScene{};
@@ -72,7 +86,10 @@ private:
 
     std::unique_ptr<vov::DepthPrePass> m_depthPrePass{};
     std::unique_ptr<vov::GeometryPass> m_geoPass{};
-    std::unique_ptr<vov::CompositePass> m_compositePass{};
+    std::unique_ptr<vov::LightingPass> m_lightingPass{};
+    std::unique_ptr<vov::BlitPass> m_blitPass{};
+
+    DebugView currentDebugMone{ DebugView::DEBUG_NONE };
 
 };
 

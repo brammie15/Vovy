@@ -85,43 +85,43 @@ namespace vov {
 
         return imageInfo;
     }
-
-    void Image::transitionImageLayout(VkCommandBuffer commandBuffer,
-                                VkImageLayout oldLayout,
-                                VkImageLayout newLayout) const {
-        VkImageMemoryBarrier barrier{};
-        barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-        barrier.oldLayout = oldLayout;
-        barrier.newLayout = newLayout;
-        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        barrier.image = m_image;
-
-        barrier.subresourceRange.aspectMask = 0;
-        if (HasDepth())
-        {
-            barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-            if (HasStencil()) barrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
-        }
-        else barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-
-        barrier.subresourceRange.baseMipLevel = 0;
-        barrier.subresourceRange.levelCount = m_mipLevels;
-        barrier.subresourceRange.baseArrayLayer = 0;
-        barrier.subresourceRange.layerCount = 1;
-        barrier.srcAccessMask = 0;
-        barrier.dstAccessMask = 0;
-
-        vkCmdPipelineBarrier(
-            commandBuffer,
-            VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-            VK_PIPELINE_STAGE_TRANSFER_BIT,
-            0,
-            0, nullptr,
-            0, nullptr,
-            1, &barrier
-        );
-    }
+    //
+    // void Image::transitionImageLayout(VkCommandBuffer commandBuffer,
+    //                             VkImageLayout oldLayout,
+    //                             VkImageLayout newLayout) const {
+    //     VkImageMemoryBarrier barrier{};
+    //     barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    //     barrier.oldLayout = oldLayout;
+    //     barrier.newLayout = newLayout;
+    //     barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    //     barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    //     barrier.image = m_image;
+    //
+    //     barrier.subresourceRange.aspectMask = 0;
+    //     if (HasDepth())
+    //     {
+    //         barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+    //         if (HasStencil()) barrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+    //     }
+    //     else barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    //
+    //     barrier.subresourceRange.baseMipLevel = 0;
+    //     barrier.subresourceRange.levelCount = m_mipLevels;
+    //     barrier.subresourceRange.baseArrayLayer = 0;
+    //     barrier.subresourceRange.layerCount = 1;
+    //     barrier.srcAccessMask = 0;
+    //     barrier.dstAccessMask = 0;
+    //
+    //     vkCmdPipelineBarrier(
+    //         commandBuffer,
+    //         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+    //         VK_PIPELINE_STAGE_TRANSFER_BIT,
+    //         0,
+    //         0, nullptr,
+    //         0, nullptr,
+    //         1, &barrier
+    //     );
+    // }
 
     void Image::TransitionImageLayout(VkCommandBuffer commandBuffer, VkImageLayout newLayout) {
         VkImageMemoryBarrier barrier{};

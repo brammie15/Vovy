@@ -1,3 +1,6 @@
+const float PI = 3.14159265359;
+
+
 // GGX/Trowbridge-Reitz normal distribution function
 // Measures the statistical distribution of microfacets
 float NormalDistributionGGX(vec3 surfaceNormal, vec3 halfwayVector, float roughness)
@@ -36,4 +39,9 @@ float GeometrySmith(vec3 surfaceNormal, vec3 viewDirection, vec3 lightDirection,
     float geometryLight = GeometrySchlickGGX(normalDotLight, roughness);
 
     return geometryView * geometryLight;
+}
+
+vec3 fresnelSchlick(float cosTheta, vec3 F0)
+{
+    return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }

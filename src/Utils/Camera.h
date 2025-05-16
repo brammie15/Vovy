@@ -17,7 +17,11 @@ namespace vov {
 
         [[nodiscard]] glm::mat4 GetViewProjectionMatrix() const { return m_projectionMatrix * m_viewMatrix; }
 
-        void setAspectRatio(float aspectRatio) { m_aspectRatio = aspectRatio; }
+        void setAspectRatio(float aspectRatio) {
+            m_aspectRatio = aspectRatio;
+            this->CalculateViewMatrix();
+            this->CalculateProjectionMatrix();
+        }
         glm::vec3 m_position{2.f, 0, 0 };
 
         void Translate(const glm::vec3& translation) {

@@ -22,7 +22,7 @@ namespace vov {
 
         [[nodiscard]] const std::string& getFilename() const { return m_filename; }
 
-        void transitionImageLayout(VkCommandBuffer commandBuffer, VkImageLayout oldLayout, VkImageLayout newLayout) const;
+        // void transitionImageLayout(VkCommandBuffer commandBuffer, VkImageLayout oldLayout, VkImageLayout newLayout) const;
 
         void TransitionImageLayout(VkCommandBuffer commandBuffer, VkImageLayout newLayout);
 
