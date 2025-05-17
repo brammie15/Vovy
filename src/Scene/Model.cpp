@@ -12,7 +12,7 @@
 #include "Utils/Timer.h"
 
 namespace vov {
-    Model::Model(Device& deviceRef, const std::string& path, GameObject* parent): m_device{deviceRef} {
+    Model::Model(Device& deviceRef, const std::string& path, GameObject* parent): m_device{deviceRef}, m_path{path} {
         loadModel(path);
         generateMeshes(parent);
     }
@@ -22,10 +22,15 @@ namespace vov {
     }
 
     void Model::draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, bool isDepthPass) const {
+        int testCounter{ 0 };
         for (const auto& mesh: m_meshes) {
             PushConstantData push{};
             push.modelMatrix = mesh->getTransform().GetWorldMatrix();
-
+            if (m_Owner != nullptr) {
+                push.objectId = m_Owner->getId() + testCounter++;
+            } else {
+                push.objectId = 0;
+            }
             vkCmdPushConstants(
                 commandBuffer,
                 pipelineLayout,
@@ -181,6 +186,7 @@ namespace vov {
         builder.vertices = std::move(vertices);
         builder.indices = std::move(indices);
         builder.modelPath = m_directory + "/";
+        builder.name = mesh->mName.C_Str();
 
 
         Mesh::TextureInfo textureInfo{};
@@ -226,6 +232,8 @@ namespace vov {
     }
 
     void Model::generateMeshes(GameObject* parent) {
+
+        m_Owner = parent;
         //TODO: Fix this
         m_builders.erase(std::ranges::remove_if(m_builders,
                                                 [] (const Mesh::Builder& builder) { return builder.vertices.empty(); }).begin(), m_builders.end());

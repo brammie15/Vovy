@@ -39,16 +39,19 @@ namespace vov {
             m_shadowMapSize = size;
         }
 
-        [[nodiscard]] UniformBufferObject getUBO() const;
+        [[nodiscard]] UniformBufferObject GetUBO() const;
 
-        [[nodiscard]] const glm::mat4& getLightSpaceMatrix();
+        [[nodiscard]] const glm::mat4& GetLightSpaceMatrix();
 
-        [[nodiscard]] bool isShadowEnabled() const { return m_shadowEnabled; }
-        [[nodiscard]] uint32_t getShadowMapSize() const { return m_shadowMapSize; }
+        [[nodiscard]] bool IsShadowEnabled() const { return m_shadowEnabled; }
+        [[nodiscard]] uint32_t GetShadowMapSize() const { return m_shadowMapSize; }
 
-        [[nodiscard]] glm::mat4 getLightProjection();
-        [[nodiscard]] glm::mat4 getLightView();
-        glm::vec3& getDirection() { return m_direction; }
+        [[nodiscard]] glm::mat4 GetLightProjection();
+        [[nodiscard]] glm::mat4 GetLightView();
+
+        glm::vec3& GetDirection() { return m_direction; }
+        glm::vec3& GetColor(){ return m_color; }
+        float& GetIntensity() { return m_intensity; }
 
     private:
         void updateLightSpaceMatrix();

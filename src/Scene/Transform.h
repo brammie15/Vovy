@@ -1,17 +1,27 @@
 #ifndef TRANSFORM_H
 #define TRANSFORM_H
 
+#include <string>
 #include <vector>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 
 namespace vov {
+    class GameObject;
+
     class Transform final {
     public:
         explicit Transform() = default;
+        explicit Transform(const std::string& name);
+
         ~Transform();
 
         explicit Transform(glm::vec3 position);
+
+        void SetOwner(GameObject* owner){ m_Owner = owner; }
+        GameObject* GetOwner() const { return m_Owner; }
+        void SetName(const std::string& name) { this->name = name; }
+        [[nodiscard]] const std::string& GetName() const { return name; }
 
         void SetWorldMatrix(const glm::mat4& mat);
 
@@ -89,6 +99,9 @@ namespace vov {
 
         Transform* m_Parent{};
         std::vector<Transform*> m_Children{};
+
+        GameObject* m_Owner{ nullptr };
+        std::string name{ "Unknown" };
     };
 }
 

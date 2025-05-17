@@ -46,11 +46,40 @@ namespace vov {
             std::cerr << "No joystick detected!" << std::endl;
         }
 
+        for (int i = 0; i <= GLFW_MOUSE_BUTTON_LAST; i++) {
+            m_currentMouseButtons[i] = false;
+            m_previousMouseButtons[i] = false;
+        }
     }
 
     Window::~Window() {
         glfwDestroyWindow(gWindow);
         glfwTerminate();
+    }
+
+    bool Window::isMouseButtonDown(int button) const {
+        const int state = glfwGetMouseButton(gWindow, button);
+        return state == GLFW_PRESS;
+    }
+
+    bool Window::isMouseButtonUp(int button) const {
+        const int state = glfwGetMouseButton(gWindow, button);
+        return state == GLFW_RELEASE;
+    }
+
+    bool Window::isMouseButtonPressed(int button) {
+        const int state = glfwGetMouseButton(gWindow, button);
+
+        bool wasPressed = m_currentMouseButtons[button];
+
+        if (state == GLFW_PRESS && !wasPressed) {
+            m_currentMouseButtons[button] = true;
+            return true;
+        } else if (state == GLFW_RELEASE) {
+            m_currentMouseButtons[button] = false;
+        }
+
+        return false;
     }
 
     void Window::CreateSurface(VkInstance instance, VkSurfaceKHR* surface) {
@@ -90,6 +119,7 @@ namespace vov {
     void Window::PollInput() {
         glfwPollEvents();
         m_previousKeys = m_currentKeys;
+        m_previousMouseButtons = m_currentMouseButtons;
     }
 
     bool Window::isKeyDown(int key) const {

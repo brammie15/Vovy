@@ -43,13 +43,14 @@ namespace vov {
             std::vector<Vertex> vertices{};
             std::vector<uint32_t> indices{};
             glm::mat4 transform = glm::mat4(1.0f);
-            std::string modelPath;
+            std::string modelPath{};
+            std::string name{};
 
-            TextureInfo textureInfo;
+            TextureInfo textureInfo{};
 
             //TODO: ask if this is properly done
-            DescriptorSetLayout* descriptorSetLayout;
-            DescriptorPool* descriptorPool;
+            DescriptorSetLayout* descriptorSetLayout{};
+            DescriptorPool* descriptorPool{};
         };
 
         struct TextureBindingInfo {

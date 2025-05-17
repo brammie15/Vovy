@@ -13,14 +13,28 @@ namespace vov {
             glm::mat4 model;
         };
 
+        struct alignas(16) CameraSettings{
+            glm::vec4 cameraPos{};
+            float exposure{};
+            float _pad1[3];
+        };
+
+        struct alignas(16) DirectionalLightInfo {
+            glm::vec3 direction{};
+            float _pad0;           // padding to align next vec3
+            glm::vec3 color{};
+            float intensity{};
+            float _pad1[3];        // padding to align struct size to 16
+        };
         struct alignas(16) UniformBuffer{
-            glm::vec4 cameraPos;
+            CameraSettings camSettings{};
+            DirectionalLightInfo lightInfo{};
         };
 
         explicit LightingPass(Device& deviceRef,uint32_t framesInFlight, VkFormat format, VkExtent2D extent);
         ~LightingPass();
 
-        void Record(const FrameContext& context, VkCommandBuffer commandBuffer, uint32_t imageIndex, const GeometryPass& geoPass);
+        void Record(const FrameContext& context, VkCommandBuffer commandBuffer, uint32_t imageIndex, const GeometryPass& geoPass, Scene& scene);
 
         void UpdateDescriptors(uint32_t frameIndex, Image& albedo, Image& normal, Image& specular, Image& bump);
 

@@ -10,6 +10,10 @@ namespace vov {
     class DescriptorSetLayout;
     class Pipeline;
 
+    struct ExposureUbo {
+        float exposure;
+    };
+
     class BlitPass {
     public:
         explicit BlitPass(Device& deviceRef, uint32_t framesInFlight, LightingPass& lightingPass, Swapchain& swapchain);
@@ -31,6 +35,7 @@ namespace vov {
 
         std::vector<VkDescriptorSet> m_descriptorSets{};
         std::unique_ptr<DescriptorSetLayout> m_descriptorSetLayout{};
+        std::vector<std::unique_ptr<Buffer>> m_exposureBuffers{};
 
         VkPipelineLayout m_pipelineLayout{};
         std::unique_ptr<Pipeline> m_pipeline;

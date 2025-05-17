@@ -53,17 +53,17 @@ namespace vov {
         m_vertexBuffer->unmap();
 
         m_pipeline->bind(context.commandBuffer);
-
-        vkCmdBindDescriptorSets(
-            context.commandBuffer,
-            VK_PIPELINE_BIND_POINT_GRAPHICS,
-            m_pipelineLayout,
-            0,
-            1,
-            &context.globalDescriptor,
-            0,
-            nullptr
-        );
+        //
+        // vkCmdBindDescriptorSets(
+        //     context.commandBuffer,
+        //     VK_PIPELINE_BIND_POINT_GRAPHICS,
+        //     m_pipelineLayout,
+        //     0,
+        //     1,
+        //     &context.globalDescriptor,
+        //     0,
+        //     nullptr
+        // );
 
         AnotherPushConstantData push{};
         push.modelMatrix = glm::mat4(1.f);
@@ -138,16 +138,16 @@ namespace vov {
 
         m_pipeline->bind(context.commandBuffer);
 
-        vkCmdBindDescriptorSets(
-            context.commandBuffer,
-            VK_PIPELINE_BIND_POINT_GRAPHICS,
-            m_pipelineLayout,
-            0,
-            1,
-            &context.globalDescriptor,
-            0,
-            nullptr
-        );
+        // vkCmdBindDescriptorSets(
+        //     context.commandBuffer,
+        //     VK_PIPELINE_BIND_POINT_GRAPHICS,
+        //     m_pipelineLayout,
+        //     0,
+        //     1,
+        //     &context.globalDescriptor,
+        //     0,
+        //     nullptr
+        // );
 
         AnotherPushConstantData push{};
         push.modelMatrix = glm::mat4(1.f);

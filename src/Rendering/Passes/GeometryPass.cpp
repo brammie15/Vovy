@@ -2,6 +2,10 @@
 
 #include <array>
 
+#include "BlitPass.h"
+#include "BlitPass.h"
+#include "BlitPass.h"
+#include "BlitPass.h"
 #include "Descriptors/DescriptorSetLayout.h"
 #include "Descriptors/DescriptorWriter.h"
 #include "Utils/DebugLabel.h"
@@ -84,10 +88,11 @@ vov::GeometryPass::GeometryPass(vov::Device& deviceRef, const CreateInfo& create
     pipelineConfig.colorAttachments = m_geoBuffers[0]->GetFormats();
     pipelineConfig.depthAttachment = m_depthFormat;
     //TODO: fix this to not be static
-    uint32_t gBufferAttachmentCount = 4;
+    uint32_t gBufferAttachmentCount = 5;
 
     VkPipelineColorBlendAttachmentState colorBlendAttachment = pipelineConfig.colorBlendAttachment;
-    std::array<VkPipelineColorBlendAttachmentState, 4> colorBlendAttachments = {
+    std::array<VkPipelineColorBlendAttachmentState, 5> colorBlendAttachments = {
+        colorBlendAttachment,
         colorBlendAttachment,
         colorBlendAttachment,
         colorBlendAttachment,
@@ -111,10 +116,22 @@ vov::GeometryPass::GeometryPass(vov::Device& deviceRef, const CreateInfo& create
         "shaders/deferred.frag.spv",
         pipelineConfig
     );
+
+    // m_stagingBuffer = std::make_unique<vov::Buffer>(
+    //     m_device,
+    //     sizeof(glm::vec4),
+    //     VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+    //     VMA_MEMORY_USAGE_GPU_TO_CPU
+    // );
+    //
+    // VkFenceCreateInfo fenceInfo{};
+    // fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    // vkCreateFence(m_device.device(), &fenceInfo, nullptr, &m_pixelQueryFence);
 }
 
 vov::GeometryPass::~GeometryPass() {
     vkDestroyPipelineLayout(m_device.device(), m_pipelineLayout, nullptr);
+    // vkDestroyFence(m_device.device(), m_pixelQueryFence, nullptr);
 }
 
 void vov::GeometryPass::Record(const FrameContext& context, VkCommandBuffer commandBuffer, int imageIndex, Image& depthImage, Scene* scene, Camera* Camera) {

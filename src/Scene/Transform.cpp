@@ -3,6 +3,9 @@
 #include <iostream>
 
 namespace vov {
+    Transform::Transform(const std::string& name): m_Owner{nullptr}, name(name) {
+    }
+
     Transform::~Transform() {
         SetParent(nullptr);
 

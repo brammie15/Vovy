@@ -34,6 +34,9 @@ namespace vov {
         bool IsTargetting() const { return m_useTarget; }
         void Target(const glm::vec3& target);
 
+        void SetExposure(float exp){ m_exposure = exp; }
+        float& GetExposure() { return m_exposure; }
+
     private:
 
         float fovAngle{90.f};
@@ -60,6 +63,8 @@ namespace vov {
 
         float m_zNear{0.001f};
         float m_zFar{100.0f};
+
+        float m_exposure{1.f};
     };
 }
 

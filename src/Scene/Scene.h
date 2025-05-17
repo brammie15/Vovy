@@ -32,11 +32,13 @@ namespace vov {
         }
 
         //Function to be called when the scene is switched to, basically lazy loading
-        void sceneLoad();
+        void SceneLoad();
 
-        [[nodiscard]] bool isLoaded() const { return m_isLoaded; }
+        void SceneUnLoad();
 
-        DirectionalLight& getDirectionalLight() {
+        [[nodiscard]] bool IsLoaded() const { return m_isLoaded; }
+
+        DirectionalLight& GetDirectionalLight() {
             return m_directionalLight;
         }
 

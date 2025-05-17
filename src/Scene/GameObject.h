@@ -30,6 +30,7 @@ namespace vov {
         Transform transform{};
 
         explicit GameObject(uint32_t id): m_id(id) {
+            this->transform.SetOwner(this);
         }
 
     private:

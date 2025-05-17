@@ -19,7 +19,8 @@ vov::LightingPass::LightingPass(Device& deviceRef, uint32_t framesInFlight, VkFo
             .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) //albedo
             .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) //normal
             .addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) //Specular
-            .addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) //Bump
+            .addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) //MetallicRoughness
+            .addBinding(4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) //Selection
             .build();
 
     m_descriptorSetLayout = DescriptorSetLayout::Builder(m_device)
@@ -36,7 +37,6 @@ vov::LightingPass::LightingPass(Device& deviceRef, uint32_t framesInFlight, VkFo
     }
 
     m_descriptorSets.resize(m_framesInFlight);
-
     for (size_t i{0}; i < m_framesInFlight; i++) {
         m_descriptorPool->allocateDescriptor(m_descriptorSetLayout->getDescriptorSetLayout(), m_descriptorSets[i]);
         auto bufferInfo = m_uniformBuffers[i]->descriptorInfo();
@@ -86,7 +86,7 @@ vov::LightingPass::LightingPass(Device& deviceRef, uint32_t framesInFlight, VkFo
     m_pipeline = std::make_unique<Pipeline>(
         m_device,
         "shaders/triangle.vert.spv",
-        "shaders/combine.frag.spv",
+        "shaders/lightingPass.frag.spv",
         pipelineConfig
     );
 
@@ -106,6 +106,7 @@ vov::LightingPass::LightingPass(Device& deviceRef, uint32_t framesInFlight, VkFo
         writer.writeImage(1, &dummyInfo);
         writer.writeImage(2, &dummyInfo);
         writer.writeImage(3, &dummyInfo);
+        writer.writeImage(4, &dummyInfo);
 
         if (!writer.build(m_textureDescriptors[i])) {
             throw std::runtime_error("Failed to build descriptor set for CompositePass");
@@ -119,7 +120,8 @@ vov::LightingPass::LightingPass(Device& deviceRef, uint32_t framesInFlight, VkFo
             extent.width, extent.height,
             format,
             VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-            VMA_MEMORY_USAGE_AUTO
+            VMA_MEMORY_USAGE_AUTO,
+            VK_FILTER_NEAREST
         );
         m_renderTargets[index]->SetName("LightTarget" + index);
     }
@@ -129,12 +131,18 @@ vov::LightingPass::~LightingPass() {
     vkDestroyPipelineLayout(m_device.device(), m_pipelineLayout, nullptr);
 }
 
-void vov::LightingPass::Record(const FrameContext& context, VkCommandBuffer commandBuffer, uint32_t imageIndex, const GeometryPass& geoPass) {
+void vov::LightingPass::Record(const FrameContext& context, VkCommandBuffer commandBuffer, uint32_t imageIndex, const GeometryPass& geoPass, Scene& scene) {
     auto& currentImage = m_renderTargets[imageIndex];
 
     auto cameraPos = glm::vec4(context.camera.m_position, 0);
     UniformBuffer ubo{};
-    ubo.cameraPos = cameraPos;
+    ubo.camSettings.cameraPos = cameraPos;
+    ubo.camSettings.exposure = context.camera.GetExposure();
+
+    ubo.lightInfo.direction = scene.GetDirectionalLight().GetDirection();
+    ubo.lightInfo.color = scene.GetDirectionalLight().GetColor();
+    ubo.lightInfo.intensity = scene.GetDirectionalLight().GetIntensity();
+
     m_uniformBuffers[imageIndex]->copyTo(&ubo, sizeof(UniformBuffer));
 
     m_renderTargets[imageIndex]->TransitionImageLayout(commandBuffer, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);

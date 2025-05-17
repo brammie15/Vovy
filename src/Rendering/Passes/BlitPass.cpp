@@ -11,12 +11,13 @@ vov::BlitPass::BlitPass(Device& deviceRef, uint32_t framesInFlight, LightingPass
     m_descriptorPool = DescriptorPool::Builder(m_device)
             .setMaxSets(framesInFlight * 2)
             .addPoolSize(VK_DESCRIPTOR_TYPE_SAMPLER, framesInFlight * 2)
+            .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, framesInFlight * 2)
             .build();
 
     m_descriptorSetLayout = DescriptorSetLayout::Builder(m_device)
-            .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+            .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT) //exposure ubo
+            .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
             .build();
-
 
     const std::array descriptorSetLayouts = {
         m_descriptorSetLayout->getDescriptorSetLayout()
@@ -57,11 +58,21 @@ vov::BlitPass::BlitPass(Device& deviceRef, uint32_t framesInFlight, LightingPass
     );
 
     m_descriptorSets.resize(framesInFlight);
+    m_exposureBuffers.resize(framesInFlight);
 
     auto dummyImage = ResourceManager::GetInstance().loadImage(m_device, "resources/Gear.png", VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
 
     for (size_t i{0}; i < m_framesInFlight; i++) {
         m_descriptorPool->allocateDescriptor(m_descriptorSetLayout->getDescriptorSetLayout(), m_descriptorSets[i]);
+
+        m_exposureBuffers[i] = std::make_unique<Buffer>(
+            m_device, sizeof(ExposureUbo),
+            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            VMA_MEMORY_USAGE_CPU_TO_GPU, true
+        );
+
+        auto bufferInfo = m_exposureBuffers[i]->descriptorInfo();
+
 
         VkDescriptorImageInfo dummyInfo{};
         dummyInfo.sampler = lightingPass.GetImage(i).getSampler();
@@ -69,7 +80,8 @@ vov::BlitPass::BlitPass(Device& deviceRef, uint32_t framesInFlight, LightingPass
         dummyInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
         DescriptorWriter(*m_descriptorSetLayout, *m_descriptorPool)
-                .writeImage(0, &dummyInfo)
+                .writeBuffer(0, &bufferInfo)
+                .writeImage(1, &dummyInfo)
                 .build(m_descriptorSets[i]);
     }
 }
@@ -80,6 +92,11 @@ vov::BlitPass::~BlitPass() {
 
 void vov::BlitPass::Record(const FrameContext& context, VkCommandBuffer commandBuffer, uint32_t imageIndex, const Swapchain& swapchain) {
     const Image& currentImage = swapchain.GetImage(static_cast<int>(imageIndex));
+
+    ExposureUbo ubo{};
+    ubo.exposure = context.camera.GetExposure();
+
+    m_exposureBuffers[imageIndex]->copyTo(&ubo, sizeof(ExposureUbo));
 
     VkRenderingAttachmentInfo colorAttachment{};
     colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
@@ -97,7 +114,6 @@ void vov::BlitPass::Record(const FrameContext& context, VkCommandBuffer commandB
     renderingInfo.pColorAttachments = &colorAttachment;
 
     DebugLabel::BeginCmdLabel(commandBuffer, "Blitting pass", glm::vec4(1.f, 0.7f, 0.1f, 1));
-    // vkCmdBeginRendering(commandBuffer, &renderingInfo);
 
     VkViewport viewport{};
     viewport.x = 0.0f;
@@ -116,27 +132,28 @@ void vov::BlitPass::Record(const FrameContext& context, VkCommandBuffer commandB
     m_pipeline->bind(commandBuffer);
     vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 
-    // vkCmdEndRendering(commandBuffer);
     DebugLabel::EndCmdLabel(commandBuffer);
 }
 
 void vov::BlitPass::UpdateDescriptor(uint32_t frameIndex, Image& lightingOutput) {
     auto imageInfo = lightingOutput.descriptorInfo();
     DescriptorWriter(*m_descriptorSetLayout, *m_descriptorPool)
-        .writeImage(0, &imageInfo)
-        .overwrite(m_descriptorSets[frameIndex]);
+            .writeImage(0, &imageInfo)
+            .overwrite(m_descriptorSets[frameIndex]);
 }
 
 void vov::BlitPass::Resize(VkExtent2D newSize, LightingPass& lightingPass) {
     for (size_t i{0}; i < m_framesInFlight; i++) {
+        VkDescriptorImageInfo imageInfo{};
+        imageInfo.sampler = lightingPass.GetImage(i).getSampler();
+        imageInfo.imageView = lightingPass.GetImage(i).getImageView();
+        imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-        VkDescriptorImageInfo dummyInfo{};
-        dummyInfo.sampler = lightingPass.GetImage(i).getSampler();
-        dummyInfo.imageView = lightingPass.GetImage(i).getImageView();
-        dummyInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        auto bufferInfo = m_exposureBuffers[i]->descriptorInfo();
 
         DescriptorWriter(*m_descriptorSetLayout, *m_descriptorPool)
-                .writeImage(0, &dummyInfo)
+                .writeBuffer(0, &bufferInfo)
+                .writeImage(1, &imageInfo)
                 .overwrite(m_descriptorSets[i]);
     }
 }

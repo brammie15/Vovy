@@ -11,16 +11,16 @@
 
 
 namespace vov {
-    Image::Image(Device& device, uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage)
+    Image::Image(Device& device, uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage, VkFilter filter)
     : m_device(device), m_image(VK_NULL_HANDLE), m_allocation(VK_NULL_HANDLE),
       m_imageView(VK_NULL_HANDLE), m_mipLevels(1), m_format{format} {  // Initialize m_mipLevels here
         createImage(width, height, 1, format, usage, memoryUsage);
         createImageView(format);
-        createSampler(VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT);
+        createSampler(filter, VK_SAMPLER_ADDRESS_MODE_REPEAT);
         m_extent = VkExtent2D{width, height};
     }
 
-    Image::Image(Device& device, const std::string& filename, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage)
+    Image::Image(Device& device, const std::string& filename, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage, VkFilter filter)
         : m_device(device), m_image(VK_NULL_HANDLE), m_allocation(VK_NULL_HANDLE), m_imageView(VK_NULL_HANDLE), m_filename{filename}, m_format{format} {
         int texWidth, texHeight, texChannels;
         stbi_uc* pixels = stbi_load(filename.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
@@ -49,7 +49,7 @@ namespace vov {
         generateMipmaps(format, texWidth, texHeight);
         // device.TransitionImageLayout(m_image, format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_mipLevels);
 
-        createSampler(VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT);
+        createSampler(filter, VK_SAMPLER_ADDRESS_MODE_REPEAT);
 
         DebugLabel::NameImage(m_image, filename);
     }

@@ -17,7 +17,7 @@ void DirectionalLight::setDirection(const glm::vec3& newDirection) {
     m_viewDirty = true;
 }
 
-DirectionalLight::UniformBufferObject DirectionalLight::getUBO() const {
+DirectionalLight::UniformBufferObject DirectionalLight::GetUBO() const {
     UniformBufferObject ubo{};
     ubo.direction = glm::vec4(m_direction, 0.0f);
     ubo.color = glm::vec4(m_color, m_intensity);
@@ -26,7 +26,7 @@ DirectionalLight::UniformBufferObject DirectionalLight::getUBO() const {
     return ubo;
 }
 
-const glm::mat4& DirectionalLight::getLightSpaceMatrix() {
+const glm::mat4& DirectionalLight::GetLightSpaceMatrix() {
     if (m_viewDirty || m_projDirty) {
         updateLightSpaceMatrix();
         m_viewDirty = false;
@@ -35,7 +35,7 @@ const glm::mat4& DirectionalLight::getLightSpaceMatrix() {
     return m_lightSpaceMatrix;
 }
 
-glm::mat4 DirectionalLight::getLightProjection() {
+glm::mat4 DirectionalLight::GetLightProjection() {
     if (m_viewDirty) {
         updateLightSpaceMatrix();
         m_viewDirty = false;
@@ -43,7 +43,7 @@ glm::mat4 DirectionalLight::getLightProjection() {
     return m_lightProjection;
 }
 
-glm::mat4 DirectionalLight::getLightView() {
+glm::mat4 DirectionalLight::GetLightView() {
     if (m_viewDirty) {
         updateLightSpaceMatrix();
         m_viewDirty = false;

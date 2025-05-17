@@ -32,6 +32,7 @@ namespace vov {
         struct PushConstant
         {
             glm::mat4 model;
+            int objectId;
         };
 
     private:

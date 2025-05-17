@@ -5,11 +5,8 @@
 #include "Scene/Scene.h"
 
 namespace vov {
-
-
     class GeometryPass {
     public:
-
         struct CreateInfo {
             int maxFrames{};
             Scene* pScene{};
@@ -17,13 +14,14 @@ namespace vov {
             VkFormat depthFormat{};
         };
 
-        struct alignas(16) UniformBuffer{
+        struct alignas(16) UniformBuffer {
             glm::mat4 view;
             glm::mat4 proj;
         };
 
         struct PushConstant {
             glm::mat4 model;
+            uint32_t objectId;
         };
 
         explicit GeometryPass(vov::Device& deviceRef, const CreateInfo& createInfo);
@@ -37,6 +35,8 @@ namespace vov {
         [[nodiscard]] Image& GetNormal(uint32_t imageIndex) const { return m_geoBuffers[imageIndex]->GetNormal(); }
         [[nodiscard]] Image& GetSpecualar(uint32_t imageIndex) const { return m_geoBuffers[imageIndex]->GetSpecular(); }
         [[nodiscard]] Image& GetWorldPos(uint32_t imageIndex) const { return m_geoBuffers[imageIndex]->GetWorldPos(); }
+
+        using PixelCallback = std::function<void(glm::vec3)>;
 
     private:
         Device& m_device;
@@ -58,6 +58,7 @@ namespace vov {
         VkDescriptorSet m_textureSet{};
 
         std::vector<std::unique_ptr<GeoBuffer>> m_geoBuffers{};
+
     };
 }
 

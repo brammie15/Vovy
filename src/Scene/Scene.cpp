@@ -24,12 +24,19 @@ namespace vov {
         m_bezierCurves.clear();
     }
 
-    void Scene::sceneLoad() {
+    void Scene::SceneLoad() {
         if (!m_isLoaded) {
             if (m_loadFunction) {
                 m_loadFunction(this);
             }
             m_isLoaded = true;
         }
+    }
+
+    void Scene::SceneUnLoad() {
+        m_gameObjects.clear();
+        m_lineSegments.clear();
+        m_bezierCurves.clear();
+        m_isLoaded = false;
     }
 }

@@ -12,6 +12,8 @@ layout(set = 0, binding = 0) uniform MatrixUBO
 layout(push_constant) uniform constants
 {
     mat4 model;
+    int objectId;
+
 } modelData;
 
 
@@ -39,6 +41,7 @@ layout(location = 0) out vec4 outAlbedo;
 layout(location = 1) out vec4 outNormal;
 layout(location = 2) out vec4 outWorldPos;
 layout(location = 3) out vec4 outMetallicRoughness;
+layout(location = 4) out vec4 outSelection;
 
 const bool USE_BUMP_MAP = false;
 
@@ -55,7 +58,15 @@ vec3 boolsToColor(bool hasNormal, bool hasSpecular, bool hasBump) {
     return vec3(r, g, b);
 }
 
+vec3 hashToColor(float n) {
+    // Large prime-based hashing for each channel
+    float r = fract(sin(n * 12.9898) * 43758.5453);
+    float g = fract(sin(n * 78.233) * 12345.6789);
+    float b = fract(sin(n * 37.719) * 98765.4321);
 
+    // Optionally boost contrast for visibility
+    return vec3(r, g, b);
+}
 
 void main(){
 
@@ -110,6 +121,11 @@ void main(){
 //    }
 
     outWorldPos.rgb = inWorldPos.xyz;
+
+    outSelection.rgb = hashToColor(float(modelData.objectId));
+//    outSelection.r = float(modelData.objectId & 0xFF) / 255.0f;
+//    outSelection.g = float((modelData.objectId >> 8) & 0xFF) / 255.0f;
+//    outSelection.b = float((modelData.objectId >> 16) & 0xFF) / 255.0f;
 
 //    outNormal = vec4(boolsToColor(textureBindingInfo.hasNormal, textureBindingInfo.hasSpecular, textureBindingInfo.hasBump), 1.0f);
 }

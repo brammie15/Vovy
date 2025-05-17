@@ -23,17 +23,17 @@ namespace vov {
             {0.0f, 1.0f, 0.0f, 1.0f}
         );
         m_pipeline->bind(frameContext.commandBuffer);
-
-        vkCmdBindDescriptorSets(
-            frameContext.commandBuffer,
-            VK_PIPELINE_BIND_POINT_GRAPHICS,
-            m_pipelineLayout,
-            0,
-            1,
-            &frameContext.globalDescriptor,
-            0,
-            nullptr
-        );
+        //
+        // vkCmdBindDescriptorSets(
+        //     frameContext.commandBuffer,
+        //     VK_PIPELINE_BIND_POINT_GRAPHICS,
+        //     m_pipelineLayout,
+        //     0,
+        //     1,
+        //     &frameContext.globalDescriptor,
+        //     0,
+        //     nullptr
+        // );
 
         for (auto& obj: gameObjects) {
             obj->model->draw(frameContext.commandBuffer, m_pipelineLayout);

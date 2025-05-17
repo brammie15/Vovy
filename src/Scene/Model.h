@@ -23,6 +23,7 @@ namespace vov {
         [[nodiscard]] std::vector<std::unique_ptr<Mesh>>& getMeshes() { return m_meshes; }
 
         void updateShadowMapDescriptorSet(VkDescriptorImageInfo descriptorSet);
+        std::string GetPath() { return m_path; }
 
     private:
         void loadModel(std::string path);
@@ -32,9 +33,13 @@ namespace vov {
         //Using nullptr so we can use the same function for with and wihtout GameObject
         void generateMeshes(GameObject* parent = nullptr);
 
+        GameObject* m_Owner{nullptr};
+
         std::string m_directory{};
         Device& m_device;
         std::vector<std::unique_ptr<Mesh>> m_meshes;
+
+        std::string m_path{};
 
         std::vector<Mesh::Builder> m_builders;
         std::unique_ptr<DescriptorPool> m_descriptorPool;

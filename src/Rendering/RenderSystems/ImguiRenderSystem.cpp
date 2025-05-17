@@ -46,7 +46,7 @@ namespace vov {
         ImGuizmo::DrawGrid(
             glm::value_ptr(camera->GetViewMatrix()),
             glm::value_ptr(camera->GetProjectionMatrix()),
-            glm::value_ptr(glm::mat4(1.f)),
+            glm::value_ptr(transform->GetWorldMatrix()),
             1.f
         );
 

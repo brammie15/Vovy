@@ -22,13 +22,11 @@
 #include "Utils/Camera.h"
 #include "Utils/DeltaTime.h"
 #include "Utils/FrameContext.h"
-#include "Utils/Timer.h"
 
 struct GlobalUBO {
     glm::mat4 view;
     glm::mat4 proj;
 };
-
 
 
 VApp::VApp() {
@@ -42,14 +40,21 @@ VApp::VApp() {
     m_sigmaVanniScene = std::make_unique<vov::Scene>("SigmaVanniScene");
     m_sponzaScene = std::make_unique<vov::Scene>("SponzaScene");
     m_vikingRoomScene = std::make_unique<vov::Scene>("VikingRoomScene");
-    m_bezierTestScene = std::make_unique<vov::Scene>("BezierTestScene");
+    m_sibenikScene = std::make_unique<vov::Scene>("SibenikScene");
+    m_flightHelmetScene = std::make_unique<vov::Scene>("FligtHelmetScene");
+
+    m_scenes.emplace_back(m_sigmaVanniScene.get());
+    m_scenes.emplace_back(m_sponzaScene.get());
+    m_scenes.emplace_back(m_vikingRoomScene.get());
+    m_scenes.emplace_back(m_sibenikScene.get());
+    m_scenes.emplace_back(m_flightHelmetScene.get());
 
 
     loadGameObjects();
-    m_currentScene = m_bezierTestScene.get();
-    m_currentScene->sceneLoad();
+    m_currentScene = m_flightHelmetScene.get();
+    m_currentScene->SceneLoad();
 
-    m_renderer.SetResizeCallback([&](VkExtent2D newSize) {
+    m_renderer.SetResizeCallback([&] (const VkExtent2D newSize) {
         this->ResizeScreen(newSize);
     });
 }
@@ -66,31 +71,7 @@ void VApp::run() {
             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
             VMA_MEMORY_USAGE_CPU_TO_GPU);
         uboBuffers[i]->map();
-
     }
-
-    //auto globalSetLayout = vov::DescriptorSetLayout::Builder(m_device)
-    //        .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)
-    //        .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) //ShadowMap Texture
-    //        .build();
-    //        // .addBinding(1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT) //Directional light ubo
-
-    //auto modelSetLayout = vov::DescriptorSetLayout::Builder(m_device)
-    //        .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) //Model Texture
-    //        .build();
-
-    /*std::vector<VkDescriptorSet> globalDescriptorSets(vov::Swapchain::MAX_FRAMES_IN_FLIGHT);
-
-    for (int i = 0; i < globalDescriptorSets.size(); i++) {
-        auto bufferInfo = uboBuffers[i]->descriptorInfo();
-        auto success = vov::DescriptorWriter(*globalSetLayout, *m_globalPool)
-                .writeBuffer(0, &bufferInfo)
-                .build(globalDescriptorSets[i]);
-
-        if (!success) {
-            throw std::runtime_error("failed to write descriptor sets!");
-        }
-    }*/
 
     m_depthPrePass = std::make_unique<vov::DepthPrePass>(
         m_device
@@ -104,13 +85,11 @@ void VApp::run() {
     m_geoPass = std::make_unique<vov::GeometryPass>(m_device, createInfo);
 
     //TODO: figure out format here;
-    m_lightingPass = std::make_unique<vov::LightingPass>(m_device, vov::Swapchain::MAX_FRAMES_IN_FLIGHT, m_renderer.getSwapchain().GetSwapChainImageFormat(), m_renderer.getSwapchain().GetSwapChainExtent());
-
+    m_lightingPass = std::make_unique<vov::LightingPass>(m_device, vov::Swapchain::MAX_FRAMES_IN_FLIGHT, VK_FORMAT_R16G16B16A16_SFLOAT, m_renderer.getSwapchain().GetSwapChainExtent());
 
     m_blitPass = std::make_unique<vov::BlitPass>(
         m_device, vov::Swapchain::MAX_FRAMES_IN_FLIGHT, *m_lightingPass, m_renderer.getSwapchain()
     );
-
 
     vov::ImguiRenderSystem imguiRenderSystem{
         m_device,
@@ -123,11 +102,12 @@ void VApp::run() {
 
     while (!m_window.ShouldClose()) {
         vov::DeltaTime::GetInstance().Update();
-        double currentFps = 1.0 / vov::DeltaTime::GetInstance().GetDeltaTime();
+        const double currentFps = 1.0 / vov::DeltaTime::GetInstance().GetDeltaTime();
         m_fpsAccumulated += currentFps;
         m_fpsFrameCount++;
 
-        if (m_fpsFrameCount >= 100) {  // Average over 100 frames
+        if (m_fpsFrameCount >= 100) {
+            // Average over 100 frames
             m_avgFps = m_fpsAccumulated / m_fpsFrameCount;
             m_fpsAccumulated = 0.0;
             m_fpsFrameCount = 0;
@@ -141,45 +121,6 @@ void VApp::run() {
         if (!m_currentScene->getGameObjects().empty() && m_selectedTransform) {
             imguiRenderSystem.drawGizmos(&m_camera, m_selectedTransform, "Maintransform");
         }
-        //
-        // if (m_bezierFollowerTransform && !m_currentScene->getBezierCurves().empty()) {
-        //     const auto& curve = m_currentScene->getBezierCurves()[0]; // Using first curve for now
-        //     m_bezierProgress += m_bezierSpeed * static_cast<float>(vov::DeltaTime::GetInstance().GetDeltaTime());
-        //     if (m_bezierProgress > 1.0f) m_bezierProgress = 0.0f;
-        //
-        //     glm::vec3 position = lineRenderSystem.deCasteljau(curve.nodes, m_bezierProgress);
-        //     m_bezierFollowerTransform->SetLocalPosition(position);
-        //
-        //     if (m_shouldRotate) {
-        //         float nextT = m_bezierProgress + 0.01f;
-        //         if (nextT > 1.0f) nextT = 0.0f;
-        //         glm::vec3 nextPosition = lineRenderSystem.deCasteljau(curve.nodes, nextT);
-        //
-        //         glm::vec3 direction = glm::normalize(nextPosition - position);
-        //
-        //         glm::vec3 up(0.0f, 1.0f, 0.0f); // Y is up
-        //         glm::vec3 right = glm::normalize(glm::cross(up, direction));
-        //         up = glm::normalize(glm::cross(direction, right));
-        //
-        //         glm::mat4 rotationMatrix(1.0f);
-        //         rotationMatrix[0] = glm::vec4(right, 0.0f);
-        //         rotationMatrix[1] = glm::vec4(up, 0.0f);
-        //         rotationMatrix[2] = glm::vec4(-direction, 0.0f); //-Z forward
-        //
-        //         glm::quat rotation = glm::quat_cast(rotationMatrix);
-        //         m_bezierFollowerTransform->SetLocalRotation(rotation);
-        //     }
-        // }
-        //
-        //
-        // // auto& curves = m_currentScene->getBezierCurves();
-        // // for (auto& curve: curves) {
-        // //     for (int j = 0; j < curve.nodes.size(); j++) {
-        // //         std::string id = "BezierNode" + std::to_string(j);
-        // //         imguiRenderSystem.drawGizmos(&camera, curve.nodes[j].position, id);
-        // //     }
-        // // }
-        //
         imguiRenderSystem.endFrame();
 
         if (m_window.isKeyPressed(GLFW_KEY_GRAVE_ACCENT)) {
@@ -189,17 +130,6 @@ void VApp::run() {
                 m_window.LockCursor();
             }
         }
-        //
-        // if (m_window.isKeyPressed(GLFW_KEY_F)) {
-        //     if (m_selectedTransform) {
-        //         const glm::vec3 focusPos = m_selectedTransform->GetWorldPosition();
-        //         constexpr auto offset = glm::vec3(0.0f, 0.0f, 5.0f); // could be camera forward
-        //         camera.m_position = focusPos + offset;
-        //
-        //         camera.Target(focusPos);
-        //         camera.CalculateViewMatrix();
-        //     }
-        // }
 #pragma endregion
 
         m_camera.Update(static_cast<float>(vov::DeltaTime::GetInstance().GetDeltaTime()));
@@ -207,35 +137,34 @@ void VApp::run() {
         m_camera.CalculateProjectionMatrix();
         m_camera.CalculateViewMatrix();
 
-        if (auto commandBuffer = m_renderer.BeginFrame()) {
-            int frameIndex = m_renderer.GetFrameIndex();
-            vov::FrameContext shadowFrameInfo{frameIndex, static_cast<float>(vov::DeltaTime::GetInstance().GetDeltaTime()), commandBuffer, nullptr, m_camera};
+        if (const auto commandBuffer = m_renderer.BeginFrame()) {
+            const int frameIndex = m_renderer.GetFrameIndex();
+            vov::FrameContext frameContext{frameIndex, static_cast<float>(vov::DeltaTime::GetInstance().GetDeltaTime()), commandBuffer, m_camera};
 
             auto& depthImage = m_renderer.GetCurrentDepthImage();
-            m_depthPrePass->Record(shadowFrameInfo, commandBuffer, frameIndex, depthImage, m_currentScene, &m_camera);
+            m_depthPrePass->Record(frameContext, commandBuffer, frameIndex, depthImage, m_currentScene, &m_camera);
 
-            m_geoPass->Record(shadowFrameInfo, commandBuffer, frameIndex, depthImage, m_currentScene, &m_camera);
+            m_geoPass->Record(frameContext, commandBuffer, frameIndex, depthImage, m_currentScene, &m_camera);
 
             m_lightingPass->UpdateDescriptors(
                 frameIndex, m_geoPass->GetAlbedo(frameIndex), m_geoPass->GetNormal(frameIndex), m_geoPass->GetSpecualar(frameIndex), m_geoPass->GetWorldPos(frameIndex)
             );
 
-            m_lightingPass->Record(shadowFrameInfo, commandBuffer, frameIndex, *m_geoPass);
-
+            m_lightingPass->Record(frameContext, commandBuffer, frameIndex, *m_geoPass, *m_currentScene);
 
             m_renderer.beginSwapChainRenderPass(commandBuffer);
-            //
+
             // if (m_currentScene->getLineSegments().size() > 2) {
             //     lineRenderSystem.renderLines(frameInfo, m_currentScene->getLineSegments());
             // }
-            //
-            // lineRenderSystem.renderBezier(frameInfo, m_currentScene->getBezierCurves());
-            //
-            // renderSystem.renderGameObjects(frameInfo, m_currentScene->getGameObjects());
-            //
 
-            m_blitPass->Record(shadowFrameInfo, commandBuffer, frameIndex, m_renderer.getSwapchain());
+            // lineRenderSystem.renderBezier(frameInfo, m_currentScene->getBezierCurves());
+            // renderSystem.renderGameObjects(frameInfo, m_currentScene->getGameObjects());
+
+            m_blitPass->Record(frameContext, commandBuffer, frameIndex, m_renderer.getSwapchain());
             imguiRenderSystem.renderImgui(commandBuffer);
+
+
             m_renderer.endSwapChainRenderPass(commandBuffer);
             m_renderer.endFrame();
         }
@@ -245,7 +174,6 @@ void VApp::run() {
         if (sleepTime > std::chrono::nanoseconds(0)) {
             std::this_thread::sleep_for(sleepTime);
         }
-
     }
     vkDeviceWaitIdle(m_device.device());
 }
@@ -253,23 +181,29 @@ void VApp::run() {
 void VApp::imGui() {
     if (ImGui::BeginMainMenuBar()) {
         if (ImGui::BeginMenu("Tools")) {
-            if (ImGui::MenuItem("New")) {
-                // Action for New
+            if (ImGui::MenuItem("Save config")) {
+                ImGui::SaveIniSettingsToDisk("resources/imgui.ini");
             }
             ImGui::EndMenu();
         }
         ImGui::EndMainMenuBar();
     }
 
+
     ImGui::Begin("SceneLight");
     ImGui::Text("Light Direction: ");
-    if (ImGui::DragFloat3("Light Direction", glm::value_ptr(m_currentScene->getDirectionalLight().getDirection()), 0.1f)) {
-        m_currentScene->getDirectionalLight().setDirection(m_currentScene->getDirectionalLight().getDirection());
+    // if (ImGui::DragFloat3("Light Direction", glm::value_ptr(m_currentScene->GetDirectionalLight().GetDirection()), 0.1f)) {
+    //     m_currentScene->GetDirectionalLight().setDirection(m_currentScene->GetDirectionalLight().GetDirection());
+    // }
+    glm::vec3& dir = m_currentScene->GetDirectionalLight().GetDirection();
+    if (ImGui::DragFloat3("##Direction", glm::value_ptr(dir), 0.01f)) {
+        if (glm::length(dir) > 0.0001f)
+            dir = glm::normalize(dir);
     }
     ImGui::Text("Light Color: ");
-    // ImGui::ColorEdit3("Light Color", &m_currentScene->getDirectionalLight().getColor().x);
+    ImGui::ColorEdit3("Light Color", &m_currentScene->GetDirectionalLight().GetColor()[0]);
     ImGui::Text("Light Intensity: ");
-    // ImGui::DragFloat("Light Intensity", &m_currentScene->getDirectionalLight().getIntensity(), 0.1f);
+    ImGui::DragFloat("Light Intensity", &m_currentScene->GetDirectionalLight().GetIntensity(), 0.1f);
 
     ImGui::End();
 
@@ -287,73 +221,11 @@ void VApp::imGui() {
     ImGui::Text("Press F to focus on selected object (BIG WIP)");
     ImGui::End();
 
-    ImGui::Begin("Line Segments");
-    ImGui::Text("Line Segments: %d", m_currentScene->getLineSegments().size());
-    for (int i = 0; i < m_currentScene->getLineSegments().size(); i++) {
-        std::string label = "Line Segment " + std::to_string(i);
-        if (ImGui::BeginCombo(label.c_str(), "Line Segment")) {
-            ImGui::DragFloat3("Start", &m_currentScene->getLineSegments()[i].start.x, 0.1f);
-            ImGui::DragFloat3("End", &m_currentScene->getLineSegments()[i].end.x, 0.1f);
-            ImGui::EndCombo();
-        }
-    }
-    ImGui::End();
+    ImGui::Begin("Cam Settings");
 
+    float& exp = m_camera.GetExposure();
+    ImGui::DragFloat("Exposure", &exp, 0.01f, 0);
 
-    ImGui::Begin("Bezier Segments");
-    ImGui::Text("Bezier Segments: %d", m_currentScene->getBezierCurves().size());
-
-    static char filenameBuffer[256] = "resources/curves.bram"; // Default filename
-
-    ImGui::Separator();
-    ImGui::InputText("File", filenameBuffer, IM_ARRAYSIZE(filenameBuffer));
-
-    if (ImGui::Button("Save Curves")) {
-        BezierSerializer::writeBezierCurves(filenameBuffer, m_currentScene->getBezierCurves());
-    }
-
-    ImGui::SameLine();
-
-    if (ImGui::Button("Load Curves")) {
-        const auto loadedCurves = BezierSerializer::readBezierCurves(filenameBuffer);
-        m_currentScene->getBezierCurves() = loadedCurves;
-    }
-
-    auto& curves = m_currentScene->getBezierCurves();
-    if (ImGui::Button("Add Curve")) {
-        curves.push_back({
-            {},
-            glm::vec3(1.0f, 0.0f, 0.0f),
-            100
-        });
-    }
-
-    for (size_t curveIndex = 0; curveIndex < curves.size(); ++curveIndex) {
-        std::string curveLabel = "Curve " + std::to_string(curveIndex);
-        if (ImGui::TreeNode(curveLabel.c_str())) {
-            auto& curve = curves[curveIndex];
-
-            ImGui::Text("Nodes: %zu", curve.nodes.size());
-
-            std::string addNodeLabel = "Add Node##" + std::to_string(curveIndex);
-            if (ImGui::Button(addNodeLabel.c_str())) {
-                glm::vec3 newPos(0.0f, 0.0f, 0.0f);
-                if (!curve.nodes.empty()) {
-                    newPos = curve.nodes.back().position + glm::vec3(0.0f, 1.0f, 0.0f);
-                }
-                curve.nodes.emplace_back(newPos);
-            }
-            for (size_t nodeIndex = 0; nodeIndex < curve.nodes.size(); ++nodeIndex) {
-                std::string nodeLabel = "Node " + std::to_string(nodeIndex);
-                if (ImGui::TreeNode(nodeLabel.c_str())) {
-                    ImGui::DragFloat3("Position", &curve.nodes[nodeIndex].position.x, 0.1f);
-                    ImGui::TreePop();
-                }
-            }
-
-            ImGui::TreePop();
-        }
-    }
 
     ImGui::End();
 
@@ -382,21 +254,33 @@ void VApp::imGui() {
         currentSceneName = m_currentScene->getName();
     }
     ImGui::Text("Current Scene: %s", currentSceneName.c_str());
+    if(ImGui::Button("Purge Scenes")) {
+        std::ranges::for_each(m_scenes, [&](vov::Scene* scene) {
+            if (scene != m_currentScene) {
+                scene->SceneUnLoad();
+            }
+        });
+    }
+    //TODO: replace with the vector
     if (ImGui::Button("SigmaVanni")) {
         m_currentScene = m_sigmaVanniScene.get();
-        m_currentScene->sceneLoad();
+        m_currentScene->SceneLoad();
     }
     if (ImGui::Button("Sponza")) {
         m_currentScene = m_sponzaScene.get();
-        m_currentScene->sceneLoad();
+        m_currentScene->SceneLoad();
     }
     if (ImGui::Button("Viking Room")) {
         m_currentScene = m_vikingRoomScene.get();
-        m_currentScene->sceneLoad();
+        m_currentScene->SceneLoad();
     }
-    if (ImGui::Button("Bezier Test")) {
-        m_currentScene = m_bezierTestScene.get();
-        m_currentScene->sceneLoad();
+    if (ImGui::Button("Flight Helmet")) {
+        m_currentScene = m_flightHelmetScene.get();
+        m_currentScene->SceneLoad();
+    }
+    if (ImGui::Button("Sibenik")) {
+        m_currentScene = m_sibenikScene.get();
+        m_currentScene->SceneLoad();
     }
     ImGui::End();
 
@@ -404,7 +288,8 @@ void VApp::imGui() {
     int id{0};
     std::function<void(vov::Transform*)> RenderObject = [&] (vov::Transform* object) {
         ImGui::PushID(++id);
-        const bool treeOpen = ImGui::TreeNodeEx(std::to_string(++id).c_str(), ImGuiTreeNodeFlags_AllowOverlap);
+        std::string name = object->GetName();
+        const bool treeOpen = ImGui::TreeNodeEx(name.c_str(), ImGuiTreeNodeFlags_AllowOverlap);
 
         ImGui::SameLine();
         if (ImGui::SmallButton("Select")) {
@@ -438,24 +323,94 @@ void VApp::imGui() {
     }
     ImGui::End();
 
-    ImGui::Begin("Bezier Curve Follower");
-    if (ImGui::Button("Set Selected as Follower")) {
-        m_bezierFollowerTransform = m_selectedTransform;
+    if (m_showLineTools) {
+
+        ImGui::Begin("Line Segments");
+        ImGui::Text("Line Segments: %d", m_currentScene->getLineSegments().size());
+        for (int i = 0; i < m_currentScene->getLineSegments().size(); i++) {
+            std::string label = "Line Segment " + std::to_string(i);
+            if (ImGui::BeginCombo(label.c_str(), "Line Segment")) {
+                ImGui::DragFloat3("Start", &m_currentScene->getLineSegments()[i].start.x, 0.1f);
+                ImGui::DragFloat3("End", &m_currentScene->getLineSegments()[i].end.x, 0.1f);
+                ImGui::EndCombo();
+            }
+        }
+        ImGui::End();
+
+
+        ImGui::Begin("Bezier Segments");
+        ImGui::Text("Bezier Segments: %d", m_currentScene->getBezierCurves().size());
+
+        static char filenameBuffer[256] = "resources/curves.bram"; // Default filename
+
+        ImGui::Separator();
+        ImGui::InputText("File", filenameBuffer, IM_ARRAYSIZE(filenameBuffer));
+
+        if (ImGui::Button("Save Curves")) {
+            BezierSerializer::writeBezierCurves(filenameBuffer, m_currentScene->getBezierCurves());
+        }
+
+        ImGui::SameLine();
+
+        if (ImGui::Button("Load Curves")) {
+            const auto loadedCurves = BezierSerializer::readBezierCurves(filenameBuffer);
+            m_currentScene->getBezierCurves() = loadedCurves;
+        }
+
+        auto& curves = m_currentScene->getBezierCurves();
+        if (ImGui::Button("Add Curve")) {
+            curves.push_back({
+                {},
+                glm::vec3(1.0f, 0.0f, 0.0f),
+                100
+            });
+        }
+
+        for (size_t curveIndex = 0; curveIndex < curves.size(); ++curveIndex) {
+            std::string curveLabel = "Curve " + std::to_string(curveIndex);
+            if (ImGui::TreeNode(curveLabel.c_str())) {
+                auto& curve = curves[curveIndex];
+
+                ImGui::Text("Nodes: %zu", curve.nodes.size());
+
+                std::string addNodeLabel = "Add Node##" + std::to_string(curveIndex);
+                if (ImGui::Button(addNodeLabel.c_str())) {
+                    glm::vec3 newPos(0.0f, 0.0f, 0.0f);
+                    if (!curve.nodes.empty()) {
+                        newPos = curve.nodes.back().position + glm::vec3(0.0f, 1.0f, 0.0f);
+                    }
+                    curve.nodes.emplace_back(newPos);
+                }
+                for (size_t nodeIndex = 0; nodeIndex < curve.nodes.size(); ++nodeIndex) {
+                    std::string nodeLabel = "Node " + std::to_string(nodeIndex);
+                    if (ImGui::TreeNode(nodeLabel.c_str())) {
+                        ImGui::DragFloat3("Position", &curve.nodes[nodeIndex].position.x, 0.1f);
+                        ImGui::TreePop();
+                    }
+                }
+                ImGui::TreePop();
+            }
+        }
+        ImGui::End();
+
+        ImGui::Begin("Bezier Curve Follower");
+        if (ImGui::Button("Set Selected as Follower")) {
+            m_bezierFollowerTransform = m_selectedTransform;
+        }
+        if (ImGui::Button("Clear Follower")) {
+            m_bezierFollowerTransform = nullptr;
+        }
+        if (m_bezierFollowerTransform) {
+            ImGui::Text("Current Follower: %p", m_bezierFollowerTransform);
+            ImGui::SliderFloat("Follow Speed", &m_bezierSpeed, 0.1f, 2.0f);
+            ImGui::SliderFloat("Progress", &m_bezierProgress, 0.0f, 1.0f);
+            ImGui::Checkbox("Should Rotate", &m_shouldRotate);
+        }
+        ImGui::End();
     }
-    if (ImGui::Button("Clear Follower")) {
-        m_bezierFollowerTransform = nullptr;
-    }
-    if (m_bezierFollowerTransform) {
-        ImGui::Text("Current Follower: %p", m_bezierFollowerTransform);
-        ImGui::SliderFloat("Follow Speed", &m_bezierSpeed, 0.1f, 2.0f);
-        ImGui::SliderFloat("Progress", &m_bezierProgress, 0.0f, 1.0f);
-        ImGui::Checkbox("Should Rotate", &m_shouldRotate);
-    }
-    ImGui::End();
 }
 
-void VApp::ResizeScreen(VkExtent2D newSize) {
-    vkDeviceWaitIdle(m_device.device());
+void VApp::ResizeScreen(const VkExtent2D newSize) {
     m_depthPrePass->Resize(newSize);
     m_geoPass->Resize(newSize);
     m_lightingPass->Resize(newSize);
@@ -465,62 +420,35 @@ void VApp::ResizeScreen(VkExtent2D newSize) {
 }
 
 void VApp::loadGameObjects() {
-    auto sigmaVanniSceneLoadFunction = [&] (vov::Scene* scene) {
-        auto sigmaVanni = vov::GameObject::createGameObject();
-
-        const auto mainSigmaVanniModel = std::make_shared<vov::Model>(m_device, "resources/sigmavanni/SigmaVanni.gltf", sigmaVanni.get());
-        sigmaVanni->model = std::move(mainSigmaVanniModel);
+    m_sigmaVanniScene->setSceneLoadFunction([&] (vov::Scene* scene) {
+        auto sigmaVanni = vov::GameObject::LoadModelFromDisk(m_device, "resources/sigmavanni/SigmaVanni.gltf");
         scene->addGameObject(std::move(sigmaVanni));
 
-        auto testObject = vov::GameObject::createGameObject();
-        const auto testModel = std::make_shared<vov::Model>(m_device, "resources/cat.obj", testObject.get());
-        testObject->model = std::move(testModel);
-        testObject->transform.SetLocalPosition({0.0f, 0.0f, 0.0f});
-
-        scene->addGameObject(std::move(testObject));
-
-        auto& directionalLight = scene->getDirectionalLight();
+        auto& directionalLight = scene->GetDirectionalLight();
         // directionalLight.setDirection(glm::vec3(0.0f, -0.5f, 0.5f));
         directionalLight.setColor(glm::vec3(1.0f, 1.0f, 1.0f));
         directionalLight.setIntensity(1.0f);
-    };
+    });
 
-    m_sigmaVanniScene->setSceneLoadFunction(sigmaVanniSceneLoadFunction);
-
-    auto sponzaSceneLoadFunction = [&] (vov::Scene* scene) {
+    m_sponzaScene->setSceneLoadFunction([&] (vov::Scene* scene) {
         auto sponza = vov::GameObject::createGameObject();
-        const auto mainSponzaModel = std::make_shared<vov::Model>(m_device, "resources/NewSponza/Sponza/glTF/Sponza.gltf", sponza.get());
-        sponza->model = std::move(mainSponzaModel);
-        scene->addGameObject(std::move(sponza));
-    };
+       const auto mainSponzaModel = std::make_shared<vov::Model>(m_device, "resources/Sponza/Sponza.gltf", sponza.get());
+       sponza->model = std::move(mainSponzaModel);
+       scene->addGameObject(std::move(sponza));
+    });
 
-
-    m_sponzaScene->setSceneLoadFunction(sponzaSceneLoadFunction);
-
-
-    auto vikingRoomSceneLoadFunction = [&] (vov::Scene* scene) {
-        auto vikingRoom = vov::GameObject::createGameObject();
-        const auto mainVikingRoomModel = std::make_shared<vov::Model>(m_device, "resources/viking_room.obj", vikingRoom.get());
-        vikingRoom->model = std::move(mainVikingRoomModel);
+    m_vikingRoomScene->setSceneLoadFunction([&] (vov::Scene* scene) {
+        auto vikingRoom = vov::GameObject::LoadModelFromDisk(m_device, "resources/viking_room.obj");
         scene->addGameObject(std::move(vikingRoom));
-    };
+    });
 
-    m_vikingRoomScene->setSceneLoadFunction(vikingRoomSceneLoadFunction);
+    m_sibenikScene->setSceneLoadFunction([&] (vov::Scene* scene) {
+        auto sibenik = vov::GameObject::LoadModelFromDisk(m_device, "resources/sibenik/sibenik.obj");
+        scene->addGameObject(std::move(sibenik));
+    });
 
-    auto bezierTestSceneLoadFunction = [&] (vov::Scene* scene) {
-        // auto bezierTestObject = vov::GameObject::createGameObject();
-        // const auto bezierTestModel = std::make_shared<vov::Model>(m_device, "resources/XYZaxis.obj", bezierTestObject.get());
-        // bezierTestObject->model = std::move(bezierTestModel);
-        // scene->addGameObject(std::move(bezierTestObject));
-
-        auto normalTest = vov::GameObject::createGameObject();
-        // const auto normalTestModel = std::make_shared<vov::Model>(m_device, "resources/normalTest/normalTest.gltf", normalTest.get());
-        // const auto normalTestModel = std::make_shared<vov::Model>(m_device, "resources/NewSponza/Sponza/glTF/Sponza.gltf", normalTest.get());
-        const auto normalTestModel = std::make_shared<vov::Model>(m_device, "resources/SpaceHelmet/FlightHelmet.gltf", normalTest.get());
-        // const auto normalTestModel = std::make_shared<vov::Model>(m_device, "resources/mc/vokselia_spawn.obj", normalTest.get());
-        normalTest->model = std::move(normalTestModel);
-        scene->addGameObject(std::move(normalTest));
-    };
-
-    m_bezierTestScene->setSceneLoadFunction(bezierTestSceneLoadFunction);
+    m_flightHelmetScene->setSceneLoadFunction([&] (vov::Scene* scene) {
+        auto flightHelmet = vov::GameObject::LoadModelFromDisk(m_device, "resources/FlightHelmet/FlightHelmet.gltf");
+        scene->addGameObject(std::move(flightHelmet));
+    });
 }

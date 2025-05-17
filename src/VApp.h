@@ -70,10 +70,13 @@ private:
 
     vov::Camera m_camera{{-2.0f, 1.0f, 0}, {0.0f, 1.0f, 0.0f}};
 
-    std::unique_ptr<vov::Scene> m_sigmaVanniScene{};
     std::unique_ptr<vov::Scene> m_sponzaScene{};
+    std::unique_ptr<vov::Scene> m_sigmaVanniScene{};
     std::unique_ptr<vov::Scene> m_vikingRoomScene{};
-    std::unique_ptr<vov::Scene> m_bezierTestScene{};
+    std::unique_ptr<vov::Scene> m_sibenikScene{};
+    std::unique_ptr<vov::Scene> m_flightHelmetScene{};
+
+    std::vector<vov::Scene*> m_scenes{};
 
     vov::Transform* m_selectedTransform = nullptr;
     vov::Transform* m_bezierFollowerTransform = nullptr;
@@ -90,6 +93,7 @@ private:
     std::unique_ptr<vov::BlitPass> m_blitPass{};
 
     DebugView currentDebugMone{ DebugView::DEBUG_NONE };
+    bool m_showLineTools{ false };
 
 };
 

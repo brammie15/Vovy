@@ -9,7 +9,6 @@ namespace vov {
         int frameIndex;
         float frameTime;
         VkCommandBuffer commandBuffer;
-        VkDescriptorSet globalDescriptor;
         Camera& camera;
     };
 }

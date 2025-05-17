@@ -22,15 +22,16 @@ add_executable(${PROJECT_NAME}
         ${SRC_ROOT}/Rendering/Swapchain.h ${SRC_ROOT}/Rendering/Swapchain.cpp
         ${SRC_ROOT}/Rendering/RenderTexture.h ${SRC_ROOT}/Rendering/RenderTexture.cpp
 
-        ${SRC_ROOT}/Rendering/RenderSystems/GameObjectRenderSystem.h ${SRC_ROOT}/Rendering/RenderSystems/GameObjectRenderSystem.cpp
+#        ${SRC_ROOT}/Rendering/RenderSystems/GameObjectRenderSystem.h ${SRC_ROOT}/Rendering/RenderSystems/GameObjectRenderSystem.cpp
         ${SRC_ROOT}/Rendering/RenderSystems/ImguiRenderSystem.h ${SRC_ROOT}/Rendering/RenderSystems/ImGuiRenderSystem.cpp
         ${SRC_ROOT}/Rendering/RenderSystems/LineRenderSystem.h ${SRC_ROOT}/Rendering/RenderSystems/LineRenderSystem.cpp
-        ${SRC_ROOT}/Rendering/RenderSystems/ShadowRenderSystem.h ${SRC_ROOT}/Rendering/RenderSystems/ShadowRenderSystem.cpp
+#        ${SRC_ROOT}/Rendering/RenderSystems/ShadowRenderSystem.h ${SRC_ROOT}/Rendering/RenderSystems/ShadowRenderSystem.cpp
 
         ${SRC_ROOT}/Rendering/Passes/DepthPrePass.h ${SRC_ROOT}/Rendering/Passes/DepthPrePass.cpp
         ${SRC_ROOT}/Rendering/Passes/GeometryPass.h ${SRC_ROOT}/Rendering/Passes/GeometryPass.cpp
         ${SRC_ROOT}/Rendering/Passes/LightingPass.h ${SRC_ROOT}/Rendering/Passes/LightingPass.cpp
         ${SRC_ROOT}/Rendering/Passes/BlitPass.h ${SRC_ROOT}/Rendering/Passes/BlitPass.cpp
+        ${SRC_ROOT}/Rendering/Passes/SelectPass.h ${SRC_ROOT}/Rendering/Passes/SelectPass.cpp
 
         ${SRC_ROOT}/Resources/Buffer.h ${SRC_ROOT}/Resources/Buffer.cpp
         ${SRC_ROOT}/Resources/Image.h ${SRC_ROOT}/Resources/Image.cpp

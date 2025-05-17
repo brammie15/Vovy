@@ -39,6 +39,10 @@ namespace vov {
         [[nodiscard]] bool isKeyUp(int key) const;
         [[nodiscard]] bool isKeyPressed(int key);
 
+        [[nodiscard]] bool isMouseButtonDown(int button) const;
+        [[nodiscard]] bool isMouseButtonUp(int button) const;
+        [[nodiscard]] bool isMouseButtonPressed(int button);
+
         [[nodiscard]] uint32_t getWidth() const { return m_width; }
         [[nodiscard]] uint32_t getHeight() const { return m_height; }
 
@@ -61,6 +65,9 @@ namespace vov {
 
         std::unordered_map<int, bool> m_currentKeys;
         std::unordered_map<int, bool> m_previousKeys;
+
+        std::unordered_map<int, bool> m_currentMouseButtons;
+        std::unordered_map<int, bool> m_previousMouseButtons;
     };
 }
 

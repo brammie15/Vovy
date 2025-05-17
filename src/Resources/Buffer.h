@@ -20,6 +20,11 @@ namespace vov {
 
         [[nodiscard]] VkBuffer getBuffer() const { return m_buffer; }
         [[nodiscard]] VmaAllocation getAllocation() const { return m_allocation; }
+        void* GetRawData() const { return m_data; }
+        [[nodiscard]] VmaAllocationInfo GetAllocationInfo() const { return m_allocationInfo; }
+
+        // [[nodiscard]] VkDeviceSize getSize() const { return m_size; }
+        // [[nodiscard]] VkBufferUsageFlags getUsage() const { return m_usageFlags; }
 
     private:
         Device& m_device;
