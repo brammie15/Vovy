@@ -10,8 +10,9 @@ namespace vov {
     class ResourceManager final: public Singleton<ResourceManager> {
     public:
 
-        Image* loadImage(Device& deviceRef, const std::string& filename, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage);
-        void clear();
+        Image* LoadImage(Device& deviceRef, const std::string& filename, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage);
+        void Clear();
+        void UnloadImage(Image* image);
 
     private:
 

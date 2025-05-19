@@ -16,7 +16,7 @@
 #include "Rendering/RenderSystems/ImguiRenderSystem.h"
 #include "Rendering/RenderSystems/LineRenderSystem.h"
 #include "Resources/Buffer.h"
-#include "Scene/DirectionalLight.h"
+#include "Scene/Lights/DirectionalLight.h"
 #include "Scene/Mesh.h"
 #include "Utils/BezierCurves.h"
 #include "Utils/Camera.h"
@@ -219,6 +219,31 @@ void VApp::imGui() {
     ImGui::Text("WASD: Move Camera");
     ImGui::Text("Press ` to lock/unlock cursor");
     ImGui::Text("Press F to focus on selected object (BIG WIP)");
+    ImGui::End();
+
+    ImGui::Begin("Point Lights");
+    if (ImGui::Button("Add Point Light")) {
+        auto pointLight = std::make_unique<vov::PointLight>(glm::vec3(0.0f, 0.0f, 0.0f));
+        m_currentScene->addPointLight(std::move(pointLight));
+    }
+    ImGui::Text("Point Lights: %d", m_currentScene->getPointLights().size());
+    //List with Select button
+    if (!m_currentScene->getPointLights().empty()) {
+        for (int i = 0; i < m_currentScene->getPointLights().size(); i++) {
+            bool treeOpen = ImGui::TreeNode(("Pointlight: " + std::to_string(i)).c_str());
+            ImGui::SameLine();
+            ImGui::PushID(("SelectPointLight" + std::to_string(i)).c_str());
+            if (ImGui::SmallButton("Select")) {
+                m_selectedTransform = m_currentScene->getPointLights()[i]->GetTransform();
+            }
+            ImGui::PopID();
+            if (treeOpen) {
+                m_currentScene->getPointLights()[i]->RenderImGui();
+                ImGui::TreePop();
+            }
+        }
+    }
+
     ImGui::End();
 
     ImGui::Begin("Cam Settings");

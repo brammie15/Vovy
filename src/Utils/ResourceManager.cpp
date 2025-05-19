@@ -6,7 +6,7 @@
 #include "Utils/Timer.h"
 
 namespace vov {
-    Image *ResourceManager::loadImage(Device& deviceRef, const std::string& filename, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage) {
+    Image *ResourceManager::LoadImage(Device& deviceRef, const std::string& filename, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage) {
         const auto it = m_images.find(filename);
         if (it != m_images.end()) {
             if (!filename.empty() && (std::filesystem::exists(filename) && std::filesystem::is_regular_file(filename))) {
@@ -21,8 +21,15 @@ namespace vov {
         return m_images[filename].get();
     }
 
-    void ResourceManager::clear() {
+    void ResourceManager::Clear() {
         m_images.clear();
+    }
+
+    //TODO: kinda bad since when 2 meshes uses the same texture i need to check
+    void ResourceManager::UnloadImage(Image* image) {
+        if (image != nullptr) {
+            m_images.erase(image->getFilename());
+        }
     }
 
     ResourceManager::~ResourceManager() = default;

@@ -42,7 +42,9 @@ add_executable(${PROJECT_NAME}
         ${SRC_ROOT}/Scene/GameObject.h ${SRC_ROOT}/Scene/GameObject.cpp
         ${SRC_ROOT}/Scene/Transform.h ${SRC_ROOT}/Scene/Transform.cpp
         ${SRC_ROOT}/Scene/Scene.h ${SRC_ROOT}/Scene/Scene.cpp
-        ${SRC_ROOT}/Scene/DirectionalLight.h ${SRC_ROOT}/Scene/DirectionalLight.cpp
+
+        ${SRC_ROOT}/Scene/Lights/DirectionalLight.h ${SRC_ROOT}/Scene/Lights/DirectionalLight.cpp
+        ${SRC_ROOT}/Scene/Lights/PointLight.h ${SRC_ROOT}/Scene/Lights/PointLight.cpp
 
         ${SRC_ROOT}/Utils/FrameContext.h
         ${SRC_ROOT}/Utils/stb_image.h

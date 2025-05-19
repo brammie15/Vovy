@@ -22,7 +22,6 @@ namespace vov {
 
         [[nodiscard]] const std::string& getFilename() const { return m_filename; }
 
-        // void transitionImageLayout(VkCommandBuffer commandBuffer, VkImageLayout oldLayout, VkImageLayout newLayout) const;
 
         void TransitionImageLayout(VkCommandBuffer commandBuffer, VkImageLayout newLayout);
 
@@ -30,10 +29,7 @@ namespace vov {
 
         [[nodiscard]] uint32_t getMipLevels() const { return m_mipLevels; }
         [[nodiscard]] VkSampler getSampler() const { return m_sampler; }
-        VkExtent2D getExtent() const {
-            return m_extent;
-        }
-
+        [[nodiscard]] VkExtent2D getExtent() const { return m_extent; }
         [[nodiscard]] VkFormat getFormat() const { return m_format; }
 
         [[nodiscard]] bool HasStencil() const {
@@ -60,6 +56,7 @@ namespace vov {
                     return false;
             }
         }
+
 
     private:
         void createImage(uint32_t width, uint32_t height, uint32_t miplevels, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage);

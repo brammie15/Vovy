@@ -5,15 +5,17 @@
 
 #include "Descriptors/DescriptorSetLayout.h"
 #include "Descriptors/DescriptorWriter.h"
+#include "Scene/Lights/PointLight.h"
 #include "Utils/DebugLabel.h"
 #include "Utils/ResourceManager.h"
 
 vov::LightingPass::LightingPass(Device& deviceRef, uint32_t framesInFlight, VkFormat format, VkExtent2D extent): m_device{deviceRef}, m_framesInFlight{framesInFlight}, m_imageFormat{format} {
     m_descriptorPool = DescriptorPool::Builder(m_device)
-            .setMaxSets(framesInFlight * 4)
-            .addPoolSize(VK_DESCRIPTOR_TYPE_SAMPLER, framesInFlight * 2)
-            .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, framesInFlight * 2)
-            .build();
+      .setMaxSets(framesInFlight * 6)
+      .addPoolSize(VK_DESCRIPTOR_TYPE_SAMPLER, framesInFlight * 2)
+      .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, framesInFlight * 2)
+      .addPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, framesInFlight)
+      .build();
 
     m_geobufferSamplersSetLayout = DescriptorSetLayout::Builder(m_device)
             .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) //albedo
@@ -26,6 +28,11 @@ vov::LightingPass::LightingPass(Device& deviceRef, uint32_t framesInFlight, VkFo
     m_descriptorSetLayout = DescriptorSetLayout::Builder(m_device)
             .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
             .build();
+
+    m_pointLightSetLayout = DescriptorSetLayout::Builder(m_device)
+       .addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
+       .build();
+
 
     m_uniformBuffers.resize(m_framesInFlight);
     for (size_t i{0}; i < m_uniformBuffers.size(); i++) {
@@ -45,6 +52,33 @@ vov::LightingPass::LightingPass(Device& deviceRef, uint32_t framesInFlight, VkFo
                 .build(m_descriptorSets[i]);
     }
 
+    m_pointLightSetLayout = DescriptorSetLayout::Builder(m_device)
+        .addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
+        .build();
+
+    // Create point light storage buffers
+    m_pointLightBuffers.resize(m_framesInFlight);
+    m_pointLightDescriptorSets.resize(m_framesInFlight);
+
+    const size_t initialPointLightCount = 16; // Initial capacity
+    for (size_t i = 0; i < m_framesInFlight; i++) {
+        m_pointLightBuffers[i] = std::make_unique<Buffer>(
+            m_device,
+            sizeof(PointLight::PointLightData) * initialPointLightCount,
+            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+            VMA_MEMORY_USAGE_CPU_TO_GPU,
+            true
+        );
+
+        // Allocate descriptor set
+        m_descriptorPool->allocateDescriptor(m_pointLightSetLayout->getDescriptorSetLayout(), m_pointLightDescriptorSets[i]);
+
+        auto bufferInfo = m_pointLightBuffers[i]->descriptorInfo();
+        DescriptorWriter(*m_pointLightSetLayout, *m_descriptorPool)
+            .writeBuffer(0, &bufferInfo)
+            .build(m_pointLightDescriptorSets[i]);
+    }
+
 
     VkPushConstantRange pushConstandRange{};
     pushConstandRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -53,7 +87,8 @@ vov::LightingPass::LightingPass(Device& deviceRef, uint32_t framesInFlight, VkFo
 
     const std::array descriptorSetLayouts = {
         m_descriptorSetLayout->getDescriptorSetLayout(),
-        m_geobufferSamplersSetLayout->getDescriptorSetLayout()
+        m_geobufferSamplersSetLayout->getDescriptorSetLayout(),
+        m_pointLightSetLayout->getDescriptorSetLayout()
     };
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
@@ -92,7 +127,7 @@ vov::LightingPass::LightingPass(Device& deviceRef, uint32_t framesInFlight, VkFo
 
     m_textureDescriptors.resize(framesInFlight);
 
-    auto dummyImage = ResourceManager::GetInstance().loadImage(m_device, "resources/Gear.png", VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
+    auto dummyImage = ResourceManager::GetInstance().LoadImage(m_device, "resources/Gear.png", VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
 
     for (uint32_t i{0}; i < framesInFlight; ++i) {
         VkDescriptorImageInfo dummyInfo{};
@@ -125,6 +160,10 @@ vov::LightingPass::LightingPass(Device& deviceRef, uint32_t framesInFlight, VkFo
         );
         m_renderTargets[index]->SetName("LightTarget" + index);
     }
+
+
+
+
 }
 
 vov::LightingPass::~LightingPass() {
@@ -143,7 +182,36 @@ void vov::LightingPass::Record(const FrameContext& context, VkCommandBuffer comm
     ubo.lightInfo.color = scene.GetDirectionalLight().GetColor();
     ubo.lightInfo.intensity = scene.GetDirectionalLight().GetIntensity();
 
+
+    const auto& pointLights = scene.getPointLights();
+    ubo.pointLightCount = static_cast<uint32_t>(pointLights.size());
+
     m_uniformBuffers[imageIndex]->copyTo(&ubo, sizeof(UniformBuffer));
+
+    if (m_pointLightBuffers[imageIndex]->GetSize() < sizeof(PointLight::PointLightData) * pointLights.size()) {
+        m_pointLightBuffers[imageIndex] = std::make_unique<Buffer>(
+            m_device,
+            sizeof(PointLight::PointLightData) * pointLights.size() * 2,
+            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+            VMA_MEMORY_USAGE_CPU_TO_GPU,
+            true
+        );
+
+        // Update descriptor
+        auto bufferInfo = m_pointLightBuffers[imageIndex]->descriptorInfo();
+        DescriptorWriter(*m_pointLightSetLayout, *m_descriptorPool)
+            .writeBuffer(0, &bufferInfo)
+            .overwrite(m_pointLightDescriptorSets[imageIndex]);
+    }
+
+    if (!pointLights.empty()) {
+        std::vector<PointLight::PointLightData> pointLightData;
+        pointLightData.reserve(pointLights.size());
+        for (const auto& light : pointLights) {
+            pointLightData.push_back(light->getPointLightData());
+        }
+        m_pointLightBuffers[imageIndex]->copyTo(pointLightData.data(), sizeof(PointLight::PointLightData) * pointLights.size());
+    }
 
     m_renderTargets[imageIndex]->TransitionImageLayout(commandBuffer, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
@@ -179,6 +247,7 @@ void vov::LightingPass::Record(const FrameContext& context, VkCommandBuffer comm
 
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorSets[imageIndex], 0, nullptr);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 1, 1, &m_textureDescriptors[imageIndex], 0, nullptr);
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 2, 1, &m_pointLightDescriptorSets[imageIndex], 0, nullptr);
 
     m_pipeline->bind(commandBuffer);
     vkCmdDraw(commandBuffer, 3, 1, 0, 0);

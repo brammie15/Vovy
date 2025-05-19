@@ -71,7 +71,7 @@ namespace vov {
 
     Device::~Device() {
         //TODO: ask if this can be made better
-        ResourceManager::GetInstance().clear();
+        ResourceManager::GetInstance().Clear();
 
 
         vmaDestroyAllocator(m_allocator); //Thanks thalia <3

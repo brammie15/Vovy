@@ -22,13 +22,15 @@ namespace vov {
         struct alignas(16) DirectionalLightInfo {
             glm::vec3 direction{};
             float _pad0;           // padding to align next vec3
+
             glm::vec3 color{};
             float intensity{};
-            float _pad1[3];        // padding to align struct size to 16
         };
         struct alignas(16) UniformBuffer{
             CameraSettings camSettings{};
             DirectionalLightInfo lightInfo{};
+            uint32_t  pointLightCount{};
+            float _pad0[3];        // padding to align struct size to 16
         };
 
         explicit LightingPass(Device& deviceRef,uint32_t framesInFlight, VkFormat format, VkExtent2D extent);
@@ -54,6 +56,10 @@ namespace vov {
         std::vector<std::unique_ptr<Buffer>> m_uniformBuffers{};
         std::vector<VkDescriptorSet> m_descriptorSets{};
         std::unique_ptr<DescriptorSetLayout> m_descriptorSetLayout{};
+
+        std::vector<std::unique_ptr<Buffer>> m_pointLightBuffers{};
+        std::vector<VkDescriptorSet> m_pointLightDescriptorSets{};
+        std::unique_ptr<DescriptorSetLayout> m_pointLightSetLayout{};
 
         std::vector<std::unique_ptr<Image>> m_renderTargets{};
         VkFormat m_imageFormat{};

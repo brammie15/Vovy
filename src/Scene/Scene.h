@@ -4,7 +4,8 @@
 #include <functional>
 #include <memory>
 #include <vector>
-#include "DirectionalLight.h"
+#include "Lights/DirectionalLight.h"
+#include "Lights/PointLight.h"
 #include "Rendering/RenderSystems/LineRenderSystem.h"
 #include "Scene/GameObject.h"
 
@@ -17,10 +18,12 @@ namespace vov {
         void addGameObject(std::unique_ptr<GameObject> gameObject);
         void addLineSegment(const LineSegment& lineSegment);
         void addBezierCurve(const BezierCurve& curve);
+        void addPointLight(std::unique_ptr<PointLight> pointLight);
 
         std::vector<std::unique_ptr<GameObject>>& getGameObjects() { return m_gameObjects; }
         std::vector<LineSegment>& getLineSegments() { return m_lineSegments; }
         std::vector<BezierCurve>& getBezierCurves() { return m_bezierCurves; }
+        std::vector<std::unique_ptr<PointLight>>& getPointLights() { return m_pointLights; }
 
         [[nodiscard]] std::string getName() const { return m_name; }
 
@@ -48,6 +51,7 @@ namespace vov {
         std::vector<std::unique_ptr<GameObject>> m_gameObjects;
         std::vector<LineSegment> m_lineSegments;
         std::vector<BezierCurve> m_bezierCurves;
+        std::vector<std::unique_ptr<PointLight>> m_pointLights;
 
         DirectionalLight m_directionalLight{};
 

@@ -19,7 +19,7 @@ namespace vov {
         explicit Transform(glm::vec3 position);
 
         void SetOwner(GameObject* owner){ m_Owner = owner; }
-        GameObject* GetOwner() const { return m_Owner; }
+        [[nodiscard]] GameObject* GetOwner() const { return m_Owner; }
         void SetName(const std::string& name) { this->name = name; }
         [[nodiscard]] const std::string& GetName() const { return name; }
 
@@ -27,8 +27,8 @@ namespace vov {
 
         Transform(const Transform&) = delete;
         Transform& operator=(const Transform&) = delete;
-        Transform(Transform&&) = delete;
-        Transform& operator=(Transform&&) = delete;
+        Transform(Transform&& other) = delete;
+        Transform& operator=(Transform&& other) = delete;
 
         const glm::vec3& GetWorldPosition();
         const glm::vec3& GetWorldScale();
@@ -60,7 +60,6 @@ namespace vov {
         void SetWorldScale(const glm::vec3& scale);
 
         [[nodiscard]] Transform *GetParent() const { return m_Parent; }
-
 
         void SetParent(Transform* parent, bool useWorldPosition = true);
 

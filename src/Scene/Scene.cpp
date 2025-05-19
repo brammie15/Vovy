@@ -16,6 +16,10 @@ namespace vov {
         m_bezierCurves.push_back(curve);
     }
 
+    void Scene::addPointLight(std::unique_ptr<PointLight> pointLight) {
+        m_pointLights.push_back(std::move(pointLight));
+    }
+
     void Scene::clearLineSegments() {
         m_lineSegments.clear();
     }

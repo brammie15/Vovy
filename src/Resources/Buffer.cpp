@@ -10,7 +10,7 @@ namespace vov {
         } else {
             allocInfo.requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
         }
-
+        m_size = size;
         m_device.CreateBuffer(size, usageFlags, memoryUsage, mappable, m_buffer, m_allocation);
     }
 
