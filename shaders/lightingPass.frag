@@ -43,8 +43,6 @@ layout(std140, set = 0, binding = 0) uniform globalUBO
     vec2 viewportSize;
 } ubo;
 
-
-
 layout(set = 1, binding = 0) uniform sampler2D albedoMap;
 layout(set = 1, binding = 1) uniform sampler2D normalMap;
 layout(set = 1, binding = 2) uniform sampler2D metallicRoughnessMap;
@@ -55,6 +53,10 @@ layout(set = 1, binding = 5) uniform sampler2D depthMap;
 
 layout(set = 2, binding = 0) uniform textureCube hdriTexture;
 layout(set = 2, binding = 1) uniform sampler hdriSampler;
+
+layout(set = 2, binding = 2) uniform textureCube diffuseIrradianceMap;
+layout(set = 2, binding = 3) uniform sampler diffuseIrradianceSampler;
+
 
 layout(set = 3, binding = 0) readonly buffer PointLights {
     PointLight pointLights[];
@@ -67,9 +69,7 @@ layout(location = 0) out vec4 outColor;
 
 // Calculate attenuation for point lights
 float calculateAttenuation(float distance, float range) {
-    // Inverse square law with range cutoff
     float attenuation = 1.0 / (distance * distance);
-    // Smooth falloff near the light's range
     float rangeFactor = pow(clamp(1.0 - pow(distance / range, 4.0), 0.0, 1.0), 2.0);
     return attenuation * rangeFactor;
 }
@@ -104,7 +104,7 @@ vec3 calculatePointLightContribution(PointLight light, vec3 worldPos, vec3 N, ve
 
     // Cook-Torrance BRDF
     float NDF = NormalDistributionGGX(N, H, roughness);
-    float G = GeometrySmith(N, V, L, roughness);
+    float G = GeometrySmith(N, V, L, roughness, false);
     vec3 F = fresnelSchlick(max(dot(H, V), 0.0), F0);
 
     vec3 kS = F;
@@ -156,7 +156,7 @@ void main()
 
     // Cook-Torrance BRDF for directional light
     float NDF = NormalDistributionGGX(N, H, roughness);
-    float G = GeometrySmith(N, V, L, roughness);
+    float G = GeometrySmith(N, V, L, roughness, false);
     vec3 F = fresnelSchlick(max(dot(H, V), 0.0), F0);
 
     vec3 kS = F;
@@ -176,10 +176,12 @@ void main()
         Lo += calculatePointLightContribution(light, worldPos, N, V, albedo, metallic, roughness, F0);
     }
 
-    // Ambient lighting
-    vec3 ambient = vec3(0.03) * albedo * ao;
-//    vec3 color = (ambient + Lo) * ubo.camSettings.exposure;
-    vec3 color = (ambient + Lo);
+    const vec3 prefilteredDiffuseIrradianec = texture(samplerCube(diffuseIrradianceMap, diffuseIrradianceSampler), vec3(normal.x,-normal.y, normal.z)).rgb;
+    const vec3 diffuse = albedo * prefilteredDiffuseIrradianec;
+
+
+    vec3 ambient = kD * diffuse;
+    vec3 color = ambient + Lo;
 
     // Tone mapping and gamma correction
 //    color = color / (color + vec3(1.0));
@@ -187,8 +189,8 @@ void main()
 
     outColor.rgb = color;
     outColor.a = 1.0;
-//
-//    float z = depth * 2.0 - 1.0; // back to NDC
+
+    //    float z = depth * 2.0 - 1.0; // back to NDC
 //    float linearDepth = (2.0 * ubo.projectionMatrix[3][2]) /
 //    (ubo.projectionMatrix[2][2] - z * ubo.projectionMatrix[2][3]);
 //

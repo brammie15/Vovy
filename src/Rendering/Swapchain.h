@@ -58,10 +58,8 @@ namespace vov {
         VkFormat m_swapChainDepthFormat;
 
 
-        //TODO: replace with vov::image
         std::vector<std::unique_ptr<vov::Image>> m_swapChainImages;
         std::vector<std::unique_ptr<vov::Image>> m_depthImages;
-
 
         std::vector<VkSemaphore> m_imageAvailableSemaphores;
         std::vector<VkSemaphore> m_renderFinishedSemaphores;

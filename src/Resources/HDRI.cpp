@@ -20,6 +20,8 @@ vov::HDRI::~HDRI() {
     vmaDestroyImage(m_device.allocator(), m_hdrImage, m_allocation);
     vmaDestroyImage(m_device.allocator(), m_cubeMap, m_cubeMapAllocation);
     vkDestroyImageView(m_device.device(), m_skyboxView, nullptr);
+    vkDestroyImageView(m_device.device(), m_diffuseIrradianceView, nullptr);
+    vmaDestroyImage(m_device.allocator(), m_diffuseIrradianceMap, m_diffuseIrradianceAllocation);
 }
 
 void vov::HDRI::LoadHDR(const std::string& filename) {
@@ -72,7 +74,9 @@ void vov::HDRI::LoadHDR(const std::string& filename) {
     m_device.TransitionImageLayout(m_hdrImage, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1);
 }
 
-void vov::HDRI::RenderToCubemap(VkImage vk_image, std::array<VkImageView, 6> faceViews, uint32_t size, const std::string& vertPath, const std::string& fragPath) {
+void vov::HDRI::RenderToCubemap(VkImage inputImage, VkImageView inputView, VkSampler sampler,
+                       VkImage outputImage, std::array<VkImageView, 6> faceViews, uint32_t size,
+                       const std::string& vertPath, const std::string& fragPath) {
     VkCommandBuffer cmdBuffer = m_device.beginSingleTimeCommands();
 
     struct PushConstants {
@@ -86,7 +90,7 @@ void vov::HDRI::RenderToCubemap(VkImage vk_image, std::array<VkImageView, 6> fac
     barrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.image = vk_image;
+    barrier.image = outputImage;
     barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     barrier.subresourceRange.baseMipLevel = 0;
     barrier.subresourceRange.levelCount = 1;
@@ -119,13 +123,12 @@ void vov::HDRI::RenderToCubemap(VkImage vk_image, std::array<VkImageView, 6> fac
     pushConstantRange.offset = 0;
     pushConstantRange.size = sizeof(PushConstants);
 
-
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.pushConstantRangeCount = 1;
     pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
 
-    std::array <VkDescriptorSetLayout, 1> descriptorSetLayouts = {
+    std::array<VkDescriptorSetLayout, 1> descriptorSetLayouts = {
         descriptorSetLayout->getDescriptorSetLayout()
     };
 
@@ -168,15 +171,14 @@ void vov::HDRI::RenderToCubemap(VkImage vk_image, std::array<VkImageView, 6> fac
 
     VkDescriptorImageInfo imageInfo{};
     imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    imageInfo.imageView = m_hdrView->getHandle();
-    imageInfo.sampler = m_hdrSampler->getHandle();
+    imageInfo.imageView = inputView;
+    imageInfo.sampler = sampler;
 
     VkDescriptorSet descriptorSet;
 
     DescriptorWriter writer(*descriptorSetLayout, *descriptorPool);
     writer.writeImage(0, &imageInfo);
     writer.build(descriptorSet);
-
 
     for (uint32_t face{ 0 }; face < 6; ++face) {
         PushConstants pc{};
@@ -204,7 +206,6 @@ void vov::HDRI::RenderToCubemap(VkImage vk_image, std::array<VkImageView, 6> fac
         vkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
         vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
 
-        // Bind pipeline and descriptor sets
         pipeline->bind(cmdBuffer);
         vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout,
                               0, 1, &descriptorSet, 0, nullptr);
@@ -218,7 +219,6 @@ void vov::HDRI::RenderToCubemap(VkImage vk_image, std::array<VkImageView, 6> fac
              &pc
          );
 
-        // Draw unit cube
         vkCmdDraw(cmdBuffer, 36, 1, 0, 0);
 
         vov::vkCmdEndRenderingKHR(cmdBuffer);
@@ -228,6 +228,7 @@ void vov::HDRI::RenderToCubemap(VkImage vk_image, std::array<VkImageView, 6> fac
     barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
     barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    barrier.image = outputImage;
 
     vkCmdPipelineBarrier(
         cmdBuffer,
@@ -239,17 +240,13 @@ void vov::HDRI::RenderToCubemap(VkImage vk_image, std::array<VkImageView, 6> fac
         1, &barrier
     );
 
-    // Submit command buffer
     m_device.endSingleTimeCommands(cmdBuffer);
 
-    for (auto& view : faceViews) {
-        vkDestroyImageView(m_device.device(), view, nullptr);
-    }
     vkDestroyPipelineLayout(m_device.device(), pipelineLayout, nullptr);
-
 }
 
 void vov::HDRI::CreateCubeMap() {
+    const uint32_t mipLevels = static_cast<uint32_t>(std::floor(std::log2(m_cubeMapSize))) + 1;
 
     VkImageCreateInfo imageInfo{};
     imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -257,12 +254,12 @@ void vov::HDRI::CreateCubeMap() {
     imageInfo.extent.height = m_cubeMapSize;
     imageInfo.extent.width = m_cubeMapSize;
     imageInfo.extent.depth = 1;
-    imageInfo.mipLevels = 1;
+    imageInfo.mipLevels = mipLevels;
     imageInfo.arrayLayers = 6; // 6 faces for cubemap
     imageInfo.format = VK_FORMAT_R32G32B32A32_SFLOAT;
     imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
     imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    imageInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    imageInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
     imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
     imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     imageInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT; // Create a cubemap
@@ -309,8 +306,15 @@ void vov::HDRI::CreateCubeMap() {
         throw std::runtime_error("Failed to create image view!");
     }
 
-    RenderToCubemap(m_cubeMap, faceViews, m_cubeMapSize, "shaders/cubemap.vert.spv", "shaders/cubemap.frag.spv");
+    RenderToCubemap(m_hdrImage, m_hdrView->getHandle(), m_hdrSampler->getHandle(),
+                    m_cubeMap, faceViews, m_cubeMapSize,
+                    "shaders/cubemap.vert.spv", "shaders/cubemap.frag.spv");
+    GenerateMipmaps(m_cubeMap, VK_FORMAT_R32G32B32A32_SFLOAT, m_cubeMapSize, m_cubeMapSize, mipLevels, 6);
     DebugLabel::NameImage(m_cubeMap, "Cubemap");
+
+    for (auto& view : faceViews) {
+        vkDestroyImageView(m_device.device(), view, nullptr);
+    }
 
 }
 
@@ -375,8 +379,10 @@ void vov::HDRI::CreateDiffuseIrradianceMap() {
     }
 
     // Render to the cubemap using the special diffuse irradiance fragment shader
-    RenderToCubemap(m_diffuseIrradianceMap, faceViews, m_diffuseIrradianceMapSize, "shaders/cubemap.vert.spv", "shaders/diffuseIrradiance.frag.spv");
-
+    // RenderToCubemap(m_diffuseIrradianceMap, faceViews, m_diffuseIrradianceMapSize, "shaders/cubemap.vert.spv", "shaders/diffuseIrradiance.frag.spv");
+    RenderToCubemap(m_cubeMap, m_skyboxView, m_hdrSampler->getHandle(),
+                    m_diffuseIrradianceMap, faceViews, m_diffuseIrradianceMapSize,
+                    "shaders/cubemap.vert.spv", "shaders/diffuseIrradiance.frag.spv");
     DebugLabel::NameImage(m_diffuseIrradianceMap, "Diffuse Irradiance Map");
 
     // Clean up temporary face views
@@ -385,5 +391,185 @@ void vov::HDRI::CreateDiffuseIrradianceMap() {
     }
 }
 
-void vov::HDRI::RenderToCubemap(VkImage inputImage, VkImageView inputView, VkSampler sampler, VkImage outputImage, std::array<VkImageView, 6> faceViews, VkShaderModule fragShader) {
+void vov::HDRI::GenerateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels, uint32_t layerCount) {
+    VkFormatProperties formatProperties;
+    vkGetPhysicalDeviceFormatProperties(m_device.getPhysicalDevice(), imageFormat, &formatProperties);
+
+    if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT)) {
+        throw std::runtime_error("Texture image format does not support linear blitting!");
+    }
+
+    VkCommandBuffer commandBuffer = m_device.beginSingleTimeCommands();
+
+    // First, transition the entire image to TRANSFER_DST_OPTIMAL
+    VkImageMemoryBarrier initialBarrier{};
+    initialBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    initialBarrier.image = image;
+    initialBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    initialBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    initialBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    initialBarrier.subresourceRange.baseArrayLayer = 0;
+    initialBarrier.subresourceRange.layerCount = layerCount;
+    initialBarrier.subresourceRange.baseMipLevel = 0;
+    initialBarrier.subresourceRange.levelCount = mipLevels;
+    initialBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    initialBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    initialBarrier.srcAccessMask = 0;
+    initialBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+    vkCmdPipelineBarrier(commandBuffer,
+                         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                         VK_PIPELINE_STAGE_TRANSFER_BIT,
+                         0,
+                         0, nullptr,
+                         0, nullptr,
+                         1, &initialBarrier);
+
+    for (uint32_t face = 0; face < layerCount; ++face) {
+        int32_t mipWidth = texWidth;
+        int32_t mipHeight = texHeight;
+
+        // The base mip level is already in TRANSFER_DST_OPTIMAL from the initial barrier
+        for (uint32_t i = 1; i < mipLevels; ++i) {
+            // Transition mip level i-1 to TRANSFER_SRC_OPTIMAL
+            VkImageMemoryBarrier barrierBeforeBlit{};
+            barrierBeforeBlit.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+            barrierBeforeBlit.image = image;
+            barrierBeforeBlit.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            barrierBeforeBlit.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            barrierBeforeBlit.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            barrierBeforeBlit.subresourceRange.baseArrayLayer = face;
+            barrierBeforeBlit.subresourceRange.layerCount = 1;
+            barrierBeforeBlit.subresourceRange.baseMipLevel = i - 1;
+            barrierBeforeBlit.subresourceRange.levelCount = 1;
+            barrierBeforeBlit.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+            barrierBeforeBlit.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+            barrierBeforeBlit.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+            barrierBeforeBlit.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+
+            vkCmdPipelineBarrier(commandBuffer,
+                                 VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                 VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                 0,
+                                 0, nullptr,
+                                 0, nullptr,
+                                 1, &barrierBeforeBlit);
+
+            // Blit from mip level i-1 to i
+            VkImageBlit blit{};
+            blit.srcOffsets[0] = {0, 0, 0};
+            blit.srcOffsets[1] = {mipWidth, mipHeight, 1};
+            blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            blit.srcSubresource.mipLevel = i - 1;
+            blit.srcSubresource.baseArrayLayer = face;
+            blit.srcSubresource.layerCount = 1;
+
+            blit.dstOffsets[0] = {0, 0, 0};
+            blit.dstOffsets[1] = {
+                mipWidth > 1 ? mipWidth / 2 : 1,
+                mipHeight > 1 ? mipHeight / 2 : 1,
+                1
+            };
+            blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            blit.dstSubresource.mipLevel = i;
+            blit.dstSubresource.baseArrayLayer = face;
+            blit.dstSubresource.layerCount = 1;
+
+            vkCmdBlitImage(commandBuffer,
+                           image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                           image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                           1, &blit,
+                           VK_FILTER_LINEAR);
+
+            // Transition mip level i-1 to SHADER_READ_ONLY_OPTIMAL
+            VkImageMemoryBarrier barrierAfterBlit{};
+            barrierAfterBlit.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+            barrierAfterBlit.image = image;
+            barrierAfterBlit.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            barrierAfterBlit.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            barrierAfterBlit.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            barrierAfterBlit.subresourceRange.baseArrayLayer = face;
+            barrierAfterBlit.subresourceRange.layerCount = 1;
+            barrierAfterBlit.subresourceRange.baseMipLevel = i - 1;
+            barrierAfterBlit.subresourceRange.levelCount = 1;
+            barrierAfterBlit.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+            barrierAfterBlit.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            barrierAfterBlit.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+            barrierAfterBlit.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+            vkCmdPipelineBarrier(commandBuffer,
+                                 VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                                 0,
+                                 0, nullptr,
+                                 0, nullptr,
+                                 1, &barrierAfterBlit);
+
+            if (mipWidth > 1) mipWidth /= 2;
+            if (mipHeight > 1) mipHeight /= 2;
+        }
+
+        // Transition the last mip level to SHADER_READ_ONLY_OPTIMAL
+        VkImageMemoryBarrier finalMipBarrier{};
+        finalMipBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        finalMipBarrier.image = image;
+        finalMipBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        finalMipBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        finalMipBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        finalMipBarrier.subresourceRange.baseArrayLayer = face;
+        finalMipBarrier.subresourceRange.layerCount = 1;
+        finalMipBarrier.subresourceRange.baseMipLevel = mipLevels - 1;
+        finalMipBarrier.subresourceRange.levelCount = 1;
+        finalMipBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        finalMipBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        finalMipBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        finalMipBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+        vkCmdPipelineBarrier(commandBuffer,
+                             VK_PIPELINE_STAGE_TRANSFER_BIT,
+                             VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                             0,
+                             0, nullptr,
+                             0, nullptr,
+                             1, &finalMipBarrier);
+    }
+
+    m_device.endSingleTimeCommands(commandBuffer);
+}
+
+void vov::HDRI::TransitionImageLayout(VkCommandBuffer cmd,
+                           VkImage image,
+                           VkImageLayout oldLayout,
+                           VkImageLayout newLayout,
+                           uint32_t mipLevels,
+                           uint32_t arrayLayers) {
+    VkImageMemoryBarrier barrier{};
+    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    barrier.oldLayout = oldLayout;
+    barrier.newLayout = newLayout;
+
+    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+
+    barrier.image = image;
+    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    barrier.subresourceRange.baseMipLevel = 0;
+    barrier.subresourceRange.levelCount = mipLevels;
+    barrier.subresourceRange.baseArrayLayer = 0;
+    barrier.subresourceRange.layerCount = arrayLayers;
+
+    // Adjust access masks depending on transition
+    barrier.srcAccessMask = 0;
+    barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+    VkPipelineStageFlags sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+    VkPipelineStageFlags destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+
+    vkCmdPipelineBarrier(
+        cmd,
+        sourceStage, destinationStage,
+        0,
+        0, nullptr,
+        0, nullptr,
+        1, &barrier);
 }

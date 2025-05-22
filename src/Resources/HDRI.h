@@ -17,7 +17,9 @@ namespace vov {
 
         void LoadHDR(const std::string& filename);
 
-        void RenderToCubemap(VkImage vk_image, std::array<VkImageView, 6> array, uint32_t size, const std::string& vertPath, const std::string& fragPath);
+        void RenderToCubemap(VkImage inputImage, VkImageView inputView, VkSampler sampler,
+                       VkImage outputImage, std::array<VkImageView, 6> faceViews, uint32_t size,
+                       const std::string& vertPath, const std::string& fragPath);
         void CreateCubeMap();
 
         void CreateDiffuseIrradianceMap();
@@ -27,11 +29,17 @@ namespace vov {
         [[nodiscard]] VkSampler GetSampler() const { return m_sampler.getHandle(); }
         [[nodiscard]] VkImageView GetHDRView() const { return m_hdrView->getHandle(); }
         [[nodiscard]] VkSampler GetHDRSampler() const { return m_hdrSampler->getHandle(); }
+        [[nodiscard]] VkImageView GetIrradianceView() const { return m_diffuseIrradianceView; }
+        [[nodiscard]] VkImage GetIrradianceMap() const { return m_diffuseIrradianceMap; }
+
+        [[nodiscard]] uint32_t GetCubeMapSize() const { return m_cubeMapSize; }
+        [[nodiscard]] uint32_t GetDiffuseIrradianceMapSize() const { return m_diffuseIrradianceMapSize; }
 
     private:
 
-        void RenderToCubemap(VkImage inputImage, VkImageView inputView, VkSampler sampler,
-                       VkImage outputImage, std::array<VkImageView, 6> faceViews, VkShaderModule fragShader);
+        void GenerateMipmaps(VkImage image, VkFormat imageFormat, int32_t texWidth, int32_t texHeight, uint32_t mipLevels, uint32_t arrayLayers);
+        //Since i use this and not vov::image
+        void TransitionImageLayout(VkCommandBuffer cmd, VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout, uint32_t mipLevels, uint32_t arrayLayers);
 
 
         Device& m_device;
@@ -53,7 +61,7 @@ namespace vov {
         VkImage m_diffuseIrradianceMap = VK_NULL_HANDLE;
         VmaAllocation m_diffuseIrradianceAllocation = VK_NULL_HANDLE;
         VkImageView m_diffuseIrradianceView = VK_NULL_HANDLE;
-        uint32_t m_diffuseIrradianceMapSize = 32; // Default size for diffuse irradiance map
+        uint32_t m_diffuseIrradianceMapSize = 256; // Default size for diffuse irradiance map
 
 
         const std::array<glm::mat4, 6> viewMatrices = {
@@ -72,9 +80,6 @@ namespace vov {
         };
 
         const glm::mat4 projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
-
-
-
     };
 }
 

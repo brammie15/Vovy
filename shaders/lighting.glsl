@@ -19,7 +19,7 @@ float NormalDistributionGGX(vec3 surfaceNormal, vec3 halfwayVector, float roughn
 
 // Schlick-GGX geometry function for a single direction
 // Approximates the shadowing/masking of microfacets
-float GeometrySchlickGGX(float normalDotView, float roughness)
+float GeometrySchlickGGX_Direct(float normalDotView, float roughness)
 {
     float roughnessFactor = (roughness + 1.0);
     float roughnessRedistribution = (roughnessFactor * roughnessFactor) / 8.0;
@@ -30,13 +30,31 @@ float GeometrySchlickGGX(float normalDotView, float roughness)
     return numerator / denominator;
 }
 
+float GeometrySchlickGGX_Indirect(float normalDotView, float roughness)
+{
+    float a = roughness;
+    float k = a * a / 2.0;
+
+    float num = normalDotView;
+    float denom = normalDotView * (1.0 - k) + k;
+
+    return num / denom;
+}
 // Smith's method combining geometry obstruction for both view and light directions
-float GeometrySmith(vec3 surfaceNormal, vec3 viewDirection, vec3 lightDirection, float roughness)
+float GeometrySmith(vec3 surfaceNormal, vec3 viewDirection, vec3 lightDirection, float roughness, bool indirectLighting)
 {
     float normalDotView = max(dot(surfaceNormal, viewDirection), 0.0);
     float normalDotLight = max(dot(surfaceNormal, lightDirection), 0.0);
-    float geometryView = GeometrySchlickGGX(normalDotView, roughness);
-    float geometryLight = GeometrySchlickGGX(normalDotLight, roughness);
+    float geometryView = 0.0;
+    float geometryLight = 0.0;
+
+    if(indirectLighting){
+        geometryView = GeometrySchlickGGX_Indirect(normalDotView, roughness);
+        geometryLight = GeometrySchlickGGX_Indirect(normalDotLight, roughness);
+    } else {
+        geometryView = GeometrySchlickGGX_Direct(normalDotView, roughness);
+        geometryLight = GeometrySchlickGGX_Direct(normalDotLight, roughness);
+    }
 
     return geometryView * geometryLight;
 }

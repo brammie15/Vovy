@@ -68,7 +68,7 @@ void VApp::run() {
     m_hdrEnvironment = std::make_unique<vov::HDRI>(m_device);
     m_hdrEnvironment->LoadHDR("resources/circus_arena_4k.hdr");
     m_hdrEnvironment->CreateCubeMap();
-    // m_hdrEnvironment->CreateDiffuseIrradianceMap();
+    m_hdrEnvironment->CreateDiffuseIrradianceMap();
 
     for (int i = 0; i < uboBuffers.size(); i++) {
         uboBuffers[i] = std::make_unique<vov::Buffer>(
@@ -173,7 +173,6 @@ void VApp::run() {
             m_blitPass->Record(frameContext, commandBuffer, frameIndex, m_renderer.getSwapchain());
 
             imguiRenderSystem.renderImgui(commandBuffer);
-
 
             m_renderer.endSwapChainRenderPass(commandBuffer);
 

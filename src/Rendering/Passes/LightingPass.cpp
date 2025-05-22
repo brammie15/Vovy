@@ -37,6 +37,8 @@ vov::LightingPass::LightingPass(Device& deviceRef, uint32_t framesInFlight, VkFo
     m_hdriSamplerSetLayout = DescriptorSetLayout::Builder(m_device)
         .addBinding(0, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT)
         .addBinding(1, VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+        .addBinding(2, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT)
+        .addBinding(3, VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
         .build();
 
 
@@ -153,20 +155,30 @@ vov::LightingPass::LightingPass(Device& deviceRef, uint32_t framesInFlight, VkFo
         }
     }
 
-    VkDescriptorImageInfo imageInfo{};
-    imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    imageInfo.imageView = hdri->GetCubeMapView();
-    imageInfo.sampler = VK_NULL_HANDLE; // Ignored for SAMPLED_IMAGE
+    VkDescriptorImageInfo skyboxInfo{};
+    skyboxInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    skyboxInfo.imageView = hdri->GetCubeMapView();
+    skyboxInfo.sampler = VK_NULL_HANDLE; // Ignored for SAMPLED_IMAGE
 
     // For the sampler
-    VkDescriptorImageInfo samplerInfo{};
-    samplerInfo.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED; // Ignored for SAMPLER
-    samplerInfo.imageView = VK_NULL_HANDLE;              // Ignored for SAMPLER
-    samplerInfo.sampler = hdri->GetHDRSampler();
+    VkDescriptorImageInfo skyboxSampler{};
+    skyboxSampler.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED; // Ignored for SAMPLER
+    skyboxSampler.imageView = VK_NULL_HANDLE;              // Ignored for SAMPLER
+    skyboxSampler.sampler = hdri->GetHDRSampler();
+
+    VkDescriptorImageInfo irradianceInfo{};
+    irradianceInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    irradianceInfo.imageView = hdri->GetIrradianceView();
+    irradianceInfo.sampler = VK_NULL_HANDLE; // Ignored for SAMPLED_IMAGE
+
+
+
 
     DescriptorWriter hdriWriter(*m_hdriSamplerSetLayout, *m_descriptorPool);
-    hdriWriter.writeImage(0, &imageInfo);
-    hdriWriter.writeImage(1, &samplerInfo);
+    hdriWriter.writeImage(0, &skyboxInfo);
+    hdriWriter.writeImage(1, &skyboxSampler);
+    hdriWriter.writeImage(2, &irradianceInfo);
+    hdriWriter.writeImage(3, &skyboxSampler);
     if (!hdriWriter.build(m_hdriSamplerDescriptorSets)) {
         throw std::runtime_error("Failed to build descriptor set for LightingPass");
     }

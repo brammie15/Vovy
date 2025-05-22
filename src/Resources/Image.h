@@ -37,7 +37,6 @@ namespace vov {
 
         [[nodiscard]] const std::string& getFilename() const { return m_filename; }
 
-
         void TransitionImageLayout(VkCommandBuffer commandBuffer, VkImageLayout newLayout);
 
         void SetName(const std::string& name);
