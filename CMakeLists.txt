@@ -36,6 +36,10 @@ add_executable(${PROJECT_NAME}
         ${SRC_ROOT}/Resources/Buffer.h ${SRC_ROOT}/Resources/Buffer.cpp
         ${SRC_ROOT}/Resources/Image.h ${SRC_ROOT}/Resources/Image.cpp
         ${SRC_ROOT}/Resources/GeoBuffer.h ${SRC_ROOT}/Resources/GeoBuffer.cpp
+        ${SRC_ROOT}/Resources/HDRI.h ${SRC_ROOT}/Resources/HDRI.cpp
+
+        ${SRC_ROOT}/Resources/Image/ImageView.h ${SRC_ROOT}/Resources/Image/ImageView.cpp
+        ${SRC_ROOT}/Resources/Image/Sampler.h ${SRC_ROOT}/Resources/Image/Sampler.cpp
 
         ${SRC_ROOT}/Scene/Mesh.h ${SRC_ROOT}/Scene/Mesh.cpp
         ${SRC_ROOT}/Scene/Model.h ${SRC_ROOT}/Scene/Model.cpp
@@ -129,7 +133,7 @@ foreach (GLSL ${GLSL_SOURCE_FILES})
 
     add_custom_command(
             OUTPUT ${SPIRV}
-            COMMAND ${GLSL_VALIDATOR} -V ${GLSL} -o ${SPIRV}
+            COMMAND ${GLSL_VALIDATOR} -V -g ${GLSL} -o ${SPIRV}
             DEPENDS ${GLSL}
     )
 

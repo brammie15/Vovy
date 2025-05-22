@@ -83,7 +83,7 @@ void vov::GeoBuffer::DestroyImages() {
 void vov::GeoBuffer::CreateImages() {
     m_albedo = std::make_unique<Image>(
         m_device,
-        m_extent.width, m_extent.height,
+        m_extent,
         VK_FORMAT_R8G8B8A8_SRGB,
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
         VMA_MEMORY_USAGE_AUTO
@@ -92,7 +92,7 @@ void vov::GeoBuffer::CreateImages() {
 
     m_normal = std::make_unique<Image>(
         m_device,
-        m_extent.width, m_extent.height,
+        m_extent,
         VK_FORMAT_R8G8B8A8_UNORM,
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
         VMA_MEMORY_USAGE_AUTO
@@ -101,7 +101,7 @@ void vov::GeoBuffer::CreateImages() {
 
     m_worldPos = std::make_unique<Image>(
         m_device,
-        m_extent.width, m_extent.height,
+        m_extent,
         VK_FORMAT_R32G32B32A32_SFLOAT,
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
         VMA_MEMORY_USAGE_AUTO
@@ -110,7 +110,7 @@ void vov::GeoBuffer::CreateImages() {
 
     m_metalicRoughness = std::make_unique<Image>(
         m_device,
-        m_extent.width, m_extent.height,
+        m_extent,
         VK_FORMAT_R32G32B32A32_SFLOAT,
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
         VMA_MEMORY_USAGE_AUTO
@@ -119,7 +119,7 @@ void vov::GeoBuffer::CreateImages() {
 
     m_selectionImage = std::make_unique<Image>(
         m_device,
-        m_extent.width, m_extent.height,
+        m_extent,
         VK_FORMAT_R8G8B8A8_UNORM,
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
         VMA_MEMORY_USAGE_AUTO

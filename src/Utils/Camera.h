@@ -6,6 +6,15 @@
 namespace vov {
     class Camera {
     public:
+        struct alignas(16) CameraSettings{
+            glm::vec4 cameraPos{};
+            float apeture{};
+            float shutterSpeed{};
+            float iso{};
+            float _pad0;           // padding to align next vec3
+        };
+
+
         explicit Camera(const glm::vec3& position, const glm::vec3& up);
         void Update(float deltaTime);
 
@@ -34,8 +43,11 @@ namespace vov {
         bool IsTargetting() const { return m_useTarget; }
         void Target(const glm::vec3& target);
 
-        void SetExposure(float exp){ m_exposure = exp; }
-        float& GetExposure() { return m_exposure; }
+
+        float& GetISO() { return m_iso; }
+        float& GetAperture() { return m_aperture; }
+        float& GetShutterSpeed() { return m_shutterSpeed; }
+
 
     private:
 
@@ -64,7 +76,10 @@ namespace vov {
         float m_zNear{0.001f};
         float m_zFar{100.0f};
 
-        float m_exposure{1.f};
+        float m_iso{100.f};
+        float m_aperture{2.8f};
+        float m_shutterSpeed{1.f / 60.f};
+
     };
 }
 

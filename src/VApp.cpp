@@ -17,7 +17,6 @@
 #include "Rendering/RenderSystems/LineRenderSystem.h"
 #include "Resources/Buffer.h"
 #include "Scene/Lights/DirectionalLight.h"
-#include "Scene/Mesh.h"
 #include "Utils/BezierCurves.h"
 #include "Utils/Camera.h"
 #include "Utils/DeltaTime.h"
@@ -57,12 +56,19 @@ VApp::VApp() {
     m_renderer.SetResizeCallback([&] (const VkExtent2D newSize) {
         this->ResizeScreen(newSize);
     });
+
+
 }
 
 VApp::~VApp() = default;
 
 void VApp::run() {
     std::vector<std::unique_ptr<vov::Buffer>> uboBuffers(vov::Swapchain::MAX_FRAMES_IN_FLIGHT);
+
+    m_hdrEnvironment = std::make_unique<vov::HDRI>(m_device);
+    m_hdrEnvironment->LoadHDR("resources/circus_arena_4k.hdr");
+    m_hdrEnvironment->CreateCubeMap();
+    // m_hdrEnvironment->CreateDiffuseIrradianceMap();
 
     for (int i = 0; i < uboBuffers.size(); i++) {
         uboBuffers[i] = std::make_unique<vov::Buffer>(
@@ -85,7 +91,7 @@ void VApp::run() {
     m_geoPass = std::make_unique<vov::GeometryPass>(m_device, createInfo);
 
     //TODO: figure out format here;
-    m_lightingPass = std::make_unique<vov::LightingPass>(m_device, vov::Swapchain::MAX_FRAMES_IN_FLIGHT, VK_FORMAT_R16G16B16A16_SFLOAT, m_renderer.getSwapchain().GetSwapChainExtent());
+    m_lightingPass = std::make_unique<vov::LightingPass>(m_device, vov::Swapchain::MAX_FRAMES_IN_FLIGHT, VK_FORMAT_R16G16B16A16_SFLOAT, m_renderer.getSwapchain().GetSwapChainExtent(), m_hdrEnvironment.get());
 
     m_blitPass = std::make_unique<vov::BlitPass>(
         m_device, vov::Swapchain::MAX_FRAMES_IN_FLIGHT, *m_lightingPass, m_renderer.getSwapchain()
@@ -146,12 +152,15 @@ void VApp::run() {
 
             m_geoPass->Record(frameContext, commandBuffer, frameIndex, depthImage, m_currentScene, &m_camera);
 
+            depthImage.TransitionImageLayout(commandBuffer, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
             m_lightingPass->UpdateDescriptors(
-                frameIndex, m_geoPass->GetAlbedo(frameIndex), m_geoPass->GetNormal(frameIndex), m_geoPass->GetSpecualar(frameIndex), m_geoPass->GetWorldPos(frameIndex)
+                frameIndex, m_geoPass->GetAlbedo(frameIndex), m_geoPass->GetNormal(frameIndex), m_geoPass->GetSpecualar(frameIndex), m_geoPass->GetWorldPos(frameIndex), depthImage
             );
 
-            m_lightingPass->Record(frameContext, commandBuffer, frameIndex, *m_geoPass, *m_currentScene);
+            m_lightingPass->Record(frameContext, commandBuffer, frameIndex, *m_geoPass, *m_hdrEnvironment, *m_currentScene);
 
+            depthImage.TransitionImageLayout(commandBuffer, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
             m_renderer.beginSwapChainRenderPass(commandBuffer);
 
             // if (m_currentScene->getLineSegments().size() > 2) {
@@ -162,10 +171,12 @@ void VApp::run() {
             // renderSystem.renderGameObjects(frameInfo, m_currentScene->getGameObjects());
 
             m_blitPass->Record(frameContext, commandBuffer, frameIndex, m_renderer.getSwapchain());
+
             imguiRenderSystem.renderImgui(commandBuffer);
 
 
             m_renderer.endSwapChainRenderPass(commandBuffer);
+
             m_renderer.endFrame();
         }
 
@@ -248,9 +259,28 @@ void VApp::imGui() {
 
     ImGui::Begin("Cam Settings");
 
-    float& exp = m_camera.GetExposure();
-    ImGui::DragFloat("Exposure", &exp, 0.01f, 0);
+    float& iso = m_camera.GetISO();
+    ImGui::DragFloat("ISO", &iso, 0.1f);
+    float& aperture = m_camera.GetAperture();
+    ImGui::DragFloat("Aperture", &aperture, 0.1f);
+    float& shutterSpeed = m_camera.GetShutterSpeed();
+    ImGui::DragFloat("Shutter Speed", &shutterSpeed, 0.1f);
 
+    ImGui::Separator();
+    //Presests
+    if (ImGui::Button("Sunny")) {
+        m_camera.GetISO() = 100;
+        m_camera.GetAperture() = 5.f;
+        m_camera.GetShutterSpeed() = 1.f / 200.f;
+    }
+
+    ImGui::SameLine();
+
+    if (ImGui::Button("Indoor")) {
+        m_camera.GetISO() = 1600.f;
+        m_camera.GetAperture() = 1.4f;
+        m_camera.GetShutterSpeed() = 1.f / 60.f;
+    }
 
     ImGui::End();
 

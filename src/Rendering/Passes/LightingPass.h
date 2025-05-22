@@ -3,6 +3,7 @@
 #include "GeometryPass.h"
 #include "Core/Device.h"
 #include "Rendering/Swapchain.h"
+#include "Resources/HDRI.h"
 #include "Utils/FrameContext.h"
 
 namespace vov {
@@ -13,12 +14,6 @@ namespace vov {
             glm::mat4 model;
         };
 
-        struct alignas(16) CameraSettings{
-            glm::vec4 cameraPos{};
-            float exposure{};
-            float _pad1[3];
-        };
-
         struct alignas(16) DirectionalLightInfo {
             glm::vec3 direction{};
             float _pad0;           // padding to align next vec3
@@ -26,19 +21,24 @@ namespace vov {
             glm::vec3 color{};
             float intensity{};
         };
+
         struct alignas(16) UniformBuffer{
-            CameraSettings camSettings{};
+            glm::mat4 proj{};
+            glm::mat4 view{};
+            Camera::CameraSettings camSettings{};
             DirectionalLightInfo lightInfo{};
             uint32_t  pointLightCount{};
-            float _pad0[3];        // padding to align struct size to 16
+            float _pad2[3];
+            glm::vec2 viewportSize{};
+            glm::vec2 _pad1{};
         };
 
-        explicit LightingPass(Device& deviceRef,uint32_t framesInFlight, VkFormat format, VkExtent2D extent);
+        explicit LightingPass(Device& deviceRef,uint32_t framesInFlight, VkFormat format, VkExtent2D extent, HDRI* hdri = nullptr);
         ~LightingPass();
 
-        void Record(const FrameContext& context, VkCommandBuffer commandBuffer, uint32_t imageIndex, const GeometryPass& geoPass, Scene& scene);
+        void Record(const FrameContext& context, VkCommandBuffer commandBuffer, uint32_t imageIndex, const GeometryPass& geoPass, const HDRI& hdri, Scene& scene);
 
-        void UpdateDescriptors(uint32_t frameIndex, Image& albedo, Image& normal, Image& specular, Image& bump);
+        void UpdateDescriptors(uint32_t frameIndex, Image& albedo, Image& normal, Image& specular, Image& bump, Image& depth);
 
         [[nodiscard]] Image& GetImage(int imageIndex) const;
         void Resize(VkExtent2D newSize);
@@ -60,6 +60,9 @@ namespace vov {
         std::vector<std::unique_ptr<Buffer>> m_pointLightBuffers{};
         std::vector<VkDescriptorSet> m_pointLightDescriptorSets{};
         std::unique_ptr<DescriptorSetLayout> m_pointLightSetLayout{};
+
+        std::unique_ptr<DescriptorSetLayout> m_hdriSamplerSetLayout{};
+        VkDescriptorSet m_hdriSamplerDescriptorSets{};
 
         std::vector<std::unique_ptr<Image>> m_renderTargets{};
         VkFormat m_imageFormat{};

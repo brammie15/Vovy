@@ -9,7 +9,7 @@
 namespace vov {
     Swapchain::Swapchain(Device& deviceRef, VkExtent2D windowExtent): m_device(deviceRef), m_windowExtent{windowExtent} {
         createSwapChain();
-        createImageViews();
+        // createImageViews();
         // createRenderPass();
         createDepthResources();
         // createFramebuffers();
@@ -195,8 +195,7 @@ namespace vov {
         for (auto image : vkImages) {
             auto vovImage = std::make_unique<vov::Image>(
                 m_device,
-                m_swapChainExtent.width,
-                m_swapChainExtent.height,
+                extent,
                 surfaceFormat.format,
                 VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
                 VMA_MEMORY_USAGE_GPU_ONLY,
@@ -221,8 +220,7 @@ namespace vov {
         for (auto image : vkImages) {
             auto vovImage = std::make_unique<vov::Image>(
                 m_device,
-                m_swapChainExtent.width,
-                m_swapChainExtent.height,
+                m_swapChainExtent,
                 m_swapChainImageFormat,
                 VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
                 VMA_MEMORY_USAGE_GPU_ONLY,
@@ -238,8 +236,7 @@ namespace vov {
         for (size_t i = 0; i < imageCount(); i++) {
             auto depthImage = std::make_unique<vov::Image>(
                 m_device,
-                m_swapChainExtent.width,
-                m_swapChainExtent.height,
+                m_swapChainExtent,
                 m_swapChainDepthFormat,
                 VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
                 VMA_MEMORY_USAGE_GPU_ONLY);

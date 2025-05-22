@@ -1,20 +1,35 @@
 #ifndef VIMAGE_H
 #define VIMAGE_H
 
+#include <memory>
+
 #include "Core/Device.h"
+#include "Image/ImageView.h"
+#include "Image/Sampler.h"
 
 namespace vov {
+    class ImageView;
+
     class Image {
     public:
-        explicit Image(Device& device, uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage, VkFilter filter = VK_FILTER_LINEAR);
+        explicit Image(
+            Device& device,
+            VkExtent2D size,
+            VkFormat format,
+            VkImageUsageFlags usage,
+            VmaMemoryUsage memoryUsage,
+            bool createView = true,
+            bool createSampler = true,
+            VkFilter filter = VK_FILTER_LINEAR
+        );
         Image(Device& device, const std::string& filename, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage, VkFilter filter = VK_FILTER_LINEAR);
 
         //Used for swapchain only
-        Image(Device& device, uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage, VkImage existingImage);
+        Image(Device& device, VkExtent2D size, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage, VkImage existingImage);
         ~Image();
 
         [[nodiscard]] VkImage getImage() const { return m_image; }
-        [[nodiscard]] VkImageView getImageView() const { return m_imageView; }
+        [[nodiscard]] VkImageView getImageView() const { return m_imageView->getHandle(); }
         [[nodiscard]] VmaAllocation getAllocation() const { return m_allocation; }
         [[nodiscard]] VkDescriptorImageInfo descriptorInfo() const;
 
@@ -28,7 +43,7 @@ namespace vov {
         void SetName(const std::string& name);
 
         [[nodiscard]] uint32_t getMipLevels() const { return m_mipLevels; }
-        [[nodiscard]] VkSampler getSampler() const { return m_sampler; }
+        [[nodiscard]] VkSampler getSampler() const { return m_sampler->getHandle(); }
         [[nodiscard]] VkExtent2D getExtent() const { return m_extent; }
         [[nodiscard]] VkFormat getFormat() const { return m_format; }
 
@@ -59,9 +74,9 @@ namespace vov {
 
 
     private:
-        void createImage(uint32_t width, uint32_t height, uint32_t miplevels, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage);
+        void createImage(VkExtent2D size, uint32_t miplevels, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage);
         void createImageView(VkFormat format);
-        void createSampler(VkFilter filter, VkSamplerAddressMode addressMode);
+        void createImageSampler(VkFilter filter, VkSamplerAddressMode addressMode);
         void generateMipmaps(VkFormat format, uint32_t width, uint32_t height) const;
 
         static VkImageAspectFlags getImageAspect(VkFormat format);
@@ -69,8 +84,9 @@ namespace vov {
         Device& m_device;
         VkImage m_image;
         VmaAllocation m_allocation;
-        VkImageView m_imageView;
-        VkSampler m_sampler{};
+
+        std::unique_ptr<ImageView> m_imageView;
+        std::unique_ptr<Sampler> m_sampler;
 
         uint32_t m_mipLevels{};
 

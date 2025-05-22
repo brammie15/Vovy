@@ -27,15 +27,22 @@ struct PointLightInfo {
 
 struct CameraSettings {
     vec4 cameraPos;
-    float exposure;
+    float aperture;
+    float shutterSpeed;
+    float iso;
+    float _pad0; // Padding to maintain 16-byte alignment
 };
 
 layout(std140, set = 0, binding = 0) uniform globalUBO
 {
+    mat4 projectionMatrix;
+    mat4 viewMatrix;
     CameraSettings camSettings;
     DirectionalLightInfo light;
     ivec4 pointLightCount;
+    vec2 viewportSize;
 } ubo;
+
 
 
 layout(set = 1, binding = 0) uniform sampler2D albedoMap;
@@ -44,7 +51,12 @@ layout(set = 1, binding = 2) uniform sampler2D metallicRoughnessMap;
 layout(set = 1, binding = 3) uniform sampler2D worldPosMap;
 layout(set = 1, binding = 4) uniform sampler2D selectionMap;
 
-layout(set = 2, binding = 0) readonly buffer PointLights {
+layout(set = 1, binding = 5) uniform sampler2D depthMap;
+
+layout(set = 2, binding = 0) uniform textureCube hdriTexture;
+layout(set = 2, binding = 1) uniform sampler hdriSampler;
+
+layout(set = 3, binding = 0) readonly buffer PointLights {
     PointLight pointLights[];
 };
 
@@ -60,6 +72,21 @@ float calculateAttenuation(float distance, float range) {
     // Smooth falloff near the light's range
     float rangeFactor = pow(clamp(1.0 - pow(distance / range, 4.0), 0.0, 1.0), 2.0);
     return attenuation * rangeFactor;
+}
+
+vec3 GetWorldPositionFromDepth(in float depth, in vec2 fragCoords, in vec2 resolution, in mat4 invProj, in mat4 invView) {
+    vec2 ndc = vec2(
+    (fragCoords.x / resolution.x) * 2.0 - 1.0,
+    (fragCoords.y / resolution.y) * 2.0 - 1.0
+    );
+    ndc.y *= -1.0;
+    const vec4 clipPos = vec4(ndc, depth, 1.0);
+
+    vec4 viewPos = invProj * clipPos;
+    viewPos /= viewPos.w;
+
+    vec4 worldPos = invView * viewPos;
+    return worldPos.xyz;
 }
 
 vec3 calculatePointLightContribution(PointLight light, vec3 worldPos, vec3 N, vec3 V, vec3 albedo, float metallic, float roughness, vec3 F0) {
@@ -92,9 +119,9 @@ vec3 calculatePointLightContribution(PointLight light, vec3 worldPos, vec3 N, ve
     return (kD * albedo / PI + specular) * radiance * NdotL;
 }
 
-
 void main()
 {
+    //hdri
     vec3 albedo = texture(albedoMap, inTexcoord).rgb;
     vec3 normal = normalize(texture(normalMap, inTexcoord).rgb * 2.0 - 1.0);
     vec3 worldPos = texture(worldPosMap, inTexcoord).rgb;
@@ -102,6 +129,16 @@ void main()
     float metallic = metallicRoughness.x;
     float roughness = metallicRoughness.y;
     float ao = 1.0;
+    float depth = texture(depthMap, inTexcoord).r;
+
+    if(depth >= 1.f){
+        vec2 fragCoord = vec2(gl_FragCoord.x, gl_FragCoord.y);
+        const vec3 sampleDirection = GetWorldPositionFromDepth(depth, fragCoord, ubo.viewportSize, inverse(ubo.projectionMatrix), inverse(ubo.viewMatrix));
+        vec3 normalizedSampleDirection = normalize(sampleDirection);
+        outColor = vec4(texture(samplerCube(hdriTexture, hdriSampler), normalizedSampleDirection).rgb, 1.0);
+//        outColor.rgb = normalizedSampleDirection;
+        return;
+    }
 
     vec3 camPos = ubo.camSettings.cameraPos.xyz;
     vec3 N = normal;
@@ -141,7 +178,8 @@ void main()
 
     // Ambient lighting
     vec3 ambient = vec3(0.03) * albedo * ao;
-    vec3 color = (ambient + Lo) * ubo.camSettings.exposure;
+//    vec3 color = (ambient + Lo) * ubo.camSettings.exposure;
+    vec3 color = (ambient + Lo);
 
     // Tone mapping and gamma correction
 //    color = color / (color + vec3(1.0));
@@ -149,4 +187,12 @@ void main()
 
     outColor.rgb = color;
     outColor.a = 1.0;
+//
+//    float z = depth * 2.0 - 1.0; // back to NDC
+//    float linearDepth = (2.0 * ubo.projectionMatrix[3][2]) /
+//    (ubo.projectionMatrix[2][2] - z * ubo.projectionMatrix[2][3]);
+//
+//    // Normalize depth to a viewable range (e.g., between 0 and 1)
+//    float depthView = clamp(linearDepth / 100.0, 0.0, 1.0); // adjust 100.0 to your far plane or visual preference
+//    outColor.rgb = vec3(depthView);
 }

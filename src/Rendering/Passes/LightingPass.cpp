@@ -9,11 +9,11 @@
 #include "Utils/DebugLabel.h"
 #include "Utils/ResourceManager.h"
 
-vov::LightingPass::LightingPass(Device& deviceRef, uint32_t framesInFlight, VkFormat format, VkExtent2D extent): m_device{deviceRef}, m_framesInFlight{framesInFlight}, m_imageFormat{format} {
+vov::LightingPass::LightingPass(Device& deviceRef, uint32_t framesInFlight, VkFormat format, VkExtent2D extent, HDRI* hdri): m_device{deviceRef}, m_framesInFlight{framesInFlight}, m_imageFormat{format} {
     m_descriptorPool = DescriptorPool::Builder(m_device)
-      .setMaxSets(framesInFlight * 6)
-      .addPoolSize(VK_DESCRIPTOR_TYPE_SAMPLER, framesInFlight * 2)
-      .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, framesInFlight * 2)
+      .setMaxSets(framesInFlight * 10)
+      .addPoolSize(VK_DESCRIPTOR_TYPE_SAMPLER, framesInFlight *  6)
+      .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, framesInFlight * 3)
       .addPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, framesInFlight)
       .build();
 
@@ -23,6 +23,7 @@ vov::LightingPass::LightingPass(Device& deviceRef, uint32_t framesInFlight, VkFo
             .addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) //Specular
             .addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) //MetallicRoughness
             .addBinding(4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) //Selection
+            .addBinding(5, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) //Depth
             .build();
 
     m_descriptorSetLayout = DescriptorSetLayout::Builder(m_device)
@@ -32,6 +33,11 @@ vov::LightingPass::LightingPass(Device& deviceRef, uint32_t framesInFlight, VkFo
     m_pointLightSetLayout = DescriptorSetLayout::Builder(m_device)
        .addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
        .build();
+
+    m_hdriSamplerSetLayout = DescriptorSetLayout::Builder(m_device)
+        .addBinding(0, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT)
+        .addBinding(1, VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+        .build();
 
 
     m_uniformBuffers.resize(m_framesInFlight);
@@ -52,9 +58,6 @@ vov::LightingPass::LightingPass(Device& deviceRef, uint32_t framesInFlight, VkFo
                 .build(m_descriptorSets[i]);
     }
 
-    m_pointLightSetLayout = DescriptorSetLayout::Builder(m_device)
-        .addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
-        .build();
 
     // Create point light storage buffers
     m_pointLightBuffers.resize(m_framesInFlight);
@@ -88,6 +91,7 @@ vov::LightingPass::LightingPass(Device& deviceRef, uint32_t framesInFlight, VkFo
     const std::array descriptorSetLayouts = {
         m_descriptorSetLayout->getDescriptorSetLayout(),
         m_geobufferSamplersSetLayout->getDescriptorSetLayout(),
+        m_hdriSamplerSetLayout->getDescriptorSetLayout(),
         m_pointLightSetLayout->getDescriptorSetLayout()
     };
 
@@ -128,12 +132,12 @@ vov::LightingPass::LightingPass(Device& deviceRef, uint32_t framesInFlight, VkFo
     m_textureDescriptors.resize(framesInFlight);
 
     auto dummyImage = ResourceManager::GetInstance().LoadImage(m_device, "resources/Gear.png", VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
+    VkDescriptorImageInfo dummyInfo{};
+    dummyInfo.sampler = dummyImage->getSampler();
+    dummyInfo.imageView = dummyImage->getImageView();
+    dummyInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
     for (uint32_t i{0}; i < framesInFlight; ++i) {
-        VkDescriptorImageInfo dummyInfo{};
-        dummyInfo.sampler = dummyImage->getSampler();
-        dummyInfo.imageView = dummyImage->getImageView();
-        dummyInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 
         DescriptorWriter writer(*m_geobufferSamplersSetLayout, *m_descriptorPool);
@@ -142,27 +146,45 @@ vov::LightingPass::LightingPass(Device& deviceRef, uint32_t framesInFlight, VkFo
         writer.writeImage(2, &dummyInfo);
         writer.writeImage(3, &dummyInfo);
         writer.writeImage(4, &dummyInfo);
+        writer.writeImage(5, &dummyInfo);
 
         if (!writer.build(m_textureDescriptors[i])) {
-            throw std::runtime_error("Failed to build descriptor set for CompositePass");
+            throw std::runtime_error("Failed to build descriptor set for LightingPass");
         }
+    }
+
+    VkDescriptorImageInfo imageInfo{};
+    imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    imageInfo.imageView = hdri->GetCubeMapView();
+    imageInfo.sampler = VK_NULL_HANDLE; // Ignored for SAMPLED_IMAGE
+
+    // For the sampler
+    VkDescriptorImageInfo samplerInfo{};
+    samplerInfo.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED; // Ignored for SAMPLER
+    samplerInfo.imageView = VK_NULL_HANDLE;              // Ignored for SAMPLER
+    samplerInfo.sampler = hdri->GetHDRSampler();
+
+    DescriptorWriter hdriWriter(*m_hdriSamplerSetLayout, *m_descriptorPool);
+    hdriWriter.writeImage(0, &imageInfo);
+    hdriWriter.writeImage(1, &samplerInfo);
+    if (!hdriWriter.build(m_hdriSamplerDescriptorSets)) {
+        throw std::runtime_error("Failed to build descriptor set for LightingPass");
     }
 
     m_renderTargets.resize(framesInFlight);
     for (int index{0}; index < framesInFlight; ++index) {
         m_renderTargets[index] = std::make_unique<Image>(
             m_device,
-            extent.width, extent.height,
+            extent,
             format,
             VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
             VMA_MEMORY_USAGE_AUTO,
+            true,
+            true,
             VK_FILTER_NEAREST
         );
-        m_renderTargets[index]->SetName("LightTarget" + index);
+        m_renderTargets[index]->SetName("LightTarget:" + std::to_string(index));
     }
-
-
-
 
 }
 
@@ -170,18 +192,24 @@ vov::LightingPass::~LightingPass() {
     vkDestroyPipelineLayout(m_device.device(), m_pipelineLayout, nullptr);
 }
 
-void vov::LightingPass::Record(const FrameContext& context, VkCommandBuffer commandBuffer, uint32_t imageIndex, const GeometryPass& geoPass, Scene& scene) {
+void vov::LightingPass::Record(const FrameContext& context, VkCommandBuffer commandBuffer, uint32_t imageIndex, const GeometryPass& geoPass, const HDRI& hdri, Scene& scene) {
     auto& currentImage = m_renderTargets[imageIndex];
 
     auto cameraPos = glm::vec4(context.camera.m_position, 0);
     UniformBuffer ubo{};
     ubo.camSettings.cameraPos = cameraPos;
-    ubo.camSettings.exposure = context.camera.GetExposure();
 
     ubo.lightInfo.direction = scene.GetDirectionalLight().GetDirection();
     ubo.lightInfo.color = scene.GetDirectionalLight().GetColor();
     ubo.lightInfo.intensity = scene.GetDirectionalLight().GetIntensity();
 
+    ubo.camSettings.apeture = context.camera.GetAperture();
+    ubo.camSettings.iso = context.camera.GetISO();
+    ubo.camSettings.shutterSpeed = context.camera.GetShutterSpeed();
+
+    ubo.proj = context.camera.GetProjectionMatrix();
+    ubo.view = context.camera.GetViewMatrix();
+    ubo.viewportSize = {static_cast<float>(currentImage->getExtent().width), static_cast<float>(currentImage->getExtent().height)};
 
     const auto& pointLights = scene.getPointLights();
     ubo.pointLightCount = static_cast<uint32_t>(pointLights.size());
@@ -212,6 +240,25 @@ void vov::LightingPass::Record(const FrameContext& context, VkCommandBuffer comm
         }
         m_pointLightBuffers[imageIndex]->copyTo(pointLightData.data(), sizeof(PointLight::PointLightData) * pointLights.size());
     }
+
+    // // For the sampler
+    // VkDescriptorImageInfo samplerInfo{};
+    // samplerInfo.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED; // Ignored for SAMPLER
+    // samplerInfo.imageView = VK_NULL_HANDLE;              // Ignored for SAMPLER
+    // samplerInfo.sampler = hdri.GetHDRSampler();
+    //
+    // VkDescriptorImageInfo imageInfo{};
+    // imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    // imageInfo.imageView = hdri.GetHDRView();
+    // imageInfo.sampler = VK_NULL_HANDLE; // Ignored for SAMPLED_IMAGE
+    //
+    // DescriptorWriter hdriWriter(*m_hdriSamplerSetLayout, *m_descriptorPool);
+    // hdriWriter.writeImage(0, &imageInfo);
+    // hdriWriter.writeImage(1, &samplerInfo);
+    // if (!hdriWriter.build(m_hdriSamplerDescriptorSets)) {
+    //     throw std::runtime_error("Failed to build descriptor set for LightingPass");
+    // }
+
 
     m_renderTargets[imageIndex]->TransitionImageLayout(commandBuffer, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
@@ -247,7 +294,8 @@ void vov::LightingPass::Record(const FrameContext& context, VkCommandBuffer comm
 
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorSets[imageIndex], 0, nullptr);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 1, 1, &m_textureDescriptors[imageIndex], 0, nullptr);
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 2, 1, &m_pointLightDescriptorSets[imageIndex], 0, nullptr);
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 2, 1, &m_hdriSamplerDescriptorSets, 0, nullptr);
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 3, 1, &m_pointLightDescriptorSets[imageIndex], 0, nullptr);
 
     m_pipeline->bind(commandBuffer);
     vkCmdDraw(commandBuffer, 3, 1, 0, 0);
@@ -258,19 +306,21 @@ void vov::LightingPass::Record(const FrameContext& context, VkCommandBuffer comm
     DebugLabel::EndCmdLabel(commandBuffer);
 }
 
-void vov::LightingPass::UpdateDescriptors(uint32_t frameIndex, Image& albedo, Image& normal, Image& specular, Image& bump) {
+void vov::LightingPass::UpdateDescriptors(uint32_t frameIndex, Image& albedo, Image& normal, Image& specular, Image& bump, Image& depth) {
     DescriptorWriter writer(*m_geobufferSamplersSetLayout, *m_descriptorPool);
 
     const auto albedoInfo = albedo.descriptorInfo();
     const auto normalInfo = normal.descriptorInfo();
     const auto specularInfo = specular.descriptorInfo();
     const auto bumpInfo = bump.descriptorInfo();
+    const auto depthInfo = depth.descriptorInfo();
 
     writer
             .writeImage(0, &albedoInfo)
             .writeImage(1, &normalInfo)
             .writeImage(2, &specularInfo)
             .writeImage(3, &bumpInfo)
+            .writeImage(5, &depthInfo)
             .overwrite(m_textureDescriptors[frameIndex]);
 }
 
@@ -285,7 +335,7 @@ void vov::LightingPass::Resize(VkExtent2D newSize) {
     for (int index{0}; index < m_framesInFlight; ++index) {
         m_renderTargets[index] = std::make_unique<Image>(
             m_device,
-            newSize.width, newSize.height,
+            newSize,
             m_imageFormat,
             VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
             VMA_MEMORY_USAGE_AUTO

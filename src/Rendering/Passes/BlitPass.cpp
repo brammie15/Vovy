@@ -66,7 +66,7 @@ vov::BlitPass::BlitPass(Device& deviceRef, uint32_t framesInFlight, LightingPass
         m_descriptorPool->allocateDescriptor(m_descriptorSetLayout->getDescriptorSetLayout(), m_descriptorSets[i]);
 
         m_exposureBuffers[i] = std::make_unique<Buffer>(
-            m_device, sizeof(ExposureUbo),
+            m_device, sizeof(Camera::CameraSettings),
             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
             VMA_MEMORY_USAGE_CPU_TO_GPU, true
         );
@@ -93,10 +93,15 @@ vov::BlitPass::~BlitPass() {
 void vov::BlitPass::Record(const FrameContext& context, VkCommandBuffer commandBuffer, uint32_t imageIndex, const Swapchain& swapchain) {
     const Image& currentImage = swapchain.GetImage(static_cast<int>(imageIndex));
 
-    ExposureUbo ubo{};
-    ubo.exposure = context.camera.GetExposure();
+    Camera::CameraSettings ubo{};
 
-    m_exposureBuffers[imageIndex]->copyTo(&ubo, sizeof(ExposureUbo));
+    ubo.apeture = context.camera.GetAperture();
+    ubo.iso = context.camera.GetISO();
+    ubo.shutterSpeed = context.camera.GetShutterSpeed();
+
+    // ubo.exposure = context.camera.GetExposure();
+
+    m_exposureBuffers[imageIndex]->copyTo(&ubo, sizeof(Camera::CameraSettings));
 
     VkRenderingAttachmentInfo colorAttachment{};
     colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
@@ -112,6 +117,8 @@ void vov::BlitPass::Record(const FrameContext& context, VkCommandBuffer commandB
     renderingInfo.layerCount = 1;
     renderingInfo.colorAttachmentCount = 1;
     renderingInfo.pColorAttachments = &colorAttachment;
+
+    renderingInfo.pDepthAttachment = nullptr;
 
     DebugLabel::BeginCmdLabel(commandBuffer, "Blitting pass", glm::vec4(1.f, 0.7f, 0.1f, 1));
 

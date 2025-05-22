@@ -10,8 +10,8 @@ namespace vov {
     class DescriptorSetLayout;
     class Pipeline;
 
-    struct ExposureUbo {
-        float exposure;
+    struct UniformBuffer {
+        Camera::CameraSettings camSettings{};
     };
 
     class BlitPass {

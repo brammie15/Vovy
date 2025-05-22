@@ -12,6 +12,7 @@
 #include "Rendering/Passes/LightingPass.h"
 #include "Rendering/Passes/DepthPrePass.h"
 #include "Rendering/Passes/GeometryPass.h"
+#include "Resources/HDRI.h"
 #include "Scene/GameObject.h"
 #include "Scene/Scene.h"
 
@@ -75,6 +76,8 @@ private:
     std::unique_ptr<vov::Scene> m_vikingRoomScene{};
     std::unique_ptr<vov::Scene> m_sibenikScene{};
     std::unique_ptr<vov::Scene> m_flightHelmetScene{};
+
+    std::unique_ptr<vov::HDRI> m_hdrEnvironment{};
 
     std::vector<vov::Scene*> m_scenes{};
 

@@ -7,10 +7,11 @@ namespace vov {
 
     RenderTexture::RenderTexture(Device& device, uint32_t width, uint32_t height, VkFormat format, bool isDepthOnly)
         : m_device(device), m_width(width), m_height(height), m_isDepthOnly(isDepthOnly) {
+        VkExtent2D extent = {width, height};
 
         if (!m_isDepthOnly) {
             m_colorImage = std::make_unique<Image>(
-                device, width, height, format,
+                device, extent, format,
                 VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
                 VMA_MEMORY_USAGE_GPU_ONLY
             );
@@ -19,7 +20,7 @@ namespace vov {
         // Create depth image only if needed or if this is a depth-only target
         VkFormat depthFormat = isDepthOnly ? format : VK_FORMAT_D32_SFLOAT;
         m_depthImage = std::make_unique<Image>(
-            device, width, height, depthFormat,
+            device,extent, depthFormat,
             VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | (isDepthOnly ? VK_IMAGE_USAGE_SAMPLED_BIT : 0),
             VMA_MEMORY_USAGE_GPU_ONLY
         );

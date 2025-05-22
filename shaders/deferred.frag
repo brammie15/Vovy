@@ -71,7 +71,8 @@ vec3 hashToColor(float n) {
 void main(){
 
     if(textureBindingInfo.hasAlbedo) {
-        outAlbedo.rgb = pow(texture(albedoSampler, inTexCoord).rgb, vec3(2.2)); // Assume sRGB
+//        outAlbedo.rgb = pow(texture(albedoSampler, inTexCoord).rgb, vec3(2.2)); // Assume sRGB
+        outAlbedo.rgb = texture(albedoSampler, inTexCoord).rgb; // Assume sRGB
     } else {
         outAlbedo.rgb = pow(inColor, vec3(2.2));
     }
