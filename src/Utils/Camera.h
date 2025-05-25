@@ -74,7 +74,7 @@ namespace vov {
         float m_cameraSensitivity{};
 
         float m_zNear{0.001f};
-        float m_zFar{100.0f};
+        float m_zFar{1000.0f};
 
         float m_iso{100.f};
         float m_aperture{2.8f};

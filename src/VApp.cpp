@@ -170,7 +170,7 @@ void VApp::run() {
                 frameIndex, m_geoPass->GetAlbedo(frameIndex), m_geoPass->GetNormal(frameIndex), m_geoPass->GetSpecualar(frameIndex), m_geoPass->GetWorldPos(frameIndex), depthImage
             );
 
-            m_lightingPass->Record(frameContext, commandBuffer, frameIndex, *m_geoPass, *m_hdrEnvironment, *m_currentScene);
+            m_lightingPass->Record(frameContext, commandBuffer, frameIndex, *m_geoPass, *m_hdrEnvironment, *m_shadowPass, *m_currentScene);
 
             depthImage.TransitionImageLayout(commandBuffer, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
             m_renderer.beginSwapChainRenderPass(commandBuffer);

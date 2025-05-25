@@ -12,7 +12,7 @@ class Model;
 class Scene;
 
 DirectionalLight::DirectionalLight()
-    : m_direction(glm::normalize(glm::vec3(1.0f, -1.0f, 0.0f))),
+    : m_direction(glm::normalize(glm::vec3(-0.577f, 0.577f, -0.577f))),
       m_color(1.0f, 1.0f, 1.0f),
       m_intensity(1.0f),
       m_shadowEnabled(false),
@@ -99,11 +99,11 @@ void DirectionalLight::CalculateSceneBoundsMatricies(Scene* scene) {
     const float distance = maxProj - glm::dot(center, m_direction);
     const glm::vec3 lightPos = center + direction * distance;
 
-    const glm::vec3 up = glm::abs(glm::dot(direction, glm::vec3(0.0f, 1.0f, 0.0f))) < 0.999f
-                             ? glm::vec3(0.0f, 1.0f, 0.0f)
-                             : glm::vec3(1.0f, 0.0f, 0.0f);
+    const glm::vec3 up = glm::abs(glm::dot(direction, glm::vec3(0.0f, 1.0f, 0.0f))) > 0.999f
+                             ? glm::vec3(0.0f, 0.0f, 1.0f)
+                             : glm::vec3(0.0f, 1.0f, 0.0f);
 
-    m_lightView = glm::lookAt(lightPos, lightPos + direction, up);
+    m_lightView = glm::lookAtLH(lightPos, lightPos + direction, up);
 
     glm::vec3 minLightSpace = glm::vec3(FLT_MAX);
     glm::vec3 maxLightSpace = glm::vec3(-FLT_MAX);
@@ -116,11 +116,12 @@ void DirectionalLight::CalculateSceneBoundsMatricies(Scene* scene) {
 
     const float nearZ = 0.0f;
     float farZ = maxLightSpace.z - minLightSpace.z;
-    m_lightProjection = glm::inverse(glm::ortho(
+    // farZ = 10;
+    m_lightProjection = glm::orthoZO(
         minLightSpace.x, maxLightSpace.x,
         minLightSpace.y, maxLightSpace.y,
         nearZ, farZ
-    ));
+    );
 
     // m_lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.1f, 50.0f);
 }

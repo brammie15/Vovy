@@ -1,6 +1,7 @@
 #ifndef COMPOSITEPASS_H
 #define COMPOSITEPASS_H
 #include "GeometryPass.h"
+#include "ShadowPass.h"
 #include "Core/Device.h"
 #include "Rendering/Swapchain.h"
 #include "Resources/HDRI.h"
@@ -36,7 +37,7 @@ namespace vov {
         explicit LightingPass(Device& deviceRef,uint32_t framesInFlight, VkFormat format, VkExtent2D extent, HDRI* hdri = nullptr);
         ~LightingPass();
 
-        void Record(const FrameContext& context, VkCommandBuffer commandBuffer, uint32_t imageIndex, const GeometryPass& geoPass, const HDRI& hdri, Scene& scene);
+        void Record(const FrameContext& context, VkCommandBuffer commandBuffer, uint32_t imageIndex, const GeometryPass& geoPass, const HDRI& hdri, ShadowPass& shadowPass, Scene& scene);
 
         void UpdateDescriptors(uint32_t frameIndex, Image& albedo, Image& normal, Image& specular, Image& bump, Image& depth);
 

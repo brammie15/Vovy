@@ -75,19 +75,19 @@ vov::ShadowPass::ShadowPass(Device& deviceRef, uint32_t framesInFlight, VkFormat
     pipelineConfig.colorAttachments = {};
     pipelineConfig.depthAttachment = m_depthImage->GetFormat();
 
-    pipelineConfig.depthStencilInfo.depthTestEnable = VK_FALSE;
-    pipelineConfig.depthStencilInfo.depthWriteEnable = VK_FALSE;
+    pipelineConfig.depthStencilInfo.depthTestEnable = VK_TRUE;
+    pipelineConfig.depthStencilInfo.depthWriteEnable = VK_TRUE;
     pipelineConfig.depthStencilInfo.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;  // Common for shadows
 
     pipelineConfig.rasterizationInfo.cullMode = VK_CULL_MODE_BACK_BIT;
 
 
     m_pipeline = std::make_unique<Pipeline>(
-        m_device,
-        "shaders/shadow.vert.spv",
-        "shaders/shadow.frag.spv",
-        pipelineConfig
-    );
+       m_device,
+       "shaders/depthPrepass.vert.spv",
+       "",
+       pipelineConfig
+   );
 
 
 }
@@ -101,8 +101,8 @@ void vov::ShadowPass::Record(const FrameContext& context, VkCommandBuffer comman
     ubo.lightViewMatrix = m_directionalLight.GetViewMatrix();
     ubo.lightProjectionMatrix = m_directionalLight.GetProjectionMatrix();
 
-    ubo.lightViewMatrix = camera.GetViewMatrix();
-    ubo.lightProjectionMatrix = camera.GetProjectionMatrix();
+    // ubo.lightViewMatrix = camera.GetViewMatrix();
+    // ubo.lightProjectionMatrix = camera.GetProjectionMatrix();
 
     ubo.lightProjectionMatrix[1][1] *= -1;
 
@@ -119,23 +119,13 @@ void vov::ShadowPass::Record(const FrameContext& context, VkCommandBuffer comman
     depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
     depthAttachment.clearValue.depthStencil = { .depth = 1.0f, .stencil = 0 };
 
-    VkRenderingAttachmentInfo depthAttachmentInfo{};
-    depthAttachmentInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-    depthAttachmentInfo.imageView = depthAttachment.imageView;
-    depthAttachmentInfo.imageLayout = depthAttachment.imageLayout;
-    depthAttachmentInfo.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    depthAttachmentInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-
     // Render Info
     const VkExtent2D extent = m_depthImage->GetExtent();
     VkRenderingInfo renderingInfo{};
     renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
     renderingInfo.renderArea = VkRect2D{VkOffset2D{0, 0}, extent};
     renderingInfo.layerCount = 1;
-    renderingInfo.colorAttachmentCount = 0;
-    renderingInfo.pColorAttachments = nullptr;
-    renderingInfo.pDepthAttachment = &depthAttachmentInfo;
-    renderingInfo.pStencilAttachment = nullptr;
+    renderingInfo.pDepthAttachment = &depthAttachment;
 
     DebugLabel::BeginCmdLabel(
         commandBuffer,
@@ -170,7 +160,7 @@ void vov::ShadowPass::Record(const FrameContext& context, VkCommandBuffer comman
 
     vkCmdEndRendering(commandBuffer);
 
-    m_depthImage->TransitionImageLayout(commandBuffer, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    m_depthImage->TransitionImageLayout(commandBuffer, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 
     DebugLabel::EndCmdLabel(commandBuffer);
 }

@@ -101,7 +101,7 @@ void vov::DepthPrePass::Record(const FrameContext& context, VkCommandBuffer comm
     m_uniformBuffers[imageIndex]->copyTo(&ubo, sizeof(ubo));
     m_uniformBuffers[imageIndex]->flush();
 
-    depthImage.TransitionImageLayout(commandBuffer, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+    depthImage.TransitionImageLayout(commandBuffer, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT);
 
     VkRenderingAttachmentInfo depthAttachment{};
     depthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
@@ -152,7 +152,7 @@ void vov::DepthPrePass::Record(const FrameContext& context, VkCommandBuffer comm
 
     vkCmdEndRendering(commandBuffer);
 
-    depthImage.TransitionImageLayout(commandBuffer, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+    depthImage.TransitionImageLayout(commandBuffer, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
     DebugLabel::EndCmdLabel(commandBuffer);
 }
 

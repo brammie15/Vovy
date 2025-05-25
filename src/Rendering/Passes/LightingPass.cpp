@@ -204,7 +204,7 @@ vov::LightingPass::~LightingPass() {
     vkDestroyPipelineLayout(m_device.device(), m_pipelineLayout, nullptr);
 }
 
-void vov::LightingPass::Record(const FrameContext& context, VkCommandBuffer commandBuffer, uint32_t imageIndex, const GeometryPass& geoPass, const HDRI& hdri, Scene& scene) {
+void vov::LightingPass::Record(const FrameContext& context, VkCommandBuffer commandBuffer, uint32_t imageIndex, const GeometryPass& geoPass, const HDRI& hdri, ShadowPass& shadowPass, Scene& scene) {
     auto& currentImage = m_renderTargets[imageIndex];
 
     auto cameraPos = glm::vec4(context.camera.m_position, 0);

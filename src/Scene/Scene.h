@@ -20,6 +20,8 @@ namespace vov {
         void addBezierCurve(const BezierCurve& curve);
         void addPointLight(std::unique_ptr<PointLight> pointLight);
 
+        AABB CalculateSceneAABB() const;
+
         std::vector<std::unique_ptr<GameObject>>& getGameObjects() { return m_gameObjects; }
         std::vector<LineSegment>& getLineSegments() { return m_lineSegments; }
         std::vector<BezierCurve>& getBezierCurves() { return m_bezierCurves; }
