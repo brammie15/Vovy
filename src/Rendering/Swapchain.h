@@ -27,7 +27,7 @@ namespace vov {
         [[nodiscard]] float ExtentAspectRatio() const;
 
         [[nodiscard]] VkImageView GetImageView(int index) const {
-            return m_swapChainImages[index]->getImageView();
+            return m_swapChainImages[index]->GetImageView();
         }
 
         VkResult acquireNextImage(uint32_t* imageIndex) const;

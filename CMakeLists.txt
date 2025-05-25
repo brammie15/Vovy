@@ -32,6 +32,7 @@ add_executable(${PROJECT_NAME}
         ${SRC_ROOT}/Rendering/Passes/LightingPass.h ${SRC_ROOT}/Rendering/Passes/LightingPass.cpp
         ${SRC_ROOT}/Rendering/Passes/BlitPass.h ${SRC_ROOT}/Rendering/Passes/BlitPass.cpp
         ${SRC_ROOT}/Rendering/Passes/SelectPass.h ${SRC_ROOT}/Rendering/Passes/SelectPass.cpp
+        ${SRC_ROOT}/Rendering/Passes/ShadowPass.h ${SRC_ROOT}/Rendering/Passes/ShadowPass.cpp
 
         ${SRC_ROOT}/Resources/Buffer.h ${SRC_ROOT}/Resources/Buffer.cpp
         ${SRC_ROOT}/Resources/Image.h ${SRC_ROOT}/Resources/Image.cpp
@@ -59,6 +60,7 @@ add_executable(${PROJECT_NAME}
         ${SRC_ROOT}/Utils/DeltaTime.h ${SRC_ROOT}/Utils/DeltaTime.cpp
         ${SRC_ROOT}/Utils/BezierCurves.h ${SRC_ROOT}/Utils/BezierCurves.cpp
         ${SRC_ROOT}/Utils/DebugLabel.h ${SRC_ROOT}/Utils/DebugLabel.cpp
+        ${SRC_ROOT}/Utils/AABB.h ${SRC_ROOT}/Utils/AABB.cpp
 )
 
 if (MSVC AND CMAKE_BUILD_TYPE STREQUAL "Debug")

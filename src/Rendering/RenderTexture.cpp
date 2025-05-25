@@ -37,7 +37,7 @@ namespace vov {
         if (!m_isDepthOnly) {
             colorAttachmentInfo = {
                 .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-                .imageView = m_colorImage->getImageView(),
+                .imageView = m_colorImage->GetImageView(),
                 .imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
                 .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
                 .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
@@ -47,7 +47,7 @@ namespace vov {
 
         VkRenderingAttachmentInfo depthAttachmentInfo{
             .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-            .imageView = m_depthImage->getImageView(),
+            .imageView = m_depthImage->GetImageView(),
             .imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
             .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
             .storeOp = m_isDepthOnly ? VK_ATTACHMENT_STORE_OP_STORE : VK_ATTACHMENT_STORE_OP_DONT_CARE,

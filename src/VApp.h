@@ -12,6 +12,7 @@
 #include "Rendering/Passes/LightingPass.h"
 #include "Rendering/Passes/DepthPrePass.h"
 #include "Rendering/Passes/GeometryPass.h"
+#include "Rendering/Passes/ShadowPass.h"
 #include "Resources/HDRI.h"
 #include "Scene/GameObject.h"
 #include "Scene/Scene.h"
@@ -76,6 +77,7 @@ private:
     std::unique_ptr<vov::Scene> m_vikingRoomScene{};
     std::unique_ptr<vov::Scene> m_sibenikScene{};
     std::unique_ptr<vov::Scene> m_flightHelmetScene{};
+    std::unique_ptr<vov::Scene> m_chessScene{};
 
     std::unique_ptr<vov::HDRI> m_hdrEnvironment{};
 
@@ -91,6 +93,7 @@ private:
     std::unique_ptr<vov::DescriptorPool> m_globalPool{};
 
     std::unique_ptr<vov::DepthPrePass> m_depthPrePass{};
+    std::unique_ptr<vov::ShadowPass> m_shadowPass{};
     std::unique_ptr<vov::GeometryPass> m_geoPass{};
     std::unique_ptr<vov::LightingPass> m_lightingPass{};
     std::unique_ptr<vov::BlitPass> m_blitPass{};

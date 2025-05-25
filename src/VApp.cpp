@@ -41,16 +41,18 @@ VApp::VApp() {
     m_vikingRoomScene = std::make_unique<vov::Scene>("VikingRoomScene");
     m_sibenikScene = std::make_unique<vov::Scene>("SibenikScene");
     m_flightHelmetScene = std::make_unique<vov::Scene>("FligtHelmetScene");
+    m_chessScene = std::make_unique<vov::Scene>("ChessScene");
 
     m_scenes.emplace_back(m_sigmaVanniScene.get());
     m_scenes.emplace_back(m_sponzaScene.get());
     m_scenes.emplace_back(m_vikingRoomScene.get());
     m_scenes.emplace_back(m_sibenikScene.get());
     m_scenes.emplace_back(m_flightHelmetScene.get());
+    m_scenes.emplace_back(m_chessScene.get());
 
 
     loadGameObjects();
-    m_currentScene = m_flightHelmetScene.get();
+    m_currentScene = m_chessScene.get();
     m_currentScene->SceneLoad();
 
     m_renderer.SetResizeCallback([&] (const VkExtent2D newSize) {
@@ -83,6 +85,14 @@ void VApp::run() {
         m_device
     );
     m_depthPrePass->Init(VK_FORMAT_D32_SFLOAT, vov::Swapchain::MAX_FRAMES_IN_FLIGHT);
+
+    m_shadowPass = std::make_unique<vov::ShadowPass>(
+        m_device,
+        vov::Swapchain::MAX_FRAMES_IN_FLIGHT,
+        VK_FORMAT_D32_SFLOAT,
+        m_renderer.getSwapchain().GetSwapChainExtent(),
+        m_currentScene->GetDirectionalLight()
+    );
 
     vov::GeometryPass::CreateInfo createInfo = {
         vov::Swapchain::MAX_FRAMES_IN_FLIGHT, m_currentScene, m_window.getExtent(), VK_FORMAT_D32_SFLOAT
@@ -139,7 +149,7 @@ void VApp::run() {
 #pragma endregion
 
         m_camera.Update(static_cast<float>(vov::DeltaTime::GetInstance().GetDeltaTime()));
-
+        m_currentScene->GetDirectionalLight().CalculateSceneBoundsMatricies(m_currentScene);
         m_camera.CalculateProjectionMatrix();
         m_camera.CalculateViewMatrix();
 
@@ -149,6 +159,8 @@ void VApp::run() {
 
             auto& depthImage = m_renderer.GetCurrentDepthImage();
             m_depthPrePass->Record(frameContext, commandBuffer, frameIndex, depthImage, m_currentScene, &m_camera);
+
+            m_shadowPass->Record(frameContext, commandBuffer, frameIndex, *m_currentScene, m_camera);
 
             m_geoPass->Record(frameContext, commandBuffer, frameIndex, depthImage, m_currentScene, &m_camera);
 
@@ -336,6 +348,10 @@ void VApp::imGui() {
         m_currentScene = m_sibenikScene.get();
         m_currentScene->SceneLoad();
     }
+    if (ImGui::Button("Chess")) {
+        m_currentScene = m_chessScene.get();
+        m_currentScene->SceneLoad();
+    }
     ImGui::End();
 
     const auto& objects = m_currentScene->getGameObjects();
@@ -466,6 +482,7 @@ void VApp::imGui() {
 
 void VApp::ResizeScreen(const VkExtent2D newSize) {
     m_depthPrePass->Resize(newSize);
+    m_shadowPass->Resize(newSize);
     m_geoPass->Resize(newSize);
     m_lightingPass->Resize(newSize);
     m_blitPass->Resize(newSize, *m_lightingPass);
@@ -504,5 +521,10 @@ void VApp::loadGameObjects() {
     m_flightHelmetScene->setSceneLoadFunction([&] (vov::Scene* scene) {
         auto flightHelmet = vov::GameObject::LoadModelFromDisk(m_device, "resources/FlightHelmet/FlightHelmet.gltf");
         scene->addGameObject(std::move(flightHelmet));
+    });
+
+    m_chessScene->setSceneLoadFunction([&] (vov::Scene* scene) {
+        auto chess = vov::GameObject::LoadModelFromDisk(m_device, "resources/ABeautifulGame/glTF/ABeautifulGame.gltf");
+        scene->addGameObject(std::move(chess));
     });
 }

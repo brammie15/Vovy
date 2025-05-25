@@ -136,7 +136,7 @@ vov::LightingPass::LightingPass(Device& deviceRef, uint32_t framesInFlight, VkFo
     auto dummyImage = ResourceManager::GetInstance().LoadImage(m_device, "resources/Gear.png", VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
     VkDescriptorImageInfo dummyInfo{};
     dummyInfo.sampler = dummyImage->getSampler();
-    dummyInfo.imageView = dummyImage->getImageView();
+    dummyInfo.imageView = dummyImage->GetImageView();
     dummyInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
     for (uint32_t i{0}; i < framesInFlight; ++i) {
@@ -221,7 +221,7 @@ void vov::LightingPass::Record(const FrameContext& context, VkCommandBuffer comm
 
     ubo.proj = context.camera.GetProjectionMatrix();
     ubo.view = context.camera.GetViewMatrix();
-    ubo.viewportSize = {static_cast<float>(currentImage->getExtent().width), static_cast<float>(currentImage->getExtent().height)};
+    ubo.viewportSize = {static_cast<float>(currentImage->GetExtent().width), static_cast<float>(currentImage->GetExtent().height)};
 
     const auto& pointLights = scene.getPointLights();
     ubo.pointLightCount = static_cast<uint32_t>(pointLights.size());
@@ -276,15 +276,15 @@ void vov::LightingPass::Record(const FrameContext& context, VkCommandBuffer comm
 
     VkRenderingAttachmentInfo colorAttachment{};
     colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-    colorAttachment.imageView = currentImage->getImageView();
-    colorAttachment.imageLayout = currentImage->getCurrentLayout();
+    colorAttachment.imageView = currentImage->GetImageView();
+    colorAttachment.imageLayout = currentImage->GetCurrentLayout();
     colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
     colorAttachment.clearValue.color = {{0.f, 0.f, 0.f, 1.0f}};
 
     VkRenderingInfo renderingInfo{};
     renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
-    renderingInfo.renderArea = VkRect2D{VkOffset2D{0, 0}, currentImage->getExtent()};
+    renderingInfo.renderArea = VkRect2D{VkOffset2D{0, 0}, currentImage->GetExtent()};
     renderingInfo.layerCount = 1;
     renderingInfo.colorAttachmentCount = 1;
     renderingInfo.pColorAttachments = &colorAttachment;
@@ -295,13 +295,13 @@ void vov::LightingPass::Record(const FrameContext& context, VkCommandBuffer comm
     VkViewport viewport{};
     viewport.x = 0.0f;
     viewport.y = 0.0f;
-    viewport.width = static_cast<float>(currentImage->getExtent().width);
-    viewport.height = static_cast<float>(currentImage->getExtent().height);
+    viewport.width = static_cast<float>(currentImage->GetExtent().width);
+    viewport.height = static_cast<float>(currentImage->GetExtent().height);
     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 
     VkRect2D scissor{};
     scissor.offset = {.x = 0, .y = 0};
-    scissor.extent = currentImage->getExtent();
+    scissor.extent = currentImage->GetExtent();
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorSets[imageIndex], 0, nullptr);

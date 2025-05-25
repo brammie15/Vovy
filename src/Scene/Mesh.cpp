@@ -53,6 +53,7 @@ namespace vov {
         m_indexCount = static_cast<uint32_t>(builder.indices.size());
         m_vertexCount = static_cast<uint32_t>(builder.vertices.size());
         m_transform.SetName(builder.name);
+        m_boundingBox = builder.boundingBox;
 
         // std::string texturePath = builder.modelPath + builder.texturePath;
         // std::cout << "Loading texture: " << texturePath << std::endl;

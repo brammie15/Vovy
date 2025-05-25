@@ -14,6 +14,7 @@
 #include "Descriptors/DescriptorSetLayout.h"
 #include "Resources/Buffer.h"
 #include "Resources/Image.h"
+#include "Utils/AABB.h"
 
 namespace vov {
     class Mesh {
@@ -47,6 +48,7 @@ namespace vov {
             std::string name{};
 
             TextureInfo textureInfo{};
+            AABB boundingBox{}; // Add this
 
             //TODO: ask if this is properly done
             DescriptorSetLayout* descriptorSetLayout{};
@@ -78,6 +80,7 @@ namespace vov {
             Device& device, const std::string& filepath);
 
         Transform& getTransform() { return m_transform; }
+        [[nodiscard]] const AABB& GetBoundingBox() const { return m_boundingBox; }
 
         [[nodiscard]] VkDescriptorSet getDescriptorSet() const {
             return m_descriptorSet;
@@ -104,6 +107,7 @@ namespace vov {
         std::unique_ptr<Buffer> m_textureBindingInfoBuffer{};
 
         Transform m_transform;
+        AABB m_boundingBox{}; // Add this member
 
         VkDescriptorSet m_descriptorSet{VK_NULL_HANDLE};
     };

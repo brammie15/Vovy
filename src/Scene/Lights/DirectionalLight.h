@@ -1,11 +1,15 @@
 #ifndef DIRECTIONALLIGHT_H
 #define DIRECTIONALLIGHT_H
 
+#include <array>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+
 namespace vov {
+    class Scene;
+
     class DirectionalLight {
     public:
         struct UniformBufferObject {
@@ -52,6 +56,10 @@ namespace vov {
         glm::vec3& GetDirection() { return m_direction; }
         glm::vec3& GetColor(){ return m_color; }
         float& GetIntensity() { return m_intensity; }
+        glm::mat4 GetViewMatrix();
+        glm::mat4 GetProjectionMatrix();
+
+        void CalculateSceneBoundsMatricies(Scene* scene);
 
     private:
         void updateLightSpaceMatrix();
@@ -63,8 +71,8 @@ namespace vov {
         uint32_t m_shadowMapSize;
         glm::mat4 m_lightSpaceMatrix;
 
-        float m_orthoSize = 10.0f;
-        float m_lightDistance = 30.0f;
+        float m_orthoSize = 5.0f;
+        float m_lightDistance = 10.0f;
         glm::vec3 m_lookAtPoint{ 0.0f, 0.0f, 0.0f };
 
         glm::mat4 m_lightProjection{};

@@ -149,8 +149,8 @@ void vov::GeometryPass::Record(const FrameContext& context, VkCommandBuffer comm
     const uint32_t gBufferAttachmentCount = m_geoBuffers[imageIndex]->GetRenderAttachmentCount();
     VkRenderingAttachmentInfo depthAttachment{};
     depthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-    depthAttachment.imageView = depthImage.getImageView();
-    depthAttachment.imageLayout = depthImage.getCurrentLayout();
+    depthAttachment.imageView = depthImage.GetImageView();
+    depthAttachment.imageLayout = depthImage.GetCurrentLayout();
     depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
     // depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;

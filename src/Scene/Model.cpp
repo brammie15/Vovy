@@ -22,7 +22,7 @@ namespace vov {
     }
 
     void Model::draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, bool isDepthPass) const {
-        int testCounter{ 0 };
+        int testCounter{0};
         for (const auto& mesh: m_meshes) {
             PushConstantData push{};
             push.modelMatrix = mesh->getTransform().GetWorldMatrix();
@@ -114,13 +114,14 @@ namespace vov {
     Mesh::Builder Model::processMesh(aiMesh* mesh, const aiScene* scene) {
         std::vector<Mesh::Vertex> vertices;
         std::vector<uint32_t> indices;
-        std::string texturePath{""};
+        std::string texturePath{};
 
-        //TODO: Fuck transparency
-        if (std::string(mesh->mName.C_Str()).find("decals") != std::string::npos) {
-            return {};
+
+        AABB aabb{};
+        if (mesh->mNumVertices > 0) {
+            aabb.min = glm::vec3(mesh->mVertices[0].x, mesh->mVertices[0].y, mesh->mVertices[0].z);
+            aabb.max = aabb.min;
         }
-
         // Retrieve material if available
         if (scene->mNumMaterials > 0 && mesh->mMaterialIndex >= 0) {
             aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
@@ -137,6 +138,8 @@ namespace vov {
                 mesh->mVertices[i].y,
                 mesh->mVertices[i].z
             };
+            aabb.min = glm::min(aabb.min, vertex.position);
+            aabb.max = glm::max(aabb.max, vertex.position);
             if (mesh->HasVertexColors(0)) {
                 vertex.color = {
                     mesh->mColors[0][i].r,
@@ -187,7 +190,7 @@ namespace vov {
         builder.indices = std::move(indices);
         builder.modelPath = m_directory + "/";
         builder.name = mesh->mName.C_Str();
-
+        builder.boundingBox = aabb; // Store the AABB
 
         Mesh::TextureInfo textureInfo{};
 
@@ -212,7 +215,7 @@ namespace vov {
                 material->GetTexture(aiTextureType_METALNESS, 0, &path) == AI_SUCCESS
             ) {
                 textureInfo.specularPath = path.C_Str();
-                std::cout << path.C_Str() << std::endl;
+                // std::cout << path.C_Str() << std::endl;
             } else {
                 textureInfo.specularPath = "";
             }
@@ -232,7 +235,6 @@ namespace vov {
     }
 
     void Model::generateMeshes(GameObject* parent) {
-
         m_Owner = parent;
         //TODO: Fix this
         m_builders.erase(std::ranges::remove_if(m_builders,
@@ -270,6 +272,32 @@ namespace vov {
                 mesh->getTransform().SetParent(nullptr, true);
             }
             m_meshes.push_back(std::move(mesh));
+        }
+
+        calculateBoundingBox();
+    }
+
+    void Model::calculateBoundingBox() {
+        if (m_meshes.empty()) {
+            m_boundingBox = {};
+            return;
+        }
+
+        // Initialize with first mesh's transformed AABB
+        m_boundingBox = TransformAABB(
+            m_meshes[0]->GetBoundingBox(),
+            m_meshes[0]->getTransform().GetWorldMatrix()
+        );
+
+        // Expand to include all other meshes
+        for (size_t i = 1; i < m_meshes.size(); i++) {
+            AABB transformed = TransformAABB(
+                m_meshes[i]->GetBoundingBox(),
+                m_meshes[i]->getTransform().GetWorldMatrix()
+            );
+
+            m_boundingBox.min = glm::min(m_boundingBox.min, transformed.min);
+            m_boundingBox.max = glm::max(m_boundingBox.max, transformed.max);
         }
     }
 }

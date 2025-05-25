@@ -76,7 +76,7 @@ vov::BlitPass::BlitPass(Device& deviceRef, uint32_t framesInFlight, LightingPass
 
         VkDescriptorImageInfo dummyInfo{};
         dummyInfo.sampler = lightingPass.GetImage(i).getSampler();
-        dummyInfo.imageView = lightingPass.GetImage(i).getImageView();
+        dummyInfo.imageView = lightingPass.GetImage(i).GetImageView();
         dummyInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
         DescriptorWriter(*m_descriptorSetLayout, *m_descriptorPool)
@@ -105,15 +105,15 @@ void vov::BlitPass::Record(const FrameContext& context, VkCommandBuffer commandB
 
     VkRenderingAttachmentInfo colorAttachment{};
     colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-    colorAttachment.imageView = currentImage.getImageView();
-    colorAttachment.imageLayout = currentImage.getCurrentLayout();
+    colorAttachment.imageView = currentImage.GetImageView();
+    colorAttachment.imageLayout = currentImage.GetCurrentLayout();
     colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
     colorAttachment.clearValue.color = {{0.f, 0.f, 0.f, 1.0f}};
 
     VkRenderingInfo renderingInfo{};
     renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
-    renderingInfo.renderArea = VkRect2D{VkOffset2D{0, 0}, currentImage.getExtent()};
+    renderingInfo.renderArea = VkRect2D{VkOffset2D{0, 0}, currentImage.GetExtent()};
     renderingInfo.layerCount = 1;
     renderingInfo.colorAttachmentCount = 1;
     renderingInfo.pColorAttachments = &colorAttachment;
@@ -125,13 +125,13 @@ void vov::BlitPass::Record(const FrameContext& context, VkCommandBuffer commandB
     VkViewport viewport{};
     viewport.x = 0.0f;
     viewport.y = 0.0f;
-    viewport.width = static_cast<float>(currentImage.getExtent().width);
-    viewport.height = static_cast<float>(currentImage.getExtent().height);
+    viewport.width = static_cast<float>(currentImage.GetExtent().width);
+    viewport.height = static_cast<float>(currentImage.GetExtent().height);
     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 
     VkRect2D scissor{};
     scissor.offset = {.x = 0, .y = 0};
-    scissor.extent = currentImage.getExtent();
+    scissor.extent = currentImage.GetExtent();
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorSets[imageIndex], 0, nullptr);
@@ -153,7 +153,7 @@ void vov::BlitPass::Resize(VkExtent2D newSize, LightingPass& lightingPass) {
     for (size_t i{0}; i < m_framesInFlight; i++) {
         VkDescriptorImageInfo imageInfo{};
         imageInfo.sampler = lightingPass.GetImage(i).getSampler();
-        imageInfo.imageView = lightingPass.GetImage(i).getImageView();
+        imageInfo.imageView = lightingPass.GetImage(i).GetImageView();
         imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
         auto bufferInfo = m_exposureBuffers[i]->descriptorInfo();

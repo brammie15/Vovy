@@ -14,6 +14,8 @@
 #include "Utils/DebugLabel.h"
 
 vov::HDRI::HDRI(Device& deviceRef): m_device(deviceRef) {
+    m_projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);;
+    // m_projection[1][1] *= -1; // Flip Y coordinate for OpenGL compatibility
 }
 
 vov::HDRI::~HDRI() {
@@ -183,7 +185,7 @@ void vov::HDRI::RenderToCubemap(VkImage inputImage, VkImageView inputView, VkSam
     for (uint32_t face{ 0 }; face < 6; ++face) {
         PushConstants pc{};
         pc.view = viewMatrices[face];
-        pc.projection = projection;
+        pc.projection = m_projection;
 
         VkRenderingAttachmentInfoKHR colorAttachment{};
         colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;

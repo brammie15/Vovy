@@ -120,6 +120,43 @@ namespace vov {
         m_imageLayout = newLayout;
     }
 
+    void Image::TransitionImageLayout(VkCommandBuffer commandBuffer, VkImageLayout newLayout,
+                                 VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask) {
+        VkImageMemoryBarrier barrier{};
+        barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        barrier.oldLayout = m_imageLayout;
+        barrier.newLayout = newLayout;
+        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.image = m_image;
+
+        barrier.subresourceRange.aspectMask = 0;
+        if (HasDepth()) {
+            barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+            if (HasStencil()) barrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+        }
+        else barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+
+        barrier.subresourceRange.baseMipLevel = 0;
+        barrier.subresourceRange.levelCount = m_mipLevels;
+        barrier.subresourceRange.baseArrayLayer = 0;
+        barrier.subresourceRange.layerCount = 1;
+        barrier.srcAccessMask = 0;
+        barrier.dstAccessMask = 0;
+
+        vkCmdPipelineBarrier(
+            commandBuffer,
+            srcStageMask,  // Use provided source stage mask
+            dstStageMask,  // Use provided destination stage mask
+            0,
+            0, nullptr,
+            0, nullptr,
+            1, &barrier
+        );
+
+        m_imageLayout = newLayout;
+    }
+
     void Image::SetName(const std::string& name) {
         DebugLabel::SetObjectName(reinterpret_cast<uint64_t>(m_image), VK_OBJECT_TYPE_IMAGE, name.c_str());
     }

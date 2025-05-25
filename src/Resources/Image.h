@@ -29,22 +29,23 @@ namespace vov {
         ~Image();
 
         [[nodiscard]] VkImage getImage() const { return m_image; }
-        [[nodiscard]] VkImageView getImageView() const { return m_imageView->getHandle(); }
+        [[nodiscard]] VkImageView GetImageView() const { return m_imageView->getHandle(); }
         [[nodiscard]] VmaAllocation getAllocation() const { return m_allocation; }
         [[nodiscard]] VkDescriptorImageInfo descriptorInfo() const;
 
-		[[nodiscard]] VkImageLayout getCurrentLayout() const { return m_imageLayout; }
+		[[nodiscard]] VkImageLayout GetCurrentLayout() const { return m_imageLayout; }
 
         [[nodiscard]] const std::string& getFilename() const { return m_filename; }
 
         void TransitionImageLayout(VkCommandBuffer commandBuffer, VkImageLayout newLayout);
+        void TransitionImageLayout(VkCommandBuffer commandBuffer, VkImageLayout newLayout, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask);
 
         void SetName(const std::string& name);
 
         [[nodiscard]] uint32_t getMipLevels() const { return m_mipLevels; }
         [[nodiscard]] VkSampler getSampler() const { return m_sampler->getHandle(); }
-        [[nodiscard]] VkExtent2D getExtent() const { return m_extent; }
-        [[nodiscard]] VkFormat getFormat() const { return m_format; }
+        [[nodiscard]] VkExtent2D GetExtent() const { return m_extent; }
+        [[nodiscard]] VkFormat GetFormat() const { return m_format; }
 
         [[nodiscard]] bool HasStencil() const {
             switch (m_format)

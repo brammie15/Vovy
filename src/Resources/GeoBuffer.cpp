@@ -136,8 +136,8 @@ void vov::GeoBuffer::CreateImages() {
 void vov::GeoBuffer::AddRenderAttachment(const Image& image) {
     VkRenderingAttachmentInfo attachmentInfo{};
     attachmentInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-    attachmentInfo.imageView = image.getImageView();
-    attachmentInfo.imageLayout = image.getCurrentLayout();
+    attachmentInfo.imageView = image.GetImageView();
+    attachmentInfo.imageLayout = image.GetCurrentLayout();
     attachmentInfo.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     attachmentInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
     attachmentInfo.clearValue.color = { {0.f, 0.f, 0.f, 1.0f} };

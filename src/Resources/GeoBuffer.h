@@ -23,7 +23,7 @@ namespace vov {
 
         [[nodiscard]] VkExtent2D GetExtent() const { return m_extent; }
 
-        [[nodiscard]] std::vector<VkFormat> GetFormats() const { return {m_albedo->getFormat(), m_normal->getFormat(), m_worldPos->getFormat(), m_metalicRoughness->getFormat(), m_selectionImage->getFormat()}; }
+        [[nodiscard]] std::vector<VkFormat> GetFormats() const { return {m_albedo->GetFormat(), m_normal->GetFormat(), m_worldPos->GetFormat(), m_metalicRoughness->GetFormat(), m_selectionImage->GetFormat()}; }
         [[nodiscard]] std::vector<VkRenderingAttachmentInfo>& GetRenderingAttachments() { return m_RenderingAttachments; }
         [[nodiscard]] int GetRenderAttachmentCount() const { return static_cast<int>(m_RenderingAttachments.size()); }
 

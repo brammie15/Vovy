@@ -105,8 +105,8 @@ void vov::DepthPrePass::Record(const FrameContext& context, VkCommandBuffer comm
 
     VkRenderingAttachmentInfo depthAttachment{};
     depthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-    depthAttachment.imageView = depthImage.getImageView();
-    depthAttachment.imageLayout = depthImage.getCurrentLayout(); //God this bad
+    depthAttachment.imageView = depthImage.GetImageView();
+    depthAttachment.imageLayout = depthImage.GetCurrentLayout(); //God this bad
     depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
     depthAttachment.clearValue.depthStencil = { .depth = 1.0f, .stencil = 0 };
@@ -114,7 +114,7 @@ void vov::DepthPrePass::Record(const FrameContext& context, VkCommandBuffer comm
     // Render Info
     VkRenderingInfo renderingInfo{};
     renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
-    renderingInfo.renderArea = VkRect2D{ VkOffset2D{0, 0}, depthImage.getExtent() };
+    renderingInfo.renderArea = VkRect2D{ VkOffset2D{0, 0}, depthImage.GetExtent() };
     renderingInfo.layerCount = 1;
     renderingInfo.pDepthAttachment = &depthAttachment;
 
@@ -129,8 +129,8 @@ void vov::DepthPrePass::Record(const FrameContext& context, VkCommandBuffer comm
     VkViewport viewport{};
     viewport.x = 0.0f;
     viewport.y = 0.0f;
-    viewport.width = static_cast<float>(depthImage.getExtent().width);
-    viewport.height = static_cast<float>(depthImage.getExtent().height);
+    viewport.width = static_cast<float>(depthImage.GetExtent().width);
+    viewport.height = static_cast<float>(depthImage.GetExtent().height);
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
     DebugLabel::BeginCmdLabel(commandBuffer, "Viewport and scissor", {0.0f, 1.0f, 0.0f, 1.0f});
@@ -138,7 +138,7 @@ void vov::DepthPrePass::Record(const FrameContext& context, VkCommandBuffer comm
 
     VkRect2D scissor{};
     scissor.offset = { 0, 0 };
-    scissor.extent = depthImage.getExtent();
+    scissor.extent = depthImage.GetExtent();
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
     DebugLabel::EndCmdLabel(commandBuffer);
 

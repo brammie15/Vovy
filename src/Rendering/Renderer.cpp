@@ -97,7 +97,7 @@ namespace vov {
 
         const VkRenderingAttachmentInfo depth_attachment_info = {
             .sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR,
-            .imageView = m_swapChain->GetDepthImage(static_cast<int>(m_currentImageIndex)).getImageView(),
+            .imageView = m_swapChain->GetDepthImage(static_cast<int>(m_currentImageIndex)).GetImageView(),
             .imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
             .loadOp = VK_ATTACHMENT_LOAD_OP_LOAD,
             // .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
