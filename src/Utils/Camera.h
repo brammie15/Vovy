@@ -80,6 +80,8 @@ namespace vov {
         float m_aperture{2.8f};
         float m_shutterSpeed{1.f / 60.f};
 
+        float m_scrollSpeed = 2.0f;
+
     };
 }
 

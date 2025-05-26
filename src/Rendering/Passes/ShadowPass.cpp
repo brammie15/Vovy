@@ -106,7 +106,8 @@ void vov::ShadowPass::Record(const FrameContext& context, VkCommandBuffer comman
 
     ubo.lightProjectionMatrix[1][1] *= -1;
 
-    m_uniformBuffers[imageIndex]->copyTo(&ubo, sizeof(ubo));
+
+    m_uniformBuffers[imageIndex]->copyTo(&ubo, sizeof(UniformBuffer));
     m_uniformBuffers[imageIndex]->flush();
 
     m_depthImage->TransitionImageLayout(commandBuffer, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT);
@@ -177,4 +178,8 @@ void vov::ShadowPass::Resize(VkExtent2D newSize) {
             true
     );
     m_depthImage->SetName("ShadowDepthImage");
+}
+
+vov::Image& vov::ShadowPass::GetDepthImage(int frameIndex) {
+    return *m_depthImage;
 }

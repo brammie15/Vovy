@@ -24,6 +24,7 @@ vov::LightingPass::LightingPass(Device& deviceRef, uint32_t framesInFlight, VkFo
             .addBinding(3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) //MetallicRoughness
             .addBinding(4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) //Selection
             .addBinding(5, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) //Depth
+            .addBinding(6, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) //Shadow
             .build();
 
     m_descriptorSetLayout = DescriptorSetLayout::Builder(m_device)
@@ -149,6 +150,7 @@ vov::LightingPass::LightingPass(Device& deviceRef, uint32_t framesInFlight, VkFo
         writer.writeImage(3, &dummyInfo);
         writer.writeImage(4, &dummyInfo);
         writer.writeImage(5, &dummyInfo);
+        writer.writeImage(6, &dummyInfo); // Shadow map
 
         if (!writer.build(m_textureDescriptors[i])) {
             throw std::runtime_error("Failed to build descriptor set for LightingPass");
@@ -214,6 +216,7 @@ void vov::LightingPass::Record(const FrameContext& context, VkCommandBuffer comm
     ubo.lightInfo.direction = scene.GetDirectionalLight().GetDirection();
     ubo.lightInfo.color = scene.GetDirectionalLight().GetColor();
     ubo.lightInfo.intensity = scene.GetDirectionalLight().GetIntensity();
+    ubo.lightInfo.lightProjView = scene.GetDirectionalLight().GetLightProjection() * scene.GetDirectionalLight().GetLightView();
 
     ubo.camSettings.apeture = context.camera.GetAperture();
     ubo.camSettings.iso = context.camera.GetISO();
@@ -318,7 +321,7 @@ void vov::LightingPass::Record(const FrameContext& context, VkCommandBuffer comm
     DebugLabel::EndCmdLabel(commandBuffer);
 }
 
-void vov::LightingPass::UpdateDescriptors(uint32_t frameIndex, Image& albedo, Image& normal, Image& specular, Image& bump, Image& depth) {
+void vov::LightingPass::UpdateDescriptors(uint32_t frameIndex, Image& albedo, Image& normal, Image& specular, Image& bump, Image& depth, Image& shadowMap) {
     DescriptorWriter writer(*m_geobufferSamplersSetLayout, *m_descriptorPool);
 
     const auto albedoInfo = albedo.descriptorInfo();
@@ -326,6 +329,7 @@ void vov::LightingPass::UpdateDescriptors(uint32_t frameIndex, Image& albedo, Im
     const auto specularInfo = specular.descriptorInfo();
     const auto bumpInfo = bump.descriptorInfo();
     const auto depthInfo = depth.descriptorInfo();
+    const auto shadowMapInfo = shadowMap.descriptorInfo();
 
     writer
             .writeImage(0, &albedoInfo)
@@ -333,6 +337,7 @@ void vov::LightingPass::UpdateDescriptors(uint32_t frameIndex, Image& albedo, Im
             .writeImage(2, &specularInfo)
             .writeImage(3, &bumpInfo)
             .writeImage(5, &depthInfo)
+            .writeImage(6, &shadowMapInfo)
             .overwrite(m_textureDescriptors[frameIndex]);
 }
 

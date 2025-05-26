@@ -6,6 +6,7 @@ struct DirectionalLightInfo {
     vec3 direction;
     vec3 color;
     float intensity;
+    mat4 shadowViewProj;
 };
 
 struct PointLight {
@@ -51,6 +52,8 @@ layout(set = 1, binding = 4) uniform sampler2D selectionMap;
 
 layout(set = 1, binding = 5) uniform sampler2D depthMap;
 
+layout(set = 1, binding = 6) uniform sampler2D shadowMap;
+
 layout(set = 2, binding = 0) uniform textureCube hdriTexture;
 layout(set = 2, binding = 1) uniform sampler hdriSampler;
 
@@ -66,6 +69,40 @@ layout(set = 3, binding = 0) readonly buffer PointLights {
 layout(location = 0) in vec2 inTexcoord;
 
 layout(location = 0) out vec4 outColor;
+
+float calculateShadow(vec3 worldPos)
+{
+    vec4 lightSpacePosition = ubo.light.shadowViewProj * vec4(worldPos, 1.0);
+    lightSpacePosition.xyz /= lightSpacePosition.w;
+
+    // Early exit if outside shadow frustum
+    if (lightSpacePosition.z < 0.0 || lightSpacePosition.z > 1.0 ||
+    lightSpacePosition.x < -1.0 || lightSpacePosition.x > 1.0 ||
+    lightSpacePosition.y < -1.0 || lightSpacePosition.y > 1.0) {
+        return 0.0;
+    }
+
+    vec3 shadowMapUV = vec3(lightSpacePosition.xy * 0.5 + 0.5, lightSpacePosition.z);
+    shadowMapUV.y = 1.0 - shadowMapUV.y; // Flip Y for Vulkan
+
+    // Calculate bias based on surface normal and light direction
+    vec3 N = normalize(texture(normalMap, inTexcoord).rgb * 2.0 - 1.0);
+    vec3 L = normalize(-ubo.light.direction);
+    float bias = max(0.005 * (1.0 - dot(N, L)), 0.001);
+
+    // Percentage-closer filtering (PCF) for softer shadows
+    float shadow = 0.0;
+    vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
+    for(int x = -1; x <= 1; ++x) {
+        for(int y = -1; y <= 1; ++y) {
+            float shadowDepth = texture(shadowMap, shadowMapUV.xy + vec2(x, y) * texelSize).r;
+            shadow += (shadowMapUV.z - bias) > shadowDepth ? 1.0 : 0.0;
+        }
+    }
+    shadow /= 9.0;
+
+    return shadow;
+}
 
 // Calculate attenuation for point lights
 float calculateAttenuation(float distance, float range) {
@@ -136,7 +173,7 @@ void main()
         const vec3 sampleDirection = GetWorldPositionFromDepth(depth, fragCoord, ubo.viewportSize, inverse(ubo.projectionMatrix), inverse(ubo.viewMatrix));
         vec3 normalizedSampleDirection = normalize(sampleDirection);
         outColor = vec4(texture(samplerCube(hdriTexture, hdriSampler), normalizedSampleDirection).rgb, 1.0);
-//        outColor.rgb = normalizedSampleDirection;
+        //        outColor.rgb = normalizedSampleDirection;
         return;
     }
 
@@ -184,17 +221,17 @@ void main()
     vec3 color = ambient + Lo;
 
     // Tone mapping and gamma correction
-//    color = color / (color + vec3(1.0));
-//    color = pow(color, vec3(1.0/2.2));
+    //    color = color / (color + vec3(1.0));
+    //    color = pow(color, vec3(1.0/2.2));
 
     outColor.rgb = color;
     outColor.a = 1.0;
 
     //    float z = depth * 2.0 - 1.0; // back to NDC
-//    float linearDepth = (2.0 * ubo.projectionMatrix[3][2]) /
-//    (ubo.projectionMatrix[2][2] - z * ubo.projectionMatrix[2][3]);
-//
-//    // Normalize depth to a viewable range (e.g., between 0 and 1)
-//    float depthView = clamp(linearDepth / 100.0, 0.0, 1.0); // adjust 100.0 to your far plane or visual preference
-//    outColor.rgb = vec3(depthView);
+    //    float linearDepth = (2.0 * ubo.projectionMatrix[3][2]) /
+    //    (ubo.projectionMatrix[2][2] - z * ubo.projectionMatrix[2][3]);
+    //
+    //    // Normalize depth to a viewable range (e.g., between 0 and 1)
+    //    float depthView = clamp(linearDepth / 100.0, 0.0, 1.0); // adjust 100.0 to your far plane or visual preference
+    //    outColor.rgb = vec3(depthView);
 }

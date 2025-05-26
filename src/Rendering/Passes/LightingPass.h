@@ -21,6 +21,8 @@ namespace vov {
 
             glm::vec3 color{};
             float intensity{};
+
+            glm::mat4 lightProjView{};
         };
 
         struct alignas(16) UniformBuffer{
@@ -39,7 +41,7 @@ namespace vov {
 
         void Record(const FrameContext& context, VkCommandBuffer commandBuffer, uint32_t imageIndex, const GeometryPass& geoPass, const HDRI& hdri, ShadowPass& shadowPass, Scene& scene);
 
-        void UpdateDescriptors(uint32_t frameIndex, Image& albedo, Image& normal, Image& specular, Image& bump, Image& depth);
+        void UpdateDescriptors(uint32_t frameIndex, Image& albedo, Image& normal, Image& specular, Image& bump, Image& depth, Image& shadowMap);
 
         [[nodiscard]] Image& GetImage(int imageIndex) const;
         void Resize(VkExtent2D newSize);

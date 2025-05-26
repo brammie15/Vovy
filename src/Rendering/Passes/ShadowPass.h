@@ -29,6 +29,8 @@ namespace vov {
         void Record(const FrameContext& context, VkCommandBuffer commandBuffer, uint32_t imageIndex, Scene& scene, Camera& camera);
 
         void Resize(VkExtent2D newSize);
+        Image& GetDepthImage(int frameIndex);
+
     private:
         Device& m_device;
         uint32_t m_framesInFlight{};
@@ -41,6 +43,7 @@ namespace vov {
         std::vector<VkDescriptorSet> m_descriptorSets{};
         std::vector<std::unique_ptr<Buffer>> m_uniformBuffers{};
 
+        //TODO: make this a vector of unique_ptrs
         std::unique_ptr<Image> m_depthImage{}; //The image i render depth for directionallight to
 
         std::unique_ptr<Pipeline> m_pipeline{};
