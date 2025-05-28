@@ -2,7 +2,6 @@
 
 #include <array>
 #include <stdexcept>
-#include <ranges>
 
 #include "Utils/DebugLabel.h"
 
@@ -20,7 +19,7 @@ namespace vov {
     VkCommandBuffer Renderer::BeginFrame() {
         assert(!m_isFrameStarted && "Frame not in progress yet??");
 
-        auto result = m_swapChain->acquireNextImage(&m_currentImageIndex);
+        const auto result = m_swapChain->acquireNextImage(&m_currentImageIndex);
         if (result == VK_ERROR_OUT_OF_DATE_KHR) {
             recreateSwapChain();
             return nullptr;
@@ -32,7 +31,7 @@ namespace vov {
 
         m_isFrameStarted = true;
 
-        auto commandBuffer = GetCurrentCommandBuffer();
+        const auto commandBuffer = GetCurrentCommandBuffer();
         VkCommandBufferBeginInfo beginInfo{};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
@@ -48,12 +47,12 @@ namespace vov {
         assert(m_isFrameStarted && "Can't call endFrame while frame is not in progress");
 
 
-        auto commandBuffer = GetCurrentCommandBuffer();
+        const auto commandBuffer = GetCurrentCommandBuffer();
         if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
             throw std::runtime_error("failed to record command buffer!");
         }
 
-        auto result = m_swapChain->submitCommandBuffers(&commandBuffer, &m_currentImageIndex);
+        const auto result = m_swapChain->submitCommandBuffers(&commandBuffer, &m_currentImageIndex);
         if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR ||
             m_window.wasWindowResized()) {
             m_window.resetWindowResized();
@@ -132,7 +131,7 @@ namespace vov {
         viewport.height = static_cast<float>(m_swapChain->GetSwapChainExtent().height);
         viewport.minDepth = 0.0f;
         viewport.maxDepth = 1.0f;
-        VkRect2D scissor{{0, 0}, m_swapChain->GetSwapChainExtent()};
+        const VkRect2D scissor{{0, 0}, m_swapChain->GetSwapChainExtent()};
         vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
         vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
     }

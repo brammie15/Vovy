@@ -134,10 +134,13 @@ vov::GeometryPass::~GeometryPass() {
     // vkDestroyFence(m_device.device(), m_pixelQueryFence, nullptr);
 }
 
-void vov::GeometryPass::Record(const FrameContext& context, VkCommandBuffer commandBuffer, int imageIndex, Image& depthImage, Scene* scene, Camera* Camera) {
+void vov::GeometryPass::Record(const FrameContext& context, const Image& depthImage) {
+    const uint32_t imageIndex = context.frameIndex;
+    const auto commandBuffer = context.commandBuffer;
+
     UniformBuffer ubo{};
-    ubo.view = Camera->GetViewMatrix();
-    ubo.proj = Camera->GetProjectionMatrix();
+    ubo.view = context.camera.GetViewMatrix();
+    ubo.proj = context.camera.GetProjectionMatrix();
     ubo.proj[1][1] *= -1;
 
     m_uniformBuffers[imageIndex]->copyTo(&ubo, sizeof(ubo));
@@ -187,7 +190,7 @@ void vov::GeometryPass::Record(const FrameContext& context, VkCommandBuffer comm
 
     m_pipeline->bind(commandBuffer);
 
-    for (const auto& object : scene->getGameObjects()) {
+    for (const auto& object : context.currentScene.getGameObjects()) {
 
         object->model->draw(commandBuffer, m_pipelineLayout);
     }

@@ -22,12 +22,6 @@
 #include "Utils/DeltaTime.h"
 #include "Utils/FrameContext.h"
 
-struct GlobalUBO {
-    glm::mat4 view;
-    glm::mat4 proj;
-};
-
-
 VApp::VApp() {
     m_globalPool =
             vov::DescriptorPool::Builder(m_device)
@@ -50,7 +44,6 @@ VApp::VApp() {
     m_scenes.emplace_back(m_flightHelmetScene.get());
     m_scenes.emplace_back(m_chessScene.get());
 
-
     loadGameObjects();
     m_currentScene = m_chessScene.get();
     m_currentScene->SceneLoad();
@@ -59,27 +52,10 @@ VApp::VApp() {
         this->ResizeScreen(newSize);
     });
 
-
-}
-
-VApp::~VApp() = default;
-
-void VApp::run() {
-    std::vector<std::unique_ptr<vov::Buffer>> uboBuffers(vov::Swapchain::MAX_FRAMES_IN_FLIGHT);
-
     m_hdrEnvironment = std::make_unique<vov::HDRI>(m_device);
     m_hdrEnvironment->LoadHDR("resources/circus_arena_4k.hdr");
     m_hdrEnvironment->CreateCubeMap();
     m_hdrEnvironment->CreateDiffuseIrradianceMap();
-
-    for (int i = 0; i < uboBuffers.size(); i++) {
-        uboBuffers[i] = std::make_unique<vov::Buffer>(
-            m_device,
-            sizeof(GlobalUBO),
-            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-            VMA_MEMORY_USAGE_CPU_TO_GPU);
-        uboBuffers[i]->map();
-    }
 
     m_depthPrePass = std::make_unique<vov::DepthPrePass>(
         m_device
@@ -107,15 +83,23 @@ void VApp::run() {
         m_device, vov::Swapchain::MAX_FRAMES_IN_FLIGHT, *m_lightingPass, m_renderer.getSwapchain()
     );
 
-    vov::ImguiRenderSystem imguiRenderSystem{
+    m_imguiRenderSystem = std::make_unique<vov::ImguiRenderSystem>(
         m_device,
         VK_FORMAT_B8G8R8A8_SRGB, //TODO: this should really be a global
         static_cast<int>(m_window.getWidth()),
         static_cast<int>(m_window.getHeight())
-    };
+    );
 
     m_camera.setAspectRatio(m_renderer.GetAspectRatio());
 
+    m_camera.GetISO() = 1600.f;
+    m_camera.GetAperture() = 0.7f;
+    m_camera.GetShutterSpeed() = 1.f / 60.f;
+}
+
+VApp::~VApp() = default;
+
+void VApp::run() {
     while (!m_window.ShouldClose()) {
         vov::DeltaTime::GetInstance().Update();
         const double currentFps = 1.0 / vov::DeltaTime::GetInstance().GetDeltaTime();
@@ -131,13 +115,13 @@ void VApp::run() {
 
 #pragma region INPUT
         m_window.PollInput();
-        imguiRenderSystem.beginFrame();
+        m_imguiRenderSystem->beginFrame();
 
         this->imGui();
         if (!m_currentScene->getGameObjects().empty() && m_selectedTransform) {
-            imguiRenderSystem.drawGizmos(&m_camera, m_selectedTransform, "Maintransform");
+            m_imguiRenderSystem->drawGizmos(&m_camera, m_selectedTransform, "Maintransform");
         }
-        imguiRenderSystem.endFrame();
+        m_imguiRenderSystem->endFrame();
 
         if (m_window.isKeyPressed(GLFW_KEY_GRAVE_ACCENT)) {
             if (m_window.isCursorLocked()) {
@@ -150,24 +134,36 @@ void VApp::run() {
 
         m_camera.Update(static_cast<float>(vov::DeltaTime::GetInstance().GetDeltaTime()));
         m_currentScene->GetDirectionalLight().CalculateSceneBoundsMatricies(m_currentScene);
-        m_camera.CalculateProjectionMatrix();
-        m_camera.CalculateViewMatrix();
+        // m_camera.CalculateProjectionMatrix();
+        // m_camera.CalculateViewMatrix();
 
         if (const auto commandBuffer = m_renderer.BeginFrame()) {
             const int frameIndex = m_renderer.GetFrameIndex();
-            vov::FrameContext frameContext{frameIndex, static_cast<float>(vov::DeltaTime::GetInstance().GetDeltaTime()), commandBuffer, m_camera};
+            vov::FrameContext frameContext{
+                frameIndex,
+                static_cast<float>(vov::DeltaTime::GetInstance().GetDeltaTime()),
+                commandBuffer,
+                m_camera,
+                *m_currentScene,
+            };
 
             auto& depthImage = m_renderer.GetCurrentDepthImage();
-            m_depthPrePass->Record(frameContext, commandBuffer, frameIndex, depthImage, m_currentScene, &m_camera);
+            m_depthPrePass->Record(frameContext, depthImage);
 
-            m_shadowPass->Record(frameContext, commandBuffer, frameIndex, *m_currentScene, m_camera);
+            m_shadowPass->Record(frameContext);
 
-            m_geoPass->Record(frameContext, commandBuffer, frameIndex, depthImage, m_currentScene, &m_camera);
+            m_geoPass->Record(frameContext, depthImage);
 
-            depthImage.TransitionImageLayout(commandBuffer, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            depthImage.TransitionImageLayout(commandBuffer, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 
             m_lightingPass->UpdateDescriptors(
-                frameIndex, m_geoPass->GetAlbedo(frameIndex), m_geoPass->GetNormal(frameIndex), m_geoPass->GetSpecualar(frameIndex), m_geoPass->GetWorldPos(frameIndex), depthImage, m_shadowPass->GetDepthImage(frameIndex)
+                frameIndex,
+                m_geoPass->GetAlbedo(frameIndex),
+                m_geoPass->GetNormal(frameIndex),
+                m_geoPass->GetSpecualar(frameIndex),
+                m_geoPass->GetWorldPos(frameIndex),
+                depthImage,
+                m_shadowPass->GetDepthImage(frameIndex)
             );
 
             m_lightingPass->Record(frameContext, commandBuffer, frameIndex, *m_geoPass, *m_hdrEnvironment, *m_shadowPass, *m_currentScene);
@@ -184,7 +180,7 @@ void VApp::run() {
 
             m_blitPass->Record(frameContext, commandBuffer, frameIndex, m_renderer.getSwapchain());
 
-            imguiRenderSystem.renderImgui(commandBuffer);
+            m_imguiRenderSystem->renderImgui(commandBuffer);
 
             m_renderer.endSwapChainRenderPass(commandBuffer);
 
@@ -320,8 +316,8 @@ void VApp::imGui() {
         currentSceneName = m_currentScene->getName();
     }
     ImGui::Text("Current Scene: %s", currentSceneName.c_str());
-    if(ImGui::Button("Purge Scenes")) {
-        std::ranges::for_each(m_scenes, [&](vov::Scene* scene) {
+    if (ImGui::Button("Purge Scenes")) {
+        std::ranges::for_each(m_scenes, [&] (vov::Scene* scene) {
             if (scene != m_currentScene) {
                 scene->SceneUnLoad();
             }
@@ -358,7 +354,7 @@ void VApp::imGui() {
     int id{0};
     std::function<void(vov::Transform*)> RenderObject = [&] (vov::Transform* object) {
         ImGui::PushID(++id);
-        std::string name = object->GetName();
+        const std::string name = object->GetName();
         const bool treeOpen = ImGui::TreeNodeEx(name.c_str(), ImGuiTreeNodeFlags_AllowOverlap);
 
         ImGui::SameLine();
@@ -394,7 +390,6 @@ void VApp::imGui() {
     ImGui::End();
 
     if (m_showLineTools) {
-
         ImGui::Begin("Line Segments");
         ImGui::Text("Line Segments: %d", m_currentScene->getLineSegments().size());
         for (int i = 0; i < m_currentScene->getLineSegments().size(); i++) {
@@ -463,20 +458,20 @@ void VApp::imGui() {
         }
         ImGui::End();
 
-        ImGui::Begin("Bezier Curve Follower");
-        if (ImGui::Button("Set Selected as Follower")) {
-            m_bezierFollowerTransform = m_selectedTransform;
-        }
-        if (ImGui::Button("Clear Follower")) {
-            m_bezierFollowerTransform = nullptr;
-        }
-        if (m_bezierFollowerTransform) {
-            ImGui::Text("Current Follower: %p", m_bezierFollowerTransform);
-            ImGui::SliderFloat("Follow Speed", &m_bezierSpeed, 0.1f, 2.0f);
-            ImGui::SliderFloat("Progress", &m_bezierProgress, 0.0f, 1.0f);
-            ImGui::Checkbox("Should Rotate", &m_shouldRotate);
-        }
-        ImGui::End();
+        // ImGui::Begin("Bezier Curve Follower");
+        // if (ImGui::Button("Set Selected as Follower")) {
+        //     m_bezierFollowerTransform = m_selectedTransform;
+        // }
+        // if (ImGui::Button("Clear Follower")) {
+        //     m_bezierFollowerTransform = nullptr;
+        // }
+        // if (m_bezierFollowerTransform) {
+        //     ImGui::Text("Current Follower: %p", m_bezierFollowerTransform);
+        //     ImGui::SliderFloat("Follow Speed", &m_bezierSpeed, 0.1f, 2.0f);
+        //     ImGui::SliderFloat("Progress", &m_bezierProgress, 0.0f, 1.0f);
+        //     ImGui::Checkbox("Should Rotate", &m_shouldRotate);
+        // }
+        // ImGui::End();
     }
 }
 
@@ -502,10 +497,8 @@ void VApp::loadGameObjects() {
     });
 
     m_sponzaScene->setSceneLoadFunction([&] (vov::Scene* scene) {
-        auto sponza = vov::GameObject::createGameObject();
-       const auto mainSponzaModel = std::make_shared<vov::Model>(m_device, "resources/Sponza/Sponza.gltf", sponza.get());
-       sponza->model = std::move(mainSponzaModel);
-       scene->addGameObject(std::move(sponza));
+        auto sponza = vov::GameObject::LoadModelFromDisk(m_device, "resources/Sponza/Sponza.gltf");
+        scene->addGameObject(std::move(sponza));
     });
 
     m_vikingRoomScene->setSceneLoadFunction([&] (vov::Scene* scene) {

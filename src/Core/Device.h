@@ -38,7 +38,7 @@ namespace vov {
 
         explicit Device(Window& window);
         ~Device();
-        void copyBuffer(Buffer* srcBuffer, Buffer* destBuffer, uint32_t size);
+        void copyBuffer(const Buffer* srcBuffer, const Buffer* destBuffer, uint32_t size);
 
 
         Device(const Device& other) = delete;

@@ -7,7 +7,7 @@
 #include "Resources/Buffer.h"
 #include "Utils/DebugLabel.h"
 
-vov::ShadowPass::ShadowPass(Device& deviceRef, uint32_t framesInFlight, VkFormat format, VkExtent2D extent, DirectionalLight& directionalLight): m_device{deviceRef}, m_directionalLight{directionalLight}, m_framesInFlight{framesInFlight}, m_imageFormat{format} {
+vov::ShadowPass::ShadowPass(Device& deviceRef, uint32_t framesInFlight, VkFormat format, VkExtent2D extent, DirectionalLight& directionalLight): m_device{deviceRef}, m_framesInFlight{framesInFlight}, m_imageFormat{format}, m_directionalLight{directionalLight} {
     m_descriptorPool = DescriptorPool::Builder(m_device)
             .setMaxSets(framesInFlight * 2)
             .addPoolSize(VK_DESCRIPTOR_TYPE_SAMPLER, framesInFlight * 2)
@@ -47,7 +47,7 @@ vov::ShadowPass::ShadowPass(Device& deviceRef, uint32_t framesInFlight, VkFormat
                 .build(m_descriptorSets[i]);
     }
 
-    std::array<VkDescriptorSetLayout, 1> descriptorSetLayouts = {
+    const std::array<VkDescriptorSetLayout, 1> descriptorSetLayouts = {
         m_descriptorSetLayout->getDescriptorSetLayout()
     };
 
@@ -96,16 +96,15 @@ vov::ShadowPass::~ShadowPass() {
     vkDestroyPipelineLayout(m_device.device(), m_pipelineLayout, nullptr);
 }
 
-void vov::ShadowPass::Record(const FrameContext& context, VkCommandBuffer commandBuffer, uint32_t imageIndex, Scene& scene, Camera& camera) {
+void vov::ShadowPass::Record(const FrameContext& context) {
+    const uint32_t imageIndex = context.frameIndex;
+    const auto commandBuffer = context.commandBuffer;
+
     UniformBuffer ubo{};
     ubo.lightViewMatrix = m_directionalLight.GetViewMatrix();
     ubo.lightProjectionMatrix = m_directionalLight.GetProjectionMatrix();
 
-    // ubo.lightViewMatrix = camera.GetViewMatrix();
-    // ubo.lightProjectionMatrix = camera.GetProjectionMatrix();
-
     ubo.lightProjectionMatrix[1][1] *= -1;
-
 
     m_uniformBuffers[imageIndex]->copyTo(&ubo, sizeof(UniformBuffer));
     m_uniformBuffers[imageIndex]->flush();
@@ -120,7 +119,6 @@ void vov::ShadowPass::Record(const FrameContext& context, VkCommandBuffer comman
     depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
     depthAttachment.clearValue.depthStencil = { .depth = 1.0f, .stencil = 0 };
 
-    // Render Info
     const VkExtent2D extent = m_depthImage->GetExtent();
     VkRenderingInfo renderingInfo{};
     renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
@@ -154,7 +152,7 @@ void vov::ShadowPass::Record(const FrameContext& context, VkCommandBuffer comman
 
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorSets[imageIndex], 0, nullptr);
 
-    for (const auto& object : scene.getGameObjects()) {
+    for (const auto& object : context.currentScene.getGameObjects()) {
 
         object->model->draw(commandBuffer, m_pipelineLayout, true);
     }

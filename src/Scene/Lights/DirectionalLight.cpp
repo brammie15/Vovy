@@ -105,11 +105,11 @@ void DirectionalLight::CalculateSceneBoundsMatricies(Scene* scene) {
 
     m_lightView = glm::lookAtLH(lightPos, lightPos + direction, up);
 
-    glm::vec3 minLightSpace = glm::vec3(FLT_MAX);
-    glm::vec3 maxLightSpace = glm::vec3(-FLT_MAX);
+    auto minLightSpace = glm::vec3(FLT_MAX);
+    auto maxLightSpace = glm::vec3(-FLT_MAX);
 
     for (const glm::vec3& corner : corners) {
-        const glm::vec3 transformedCorner = glm::vec3(m_lightView * glm::vec4(corner, 1.0f));
+        const auto transformedCorner = glm::vec3(m_lightView * glm::vec4(corner, 1.0f));
         maxLightSpace = glm::max(maxLightSpace, transformedCorner);
         minLightSpace = glm::min(minLightSpace, transformedCorner);
     }

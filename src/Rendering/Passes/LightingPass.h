@@ -36,12 +36,12 @@ namespace vov {
             glm::vec2 _pad1{};
         };
 
-        explicit LightingPass(Device& deviceRef,uint32_t framesInFlight, VkFormat format, VkExtent2D extent, HDRI* hdri = nullptr);
+        explicit LightingPass(Device& deviceRef,uint32_t framesInFlight, VkFormat format, VkExtent2D extent, const HDRI* hdri = nullptr);
         ~LightingPass();
 
         void Record(const FrameContext& context, VkCommandBuffer commandBuffer, uint32_t imageIndex, const GeometryPass& geoPass, const HDRI& hdri, ShadowPass& shadowPass, Scene& scene);
 
-        void UpdateDescriptors(uint32_t frameIndex, Image& albedo, Image& normal, Image& specular, Image& bump, Image& depth, Image& shadowMap);
+        void UpdateDescriptors(uint32_t frameIndex, const Image& albedo, const Image& normal, const Image& specular, const Image& bump, const Image& depth, const Image& shadowMap);
 
         [[nodiscard]] Image& GetImage(int imageIndex) const;
         void Resize(VkExtent2D newSize);

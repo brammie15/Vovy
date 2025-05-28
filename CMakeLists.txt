@@ -92,6 +92,7 @@ include(cmake/LinkImGuizmo.cmake)
 LinkImGuizmo(${PROJECT_NAME} PRIVATE)
 target_link_libraries(imguizmo PRIVATE imgui)
 
+
 find_package(VLD CONFIG)
 
 if (NOT VLD_FOUND)
@@ -104,7 +105,7 @@ endif ()
 #include(cmake/LinkTinyObjLoader.cmake)
 #LinkTinyObjLoader(${PROJECT_NAME} PUBLIC)
 
-target_link_libraries(${PROJECT_NAME} PUBLIC Vulkan::Vulkan ${VLD_LIBRARY})
+target_link_libraries(${PROJECT_NAME} PUBLIC Vulkan::Vulkan ${VLD_LIBRARY} opengl32)
 target_include_directories(${PROJECT_NAME} PUBLIC ${VLD_INCLUDE_DIR})
 
 

@@ -45,33 +45,13 @@ namespace vov {
         }
     }
 
-    void Model::bind(VkCommandBuffer commandBuffer, VkPipelineLayout layout) {
+    void Model::bind(VkCommandBuffer commandBuffer, VkPipelineLayout layout) const {
         for (const auto& mesh: m_meshes) {
             mesh->bind(commandBuffer, layout);
         }
     }
 
-    bool MeshHasOpacityMap(const aiScene* scene, const aiMesh* mesh) {
-        if (!scene || !mesh || mesh->mMaterialIndex < 0) {
-            return false; // Invalid scene or mesh
-        }
-
-        // Get the material associated with the mesh
-        aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
-
-        // Check if the material has an opacity texture
-        return material->GetTextureCount(aiTextureType_OPACITY) > 0;
-    }
-
-    void Model::updateShadowMapDescriptorSet(VkDescriptorImageInfo shadowMapDescriptorInfo) {
-        for (auto& mesh: m_meshes) {
-            DescriptorWriter(*m_descriptorSetLayout, *m_descriptorPool)
-                    .writeImage(1, &shadowMapDescriptorInfo)
-                    .overwrite(mesh->getDescriptorSet());
-        }
-    }
-
-    void Model::loadModel(std::string path) {
+    void Model::loadModel(const std::string& path) {
         Timer loadModelTimer("path");
         Assimp::Importer import;
         const aiScene* scene = import.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace | aiProcess_GenNormals);
@@ -93,8 +73,8 @@ namespace vov {
 
     void Model::processNode(aiNode* node, const aiScene* scene, glm::mat4 parentTransform) {
         // Compute the current node's transform
-        glm::mat4 nodeTransform = convertMatrix(node->mTransformation);
-        glm::mat4 worldTransform = parentTransform * nodeTransform;
+        const glm::mat4 nodeTransform = convertMatrix(node->mTransformation);
+        const glm::mat4 worldTransform = parentTransform * nodeTransform;
 
         // Process meshes for this nodes
         for (unsigned int i = 0; i < node->mNumMeshes; i++) {
@@ -115,7 +95,6 @@ namespace vov {
         std::vector<Mesh::Vertex> vertices;
         std::vector<uint32_t> indices;
         std::string texturePath{};
-
 
         AABB aabb{};
         if (mesh->mNumVertices > 0) {

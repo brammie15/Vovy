@@ -18,17 +18,15 @@ namespace vov {
         explicit Model(Device& deviceRef, const std::string& path, GameObject* parent = nullptr);
         Model(Device& deviceRef, const std::vector<Mesh::Builder>& builders);
         void draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, bool isDepthPass = false) const;
-        void bind(VkCommandBuffer commandBuffer, VkPipelineLayout layout);
+        void bind(VkCommandBuffer commandBuffer, VkPipelineLayout layout) const;
 
 
         [[nodiscard]] std::vector<std::unique_ptr<Mesh>>& getMeshes() { return m_meshes; }
         [[nodiscard]] const AABB& GetBoundingBox() const { return m_boundingBox; }
 
-        void updateShadowMapDescriptorSet(VkDescriptorImageInfo descriptorSet);
         std::string GetPath() { return m_path; }
-
     private:
-        void loadModel(std::string path);
+        void loadModel(const std::string& path);
         void processNode(aiNode* node, const aiScene* scene, glm::mat4 parentTransform = glm::mat4(1.0f));
         Mesh::Builder processMesh(aiMesh* mesh, const aiScene* scene);
 

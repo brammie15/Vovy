@@ -46,10 +46,14 @@ namespace vov {
         [[nodiscard]] uint32_t getWidth() const { return m_width; }
         [[nodiscard]] uint32_t getHeight() const { return m_height; }
 
+        void StopSplash();
+
     private:
         static void framebufferResizeCallback(GLFWwindow* window, int width, int height);
         static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
         void LoadGamepadMappings(const std::string& filename);
+
+        void ShowSplash();
 
         uint32_t m_width;
         uint32_t m_height;
@@ -68,6 +72,10 @@ namespace vov {
 
         std::unordered_map<int, bool> m_currentMouseButtons;
         std::unordered_map<int, bool> m_previousMouseButtons;
+
+        GLFWwindow* m_splashWindow = nullptr;
+        GLuint m_splashTexture = 0;
+        bool m_showingSplash = false;
     };
 }
 

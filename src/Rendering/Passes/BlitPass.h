@@ -16,15 +16,15 @@ namespace vov {
 
     class BlitPass {
     public:
-        explicit BlitPass(Device& deviceRef, uint32_t framesInFlight, LightingPass& lightingPass, Swapchain& swapchain);
+        explicit BlitPass(Device& deviceRef, uint32_t framesInFlight, LightingPass& lightingPass, const Swapchain& swapchain);
         ~BlitPass();
 
         void Record(const FrameContext& context, VkCommandBuffer commandBuffer, uint32_t imageIndex, const Swapchain& swapchain);
 
-        void UpdateDescriptor(uint32_t frameIndex, Image& lightingOutput);
+        void UpdateDescriptor(uint32_t frameIndex, const Image& lightingOutput);
 
         //TODO: not the best in consistancy
-        void Resize(VkExtent2D newSize, LightingPass& lightingPass);
+        void Resize(VkExtent2D newSize, const LightingPass& lightingPass);
 
     private:
         Device& m_device;

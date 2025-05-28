@@ -38,17 +38,15 @@ namespace vov {
         }
 
         void SetTarget(const glm::vec3& target);
-        [[nodiscard]] glm::vec3 GetTarget() const { return m_target; }
         void ClearTarget();
-        bool IsTargetting() const { return m_useTarget; }
         void Target(const glm::vec3& target);
+        [[nodiscard]] glm::vec3 GetTarget() const { return m_target; }
+        [[nodiscard]] bool IsTargetting() const { return m_useTarget; }
 
 
         float& GetISO() { return m_iso; }
         float& GetAperture() { return m_aperture; }
         float& GetShutterSpeed() { return m_shutterSpeed; }
-
-
     private:
 
         float fovAngle{90.f};

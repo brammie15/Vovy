@@ -7,7 +7,7 @@
 #include "Utils/DebugLabel.h"
 #include "Utils/ResourceManager.h"
 
-vov::BlitPass::BlitPass(Device& deviceRef, uint32_t framesInFlight, LightingPass& lightingPass, Swapchain& swapchain): m_device{deviceRef}, m_lightingPass{lightingPass}, m_framesInFlight{framesInFlight} {
+vov::BlitPass::BlitPass(Device& deviceRef, uint32_t framesInFlight, LightingPass& lightingPass, const Swapchain& swapchain): m_device{deviceRef}, m_lightingPass{lightingPass}, m_framesInFlight{framesInFlight} {
     m_descriptorPool = DescriptorPool::Builder(m_device)
             .setMaxSets(framesInFlight * 2)
             .addPoolSize(VK_DESCRIPTOR_TYPE_SAMPLER, framesInFlight * 2)
@@ -142,14 +142,14 @@ void vov::BlitPass::Record(const FrameContext& context, VkCommandBuffer commandB
     DebugLabel::EndCmdLabel(commandBuffer);
 }
 
-void vov::BlitPass::UpdateDescriptor(uint32_t frameIndex, Image& lightingOutput) {
-    auto imageInfo = lightingOutput.descriptorInfo();
+void vov::BlitPass::UpdateDescriptor(uint32_t frameIndex, const Image& lightingOutput) {
+    const auto imageInfo = lightingOutput.descriptorInfo();
     DescriptorWriter(*m_descriptorSetLayout, *m_descriptorPool)
             .writeImage(0, &imageInfo)
             .overwrite(m_descriptorSets[frameIndex]);
 }
 
-void vov::BlitPass::Resize(VkExtent2D newSize, LightingPass& lightingPass) {
+void vov::BlitPass::Resize(VkExtent2D newSize, const LightingPass& lightingPass) {
     for (size_t i{0}; i < m_framesInFlight; i++) {
         VkDescriptorImageInfo imageInfo{};
         imageInfo.sampler = lightingPass.GetImage(i).getSampler();

@@ -2,12 +2,6 @@
 
 #include "Buffer.h"
 #include "glm/vec4.hpp"
-#include "Rendering/Passes/BlitPass.h"
-#include "Rendering/Passes/BlitPass.h"
-#include "Rendering/Passes/BlitPass.h"
-#include "Rendering/Passes/BlitPass.h"
-#include "Utils/BezierCurves.h"
-#include "Utils/BezierCurves.h"
 
 vov::GeoBuffer::GeoBuffer(vov::Device& deviceRef, VkExtent2D size): m_device{deviceRef}, m_extent{size}  {
     CreateImages();
@@ -36,7 +30,7 @@ void vov::GeoBuffer::TransitionSampling(VkCommandBuffer commandBuffer) {
 }
 
 glm::vec3 vov::GeoBuffer::GetPixel(VkCommandBuffer commandBuffer,glm::ivec2 screenPos, glm::ivec2 viewportSize) {
-    int32_t flippedY{ static_cast<int32_t>(viewportSize.y - screenPos.y) };
+    const int32_t flippedY{ static_cast<int32_t>(viewportSize.y - screenPos.y) };
     glm::vec2 pixelPos{ static_cast<float>(screenPos.x) / static_cast<float>(viewportSize.x), static_cast<float>(flippedY) / static_cast<float>(viewportSize.y) };
 
     VkBufferImageCopy region{};
@@ -61,13 +55,13 @@ glm::vec3 vov::GeoBuffer::GetPixel(VkCommandBuffer commandBuffer,glm::ivec2 scre
                            stagingBuffer.getBuffer(), 1, &region);
 
     stagingBuffer.map();
-    uint8_t* color = reinterpret_cast<uint8_t*>(stagingBuffer.GetRawData()); // Assuming VK_FORMAT_R8G8B8A8_UNORM
+    const auto* color = static_cast<uint8_t*>(stagingBuffer.GetRawData()); // Assuming VK_FORMAT_R8G8B8A8_UNORM
     glm::vec4 pixelData{};
 
     pixelData = glm::vec4(color[0], color[1], color[2], color[3]);
     stagingBuffer.unmap();
 
-    return glm::vec3(pixelData.r, pixelData.g, pixelData.b);
+    return {pixelData.r, pixelData.g, pixelData.b};
 }
 
 void vov::GeoBuffer::DestroyImages() {

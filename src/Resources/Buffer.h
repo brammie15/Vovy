@@ -17,16 +17,12 @@ namespace vov {
 
         void flush() const;
 
-
         [[nodiscard]] VkBuffer getBuffer() const { return m_buffer; }
         [[nodiscard]] VmaAllocation getAllocation() const { return m_allocation; }
-        void* GetRawData() const { return m_data; }
+        [[nodiscard]] void* GetRawData() const { return m_data; }
         [[nodiscard]] VmaAllocationInfo GetAllocationInfo() const { return m_allocationInfo; }
         [[nodiscard]] size_t GetSize() const { return m_size; }
         [[nodiscard]] bool isMapped() const { return m_data != nullptr; }
-
-        // [[nodiscard]] VkDeviceSize getSize() const { return m_size; }
-        // [[nodiscard]] VkBufferUsageFlags getUsage() const { return m_usageFlags; }
 
     private:
         Device& m_device;

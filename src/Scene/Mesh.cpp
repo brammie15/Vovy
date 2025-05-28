@@ -102,7 +102,7 @@ namespace vov {
         VkDeviceSize bufferSize = sizeof(vertices[0]) * m_vertexCount;
 
         // Create staging buffer (CPU-accessible)
-        auto stagingBuffer = std::make_unique<Buffer>(
+        const auto stagingBuffer = std::make_unique<Buffer>(
             m_device, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY
         );
 
@@ -123,7 +123,7 @@ namespace vov {
         m_indexCount = static_cast<uint32_t>(indices.size());
         VkDeviceSize bufferSize = sizeof(indices[0]) * m_indexCount;
 
-        auto stagingBuffer = std::make_unique<Buffer>(
+        const auto stagingBuffer = std::make_unique<Buffer>(
             m_device, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY
         );
 
@@ -168,7 +168,7 @@ namespace vov {
         info.hasBump = is_file(textureInfo.bumpPath);
 
 
-        auto stagingBuffer = std::make_unique<Buffer>(
+        const auto stagingBuffer = std::make_unique<Buffer>(
             m_device, sizeof(Mesh::TextureBindingInfo), VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY
         );
 
@@ -185,7 +185,7 @@ namespace vov {
 
         m_device.copyBuffer(stagingBuffer.get(), m_textureBindingInfoBuffer.get(), sizeof(Mesh::TextureBindingInfo));
 
-        auto bufferDescription = m_textureBindingInfoBuffer->descriptorInfo();
+        const auto bufferDescription = m_textureBindingInfoBuffer->descriptorInfo();
         DescriptorWriter(*descriptorSetLayout, *descriptorPool)
                 .writeBuffer(0, &bufferDescription)
                 .writeImage(1, &albedoInfo)

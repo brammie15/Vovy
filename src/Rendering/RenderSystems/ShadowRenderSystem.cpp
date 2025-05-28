@@ -41,11 +41,11 @@ void vov::ShadowRenderSystem::render(const FrameContext& frameContext, vov::Scen
         m_pipelineLayout,
         0,
         1,
-            &frameContext.globalDescriptor,
+        &frameContext.globalDescriptor,
         0,
         nullptr
     );
-    for (auto& obj: scene.getGameObjects()) {
+    for (const auto& obj: scene.getGameObjects()) {
         obj->model->draw(frameContext.commandBuffer, m_pipelineLayout);
     }
     m_renderTexture->endRendering(frameContext.commandBuffer);

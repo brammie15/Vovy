@@ -35,7 +35,7 @@ namespace vov {
         m_frameStarted = false;
     }
 
-    void ImguiRenderSystem::drawGizmos(Camera* camera, Transform* transform, const std::string& id) {
+    void ImguiRenderSystem::drawGizmos(const Camera* camera, Transform* transform, const std::string& id) const {
         if (transform == nullptr) {
             return;
         }
@@ -165,7 +165,7 @@ namespace vov {
             ImGui::DockBuilderFinish(dockspace_id);
         }
 
-        ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_PassthruCentralNode;
+        constexpr ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_PassthruCentralNode;
         ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
         ImGui::End();
     }

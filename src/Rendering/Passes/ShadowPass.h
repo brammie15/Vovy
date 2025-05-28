@@ -26,7 +26,7 @@ namespace vov {
         explicit ShadowPass(Device& deviceRef, uint32_t framesInFlight, VkFormat format, VkExtent2D extent, DirectionalLight& directionalLight);
         ~ShadowPass();
 
-        void Record(const FrameContext& context, VkCommandBuffer commandBuffer, uint32_t imageIndex, Scene& scene, Camera& camera);
+        void Record(const FrameContext& context);
 
         void Resize(VkExtent2D newSize);
         Image& GetDepthImage(int frameIndex);

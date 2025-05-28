@@ -101,8 +101,8 @@ namespace vov {
             }
 
             for (int i = 0; i < curve.resolution; ++i) {
-                float t = static_cast<float>(i) / (curve.resolution - 1);
-                glm::vec3 point = deCasteljau(curve.nodes, t);
+                const float t = static_cast<float>(i) / (curve.resolution - 1);
+                const glm::vec3 point = deCasteljau(curve.nodes, t);
 
                 vertexData.push_back({point, curve.color});
             }

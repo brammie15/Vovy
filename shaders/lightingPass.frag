@@ -172,6 +172,7 @@ void main()
         vec2 fragCoord = vec2(gl_FragCoord.x, gl_FragCoord.y);
         const vec3 sampleDirection = GetWorldPositionFromDepth(depth, fragCoord, ubo.viewportSize, inverse(ubo.projectionMatrix), inverse(ubo.viewMatrix));
         vec3 normalizedSampleDirection = normalize(sampleDirection);
+        normalizedSampleDirection.y *= -1.0; // Flip Y for Vulkan
         outColor = vec4(texture(samplerCube(hdriTexture, hdriSampler), normalizedSampleDirection).rgb, 1.0);
         //        outColor.rgb = normalizedSampleDirection;
         return;

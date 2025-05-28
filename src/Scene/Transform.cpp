@@ -46,7 +46,7 @@ namespace vov {
             const auto parentInv = glm::inverse(m_Parent->GetWorldMatrix());
             const auto localMat = parentInv * mat;
             m_LocalPosition = glm::vec3(localMat[3]);
-            glm::mat3 localRotationMatrix = glm::mat3(
+            const auto localRotationMatrix = glm::mat3(
                 glm::vec3(localMat[0]) / m_WorldScale.x,
                 glm::vec3(localMat[1]) / m_WorldScale.y,
                 glm::vec3(localMat[2]) / m_WorldScale.z

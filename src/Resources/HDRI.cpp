@@ -1,9 +1,9 @@
 #include "HDRI.h"
-#include "utils/stb_image.h"
-#include <stdexcept>
 #include <array>
+#include <stdexcept>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include "utils/stb_image.h"
 
 #include "Buffer.h"
 #include "Descriptors/DescriptorPool.h"
@@ -13,7 +13,7 @@
 #include "Rendering/Renderer.h"
 #include "Utils/DebugLabel.h"
 
-vov::HDRI::HDRI(Device& deviceRef): m_device(deviceRef) {
+vov::HDRI::HDRI(Device& deviceRef): m_device(deviceRef), m_cubeMap{nullptr}, m_cubeMapAllocation{nullptr}, m_skyboxView{nullptr} {
     m_projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);;
     // m_projection[1][1] *= -1; // Flip Y coordinate for OpenGL compatibility
 }
@@ -152,7 +152,7 @@ void vov::HDRI::RenderToCubemap(VkImage inputImage, VkImageView inputView, VkSam
 
     pipelineConfig.colorAttachments = {VK_FORMAT_R32G32B32A32_SFLOAT};
 
-    std::unique_ptr<Pipeline> pipeline = std::make_unique<Pipeline>(
+    auto pipeline = std::make_unique<Pipeline>(
         m_device,
         vertPath,
         fragPath,
@@ -314,7 +314,7 @@ void vov::HDRI::CreateCubeMap() {
     GenerateMipmaps(m_cubeMap, VK_FORMAT_R32G32B32A32_SFLOAT, m_cubeMapSize, m_cubeMapSize, mipLevels, 6);
     DebugLabel::NameImage(m_cubeMap, "Cubemap");
 
-    for (auto& view : faceViews) {
+    for (const auto& view : faceViews) {
         vkDestroyImageView(m_device.device(), view, nullptr);
     }
 
@@ -388,7 +388,7 @@ void vov::HDRI::CreateDiffuseIrradianceMap() {
     DebugLabel::NameImage(m_diffuseIrradianceMap, "Diffuse Irradiance Map");
 
     // Clean up temporary face views
-    for (auto& view : faceViews) {
+    for (const auto& view : faceViews) {
         vkDestroyImageView(m_device.device(), view, nullptr);
     }
 }
@@ -564,8 +564,8 @@ void vov::HDRI::TransitionImageLayout(VkCommandBuffer cmd,
     barrier.srcAccessMask = 0;
     barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 
-    VkPipelineStageFlags sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-    VkPipelineStageFlags destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+    const VkPipelineStageFlags sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+    const VkPipelineStageFlags destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
 
     vkCmdPipelineBarrier(
         cmd,

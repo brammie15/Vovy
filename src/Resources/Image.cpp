@@ -37,10 +37,10 @@ namespace vov {
         m_mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
         m_extent = VkExtent2D{static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight)};
 
-        VkDeviceSize imageSize = texWidth * texHeight * 4;
+        const VkDeviceSize imageSize = texWidth * texHeight * 4;
 
         // Create a staging buffer
-        Buffer stagingBuffer(device, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
+        const Buffer stagingBuffer(device, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
 
         //TODO: should prob actually use the VMA auto mapper, o well :p
         stagingBuffer.copyTo(pixels, imageSize);
@@ -62,7 +62,7 @@ namespace vov {
 
     Image::Image(Device& device, VkExtent2D size, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage, VkImage existingImage)
     : m_device(device), m_image(existingImage), m_allocation(VK_NULL_HANDLE),
-      m_imageView(VK_NULL_HANDLE), m_mipLevels(1), m_format(format), m_extent{size} {
+      m_imageView(VK_NULL_HANDLE), m_mipLevels(1), m_extent{size}, m_format(format) {
         createImageView(format);
         m_isSwapchainImage = true; // Mark this image as a swapchain image
     }

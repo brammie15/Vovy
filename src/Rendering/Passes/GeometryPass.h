@@ -24,10 +24,10 @@ namespace vov {
             uint32_t objectId;
         };
 
-        explicit GeometryPass(vov::Device& deviceRef, const CreateInfo& createInfo);
+        explicit GeometryPass(Device& deviceRef, const CreateInfo& createInfo);
         ~GeometryPass();
 
-        void Record(const FrameContext& context, VkCommandBuffer commandBuffer, int imageIndex, Image& depthImage, Scene* scene, Camera* Camera);
+        void Record(const FrameContext& context, const Image& depthImage);
 
         void Resize(VkExtent2D newSize) const;
 

@@ -9,10 +9,11 @@
 #include "Rendering/Pipeline.h"
 #include "Rendering/Renderer.h"
 #include "Rendering/Passes/BlitPass.h"
-#include "Rendering/Passes/LightingPass.h"
 #include "Rendering/Passes/DepthPrePass.h"
 #include "Rendering/Passes/GeometryPass.h"
+#include "Rendering/Passes/LightingPass.h"
 #include "Rendering/Passes/ShadowPass.h"
+#include "Rendering/RenderSystems/ImguiRenderSystem.h"
 #include "Resources/HDRI.h"
 #include "Scene/GameObject.h"
 #include "Scene/Scene.h"
@@ -29,17 +30,6 @@
 //         return std::make_unique<T>(std::forward<Args>(args)...);
 //     }
 // }
-
-enum DebugView {
-    DEBUG_NONE,
-    DEBUG_ALBEDO,
-    DEBUG_NORMAL,
-    DEBUG_SPECULAR,
-    DEBUG_ROUGHNESS,
-    DEBUG_METALNESS,
-    DEBUG_DEPTH,
-    DEBUG_POSITION
-};
 
 class VApp {
 public:
@@ -66,7 +56,7 @@ private:
     int m_fpsFrameCount = 0;
     double m_avgFps = 0.0;
 
-    vov::Window m_window{WIDTH, HEIGHT, "Hello Vulkan!"};
+    vov::Window m_window{WIDTH, HEIGHT, "Vovy: Verry optimal? Verry yes!"};
     vov::Device m_device{m_window};
     vov::Renderer m_renderer{m_window, m_device};
 
@@ -84,13 +74,15 @@ private:
     std::vector<vov::Scene*> m_scenes{};
 
     vov::Transform* m_selectedTransform = nullptr;
-    vov::Transform* m_bezierFollowerTransform = nullptr;
-    float m_bezierProgress = 0.0f;
-    float m_bezierSpeed = 0.5f; // Speed at which the transform moves along the curve
-    bool m_shouldRotate = false; // Whether the transform should rotate to follow the curve
+    // vov::Transform* m_bezierFollowerTransform = nullptr;
+    // float m_bezierProgress = 0.0f;
+    // float m_bezierSpeed = 0.5f; // Speed at which the transform moves along the curve
+    // bool m_shouldRotate = false; // Whether the transform should rotate to follow the curve
 
-    vov::Scene* m_currentScene{ nullptr };
+    vov::Scene* m_currentScene{nullptr};
     std::unique_ptr<vov::DescriptorPool> m_globalPool{};
+
+    std::unique_ptr<vov::ImguiRenderSystem> m_imguiRenderSystem{};
 
     std::unique_ptr<vov::DepthPrePass> m_depthPrePass{};
     std::unique_ptr<vov::ShadowPass> m_shadowPass{};
@@ -98,9 +90,8 @@ private:
     std::unique_ptr<vov::LightingPass> m_lightingPass{};
     std::unique_ptr<vov::BlitPass> m_blitPass{};
 
-    DebugView currentDebugMone{ DebugView::DEBUG_NONE };
-    bool m_showLineTools{ false };
-
+    vov::DebugView currentDebugMode{vov::DebugView::NONE};
+    bool m_showLineTools{false};
 };
 
 #endif //VAPP_H

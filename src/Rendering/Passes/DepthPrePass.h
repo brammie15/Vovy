@@ -20,7 +20,7 @@ namespace vov {
         ~DepthPrePass();
 
         void Init(VkFormat depthFormat, uint32_t framesInFlight);
-        void Record(const FrameContext& context, VkCommandBuffer commandBuffer, uint32_t imageIndex, Image& depthImage, Scene* scene, Camera* camera);
+        void Record(const FrameContext& context, Image& depthImage);
 
         void Resize(VkExtent2D newSize);
 

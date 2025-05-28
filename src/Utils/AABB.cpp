@@ -40,7 +40,7 @@ bool vov::RayAABBIntersection(const glm::vec3& rayOrigin, const glm::vec3& rayDi
 }
 
 vov::AABB vov::TransformAABB(const AABB& localAABB, const glm::mat4& transform) {
-    std::array<glm::vec3, 8> corners = {
+    const std::array<glm::vec3, 8> corners = {
         glm::vec3(localAABB.min.x, localAABB.min.y, localAABB.min.z),
         glm::vec3(localAABB.min.x, localAABB.min.y, localAABB.max.z),
         glm::vec3(localAABB.min.x, localAABB.max.y, localAABB.min.z),

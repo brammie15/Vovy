@@ -3,6 +3,7 @@
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
+#include <thread>
 
 #include "Utils/stb_image.h"
 
@@ -10,22 +11,23 @@ namespace vov {
     GLFWwindow* Window::gWindow = nullptr;
 
     Window::Window(uint32_t width, uint32_t height, const std::string& windowName): m_width(width), m_height(height),
-                                                                                           m_windowName(windowName) {
+                                                                                    m_windowName(windowName) {
         glfwInit();
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
-        gWindow = glfwCreateWindow(static_cast<int>(m_width), static_cast<int>(m_height),m_windowName.c_str(), nullptr, nullptr);
+        gWindow = glfwCreateWindow(static_cast<int>(m_width), static_cast<int>(m_height), m_windowName.c_str(), nullptr, nullptr);
         glfwSetWindowUserPointer(gWindow, this);
         glfwSetFramebufferSizeCallback(gWindow, framebufferResizeCallback);
         // glfwSetKeyCallback(gWindow, keyCallback);
-        glfwSetCursorPosCallback(gWindow, [](GLFWwindow* window, double x, double y) {
+        glfwSetCursorPosCallback(gWindow, [] (GLFWwindow* window, double x, double y) {
             const auto MyWindow = static_cast<Window*>(glfwGetWindowUserPointer(window));
             MyWindow->m_currentMousePos.x = static_cast<float>(x);
             MyWindow->m_currentMousePos.y = static_cast<float>(y);
         });
 
         glfwMaximizeWindow(gWindow);
+        // ShowSplash();
 
         GLFWimage images[1];
         images[0].pixels = stbi_load("resources/vovy_logo.png", &images[0].width, &images[0].height, 0, 4); //rgba channels
@@ -50,9 +52,11 @@ namespace vov {
             m_currentMouseButtons[i] = false;
             m_previousMouseButtons[i] = false;
         }
+
     }
 
     Window::~Window() {
+        StopSplash();
         glfwDestroyWindow(gWindow);
         glfwTerminate();
     }
@@ -70,7 +74,7 @@ namespace vov {
     bool Window::isMouseButtonPressed(int button) {
         const int state = glfwGetMouseButton(gWindow, button);
 
-        bool wasPressed = m_currentMouseButtons[button];
+        const bool wasPressed = m_currentMouseButtons[button];
 
         if (state == GLFW_PRESS && !wasPressed) {
             m_currentMouseButtons[button] = true;
@@ -83,7 +87,7 @@ namespace vov {
     }
 
     void Window::CreateSurface(VkInstance instance, VkSurfaceKHR* surface) {
-        if(instance == VK_NULL_HANDLE){
+        if (instance == VK_NULL_HANDLE) {
             throw std::runtime_error("Shit's fucked");
         }
 
@@ -135,7 +139,7 @@ namespace vov {
     bool Window::isKeyPressed(int key) {
         const int state = glfwGetKey(gWindow, key);
 
-        bool wasPressed = m_currentKeys[key];
+        const bool wasPressed = m_currentKeys[key];
 
         if (state == GLFW_PRESS && !wasPressed) {
             m_currentKeys[key] = true;
@@ -181,4 +185,86 @@ namespace vov {
             }
         }
     }
+
+    void Window::ShowSplash() {
+        glfwInit();
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+
+        m_splashWindow = glfwCreateWindow(640, 360, "Loading...", nullptr, nullptr);
+        if (!m_splashWindow) {
+            std::cerr << "Failed to create splash screen window.\n";
+            return;
+        }
+
+        glfwMakeContextCurrent(m_splashWindow);
+
+        int width, height, channels;
+        unsigned char* pixels = stbi_load("resources/splash.jpg", &width, &height, &channels, 4);
+        if (!pixels) {
+            std::cerr << "Failed to load splash.jpg\n";
+            glfwDestroyWindow(m_splashWindow);
+            m_splashWindow = nullptr;
+            return;
+        }
+
+        // glfwMaximizeWindow(m_splashWindow);
+        // glfwFocusWindow(m_splashWindow);
+
+        glGenTextures(1, &m_splashTexture);
+        glBindTexture(GL_TEXTURE_2D, m_splashTexture);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        stbi_image_free(pixels);
+
+        m_showingSplash = true;
+
+        // Start a simple render loop in a separate thread (optional)
+        std::thread([this]() {
+            while (m_showingSplash && !glfwWindowShouldClose(m_splashWindow)) {
+                glfwMakeContextCurrent(m_splashWindow);
+                int winW, winH;
+                glfwGetFramebufferSize(m_splashWindow, &winW, &winH);
+                glViewport(0, 0, winW, winH);
+                glClearColor(0, 0, 0, 1);
+                glClear(GL_COLOR_BUFFER_BIT);
+
+                glEnable(GL_TEXTURE_2D);
+                glBindTexture(GL_TEXTURE_2D, m_splashTexture);
+
+                glBegin(GL_QUADS);
+                glTexCoord2f(0.f, 1.f);
+                glVertex2f(-1.f, -1.f);
+                glTexCoord2f(1.f, 1.f);
+                glVertex2f(1.f, -1.f);
+                glTexCoord2f(1.f, 0.f);
+                glVertex2f(1.f, 1.f);
+                glTexCoord2f(0.f, 0.f);
+                glVertex2f(-1.f, 1.f);
+                glEnd();
+
+                glfwSwapBuffers(m_splashWindow);
+                glfwPollEvents();
+
+                std::this_thread::sleep_for(std::chrono::milliseconds(16)); // ~60 FPS
+            }
+        }).detach();
+    }
+
+    void Window::StopSplash() {
+        m_showingSplash = false;
+
+        if (m_splashTexture != 0) {
+            glDeleteTextures(1, &m_splashTexture);
+            m_splashTexture = 0;
+        }
+
+        if (m_splashWindow != nullptr) {
+            glfwDestroyWindow(m_splashWindow);
+            m_splashWindow = nullptr;
+        }
+    }
+
 }

@@ -9,7 +9,7 @@
 #include "Utils/DebugLabel.h"
 #include "Utils/ResourceManager.h"
 
-vov::LightingPass::LightingPass(Device& deviceRef, uint32_t framesInFlight, VkFormat format, VkExtent2D extent, HDRI* hdri): m_device{deviceRef}, m_framesInFlight{framesInFlight}, m_imageFormat{format} {
+vov::LightingPass::LightingPass(Device& deviceRef, uint32_t framesInFlight, VkFormat format, VkExtent2D extent, const HDRI* hdri): m_device{deviceRef}, m_framesInFlight{framesInFlight}, m_imageFormat{format} {
     m_descriptorPool = DescriptorPool::Builder(m_device)
       .setMaxSets(framesInFlight * 10)
       .addPoolSize(VK_DESCRIPTOR_TYPE_SAMPLER, framesInFlight *  6)
@@ -134,7 +134,7 @@ vov::LightingPass::LightingPass(Device& deviceRef, uint32_t framesInFlight, VkFo
 
     m_textureDescriptors.resize(framesInFlight);
 
-    auto dummyImage = ResourceManager::GetInstance().LoadImage(m_device, "resources/Gear.png", VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
+    const auto dummyImage = ResourceManager::GetInstance().LoadImage(m_device, "resources/Gear.png", VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
     VkDescriptorImageInfo dummyInfo{};
     dummyInfo.sampler = dummyImage->getSampler();
     dummyInfo.imageView = dummyImage->GetImageView();
@@ -321,7 +321,7 @@ void vov::LightingPass::Record(const FrameContext& context, VkCommandBuffer comm
     DebugLabel::EndCmdLabel(commandBuffer);
 }
 
-void vov::LightingPass::UpdateDescriptors(uint32_t frameIndex, Image& albedo, Image& normal, Image& specular, Image& bump, Image& depth, Image& shadowMap) {
+void vov::LightingPass::UpdateDescriptors(uint32_t frameIndex, const Image& albedo, const Image& normal, const Image& specular, const Image& bump, const Image& depth, const Image& shadowMap) {
     DescriptorWriter writer(*m_geobufferSamplersSetLayout, *m_descriptorPool);
 
     const auto albedoInfo = albedo.descriptorInfo();

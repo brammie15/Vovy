@@ -26,7 +26,7 @@ namespace vov {
             ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
         }
 
-        void drawGizmos(Camera* camera, Transform* transform, const std::string& id);
+        void drawGizmos(const Camera* camera, Transform* transform, const std::string& id) const;
         void drawGizmos(const Camera* camera, glm::vec3& position, const std::string& id) const;
 
     private:

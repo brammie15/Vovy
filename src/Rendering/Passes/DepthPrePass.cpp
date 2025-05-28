@@ -92,10 +92,13 @@ void vov::DepthPrePass::Init(VkFormat depthFormat, uint32_t framesInFlight) {
 
 }
 
-void vov::DepthPrePass::Record(const FrameContext& context, VkCommandBuffer commandBuffer, uint32_t imageIndex, Image& depthImage, Scene* scene, Camera* camera) {
+void vov::DepthPrePass::Record(const FrameContext& context, Image& depthImage) {
+    const uint32_t imageIndex = context.frameIndex;
+    const auto commandBuffer = context.commandBuffer;
+
     UniformBuffer ubo{};
-    ubo.view = camera->GetViewMatrix();
-    ubo.proj = camera->GetProjectionMatrix();
+    ubo.view = context.camera.GetViewMatrix();
+    ubo.proj = context.camera.GetProjectionMatrix();
     ubo.proj[1][1] *= -1;
 
     m_uniformBuffers[imageIndex]->copyTo(&ubo, sizeof(ubo));
@@ -146,7 +149,7 @@ void vov::DepthPrePass::Record(const FrameContext& context, VkCommandBuffer comm
 
     m_pipeline->bind(commandBuffer);
 
-    for (const auto& object : scene->getGameObjects()) {
+    for (const auto& object : context.currentScene.getGameObjects()) {
         object->model->draw(commandBuffer, m_pipelineLayout, true);
     }
 

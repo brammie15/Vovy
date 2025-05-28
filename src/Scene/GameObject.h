@@ -4,8 +4,8 @@
 
 #include <memory>
 
-#include "Transform.h"
 #include "Model.h"
+#include "Transform.h"
 
 namespace vov {
     class GameObject {

@@ -2,7 +2,6 @@
 #define DELTATIME_H
 
 #include <chrono>
-
 #include "Singleton.h"
 
 namespace vov {
@@ -30,6 +29,5 @@ namespace vov {
         std::chrono::high_resolution_clock::time_point m_PrevTime;
     };
 }
-
 
 #endif //DELTATIME_H
