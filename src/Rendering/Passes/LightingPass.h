@@ -34,6 +34,7 @@ namespace vov {
             float _pad2[3];
             glm::vec2 viewportSize{};
             glm::vec2 _pad1{};
+            int debugViewMode{static_cast<int>(DebugView::NONE)};
         };
 
         explicit LightingPass(Device& deviceRef,uint32_t framesInFlight, VkFormat format, VkExtent2D extent, const HDRI* hdri = nullptr);

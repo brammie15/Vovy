@@ -90,7 +90,7 @@ private:
     std::unique_ptr<vov::LightingPass> m_lightingPass{};
     std::unique_ptr<vov::BlitPass> m_blitPass{};
 
-    vov::DebugView currentDebugMode{vov::DebugView::NONE};
+    vov::DebugView m_currentDebugViewMode{vov::DebugView::NONE};
     bool m_showLineTools{false};
 };
 

@@ -11,6 +11,9 @@
 #include "Utils/DebugLabel.h"
 #include "Utils/stb_image.h"
 
+#define NOMINMAX
+#include <DirectXTex.h>
+
 
 namespace vov {
     Image::Image(Device& device, VkExtent2D size, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage, bool createView, bool createSampler, VkFilter filter)

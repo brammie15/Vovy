@@ -4,6 +4,7 @@ cmake-*
 compiled_shaders
 
 resources/pkg_a_curtains
+resources/**
 
 out
 .vs

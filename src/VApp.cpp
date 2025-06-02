@@ -145,6 +145,7 @@ void VApp::run() {
                 commandBuffer,
                 m_camera,
                 *m_currentScene,
+                m_currentDebugViewMode
             };
 
             auto& depthImage = m_renderer.GetCurrentDepthImage();
@@ -308,6 +309,26 @@ void VApp::imGui() {
         }
     }
 
+    ImGui::End();
+
+    //Debug render tools
+    ImGui::Begin("Debug View");
+    int currentIndex = static_cast<int>(m_currentDebugViewMode);
+
+    if (ImGui::BeginCombo("Debug View", vov::DebugViewToString(m_currentDebugViewMode).c_str())) {
+        for (int i = 0; i < static_cast<int>(vov::DebugView::COUNT); ++i) {
+            auto view = static_cast<vov::DebugView>(i);
+            bool isSelected = (i == currentIndex);
+            if (ImGui::Selectable(vov::DebugViewToString(view).c_str(), isSelected)) {
+                m_currentDebugViewMode = view;
+                std::cout << "Selected debug view: " << vov::DebugViewToString(view) << std::endl;
+            }
+            if (isSelected) {
+                ImGui::SetItemDefaultFocus();
+            }
+        }
+        ImGui::EndCombo();
+    }
     ImGui::End();
 
     ImGui::Begin("Scenes");
@@ -507,7 +528,7 @@ void VApp::loadGameObjects() {
     });
 
     m_sibenikScene->setSceneLoadFunction([&] (vov::Scene* scene) {
-        auto sibenik = vov::GameObject::LoadModelFromDisk(m_device, "resources/sibenik/sibenik.obj");
+        auto sibenik = vov::GameObject::LoadModelFromDisk(m_device, "resources/Bistro/BistroExterior.fbx");
         scene->addGameObject(std::move(sibenik));
     });
 

@@ -1,6 +1,7 @@
 #include "LightingPass.h"
 
 #include <array>
+#include <iostream>
 #include <sstream>
 
 #include "Descriptors/DescriptorSetLayout.h"
@@ -229,6 +230,8 @@ void vov::LightingPass::Record(const FrameContext& context, VkCommandBuffer comm
     const auto& pointLights = scene.getPointLights();
     ubo.pointLightCount = static_cast<uint32_t>(pointLights.size());
 
+    ubo.debugViewMode = static_cast<int>(context.debugView);
+
     m_uniformBuffers[imageIndex]->copyTo(&ubo, sizeof(UniformBuffer));
 
     if (m_pointLightBuffers[imageIndex]->GetSize() < sizeof(PointLight::PointLightData) * pointLights.size()) {
@@ -255,25 +258,6 @@ void vov::LightingPass::Record(const FrameContext& context, VkCommandBuffer comm
         }
         m_pointLightBuffers[imageIndex]->copyTo(pointLightData.data(), sizeof(PointLight::PointLightData) * pointLights.size());
     }
-
-    // // For the sampler
-    // VkDescriptorImageInfo samplerInfo{};
-    // samplerInfo.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED; // Ignored for SAMPLER
-    // samplerInfo.imageView = VK_NULL_HANDLE;              // Ignored for SAMPLER
-    // samplerInfo.sampler = hdri.GetHDRSampler();
-    //
-    // VkDescriptorImageInfo imageInfo{};
-    // imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    // imageInfo.imageView = hdri.GetHDRView();
-    // imageInfo.sampler = VK_NULL_HANDLE; // Ignored for SAMPLED_IMAGE
-    //
-    // DescriptorWriter hdriWriter(*m_hdriSamplerSetLayout, *m_descriptorPool);
-    // hdriWriter.writeImage(0, &imageInfo);
-    // hdriWriter.writeImage(1, &samplerInfo);
-    // if (!hdriWriter.build(m_hdriSamplerDescriptorSets)) {
-    //     throw std::runtime_error("Failed to build descriptor set for LightingPass");
-    // }
-
 
     m_renderTargets[imageIndex]->TransitionImageLayout(commandBuffer, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 

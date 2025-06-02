@@ -20,8 +20,30 @@ namespace vov {
 
         DIFFUSE_LIGHTING,
         SPECULAR_LIGHTING,
-        SHADOWMAP
+        SHADOWMAP,
+        FULLSCREEN_SHADOW,
+
+        COUNT
     };
+
+    inline std::string DebugViewToString(DebugView view) {
+        switch (view) {
+            case DebugView::NONE: return "None";
+            case DebugView::ALBEDO: return "Albedo";
+            case DebugView::NORMAL: return "Normal";
+            case DebugView::SPECULAR: return "Specular";
+            case DebugView::ROUGHNESS: return "Roughness";
+            case DebugView::METALNESS: return "Metalness";
+            case DebugView::DEPTH: return "Depth";
+            case DebugView::POSITION: return "Position";
+            case DebugView::UV: return "UV";
+            case DebugView::DIFFUSE_LIGHTING: return "Diffuse Lighting";
+            case DebugView::SPECULAR_LIGHTING: return "Specular Lighting";
+            case DebugView::SHADOWMAP: return "Shadowmap";
+            case DebugView::FULLSCREEN_SHADOW: return "Fullscreen Shadow";
+            default: return "Unknown";
+        }
+    }
 
     struct FrameContext {
         int frameIndex{};

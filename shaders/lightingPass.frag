@@ -1,6 +1,7 @@
 #version 450
 #extension GL_GOOGLE_include_directive : enable
 #include "lighting.glsl"
+#include "DebugModes.glsl"
 
 struct DirectionalLightInfo {
     vec3 direction;
@@ -22,16 +23,15 @@ struct PointLightInfo {
     vec3 color;
     float intensity;
     float radius;
-    float padding[3]; // total = 64 bytes, 16-byte aligned
+    float padding[3];// total = 64 bytes, 16-byte aligned
 };
-
 
 struct CameraSettings {
     vec4 cameraPos;
     float aperture;
     float shutterSpeed;
     float iso;
-    float _pad0; // Padding to maintain 16-byte alignment
+    float _pad0;// Padding to maintain 16-byte alignment
 };
 
 layout(std140, set = 0, binding = 0) uniform globalUBO
@@ -42,7 +42,10 @@ layout(std140, set = 0, binding = 0) uniform globalUBO
     DirectionalLightInfo light;
     ivec4 pointLightCount;
     vec2 viewportSize;
+    vec2 _padding;// Padding to maintain 16-byte alignment
+    int debugMode;
 } ubo;
+
 
 layout(set = 1, binding = 0) uniform sampler2D albedoMap;
 layout(set = 1, binding = 1) uniform sampler2D normalMap;
@@ -65,7 +68,6 @@ layout(set = 3, binding = 0) readonly buffer PointLights {
     PointLight pointLights[];
 };
 
-
 layout(location = 0) in vec2 inTexcoord;
 
 layout(location = 0) out vec4 outColor;
@@ -83,7 +85,7 @@ float calculateShadow(vec3 worldPos)
     }
 
     vec3 shadowMapUV = vec3(lightSpacePosition.xy * 0.5 + 0.5, lightSpacePosition.z);
-    shadowMapUV.y = 1.0 - shadowMapUV.y; // Flip Y for Vulkan
+    shadowMapUV.y = 1.0 - shadowMapUV.y;// Flip Y for Vulkan
 
     // Calculate bias based on surface normal and light direction
     vec3 N = normalize(texture(normalMap, inTexcoord).rgb * 2.0 - 1.0);
@@ -93,8 +95,8 @@ float calculateShadow(vec3 worldPos)
     // Percentage-closer filtering (PCF) for softer shadows
     float shadow = 0.0;
     vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
-    for(int x = -1; x <= 1; ++x) {
-        for(int y = -1; y <= 1; ++y) {
+    for (int x = -1; x <= 1; ++x) {
+        for (int y = -1; y <= 1; ++y) {
             float shadowDepth = texture(shadowMap, shadowMapUV.xy + vec2(x, y) * texelSize).r;
             shadow += (shadowMapUV.z - bias) > shadowDepth ? 1.0 : 0.0;
         }
@@ -158,6 +160,13 @@ vec3 calculatePointLightContribution(PointLight light, vec3 worldPos, vec3 N, ve
 
 void main()
 {
+
+    if (ubo.debugMode == DEBUG_MODE_FULLSCREEN_SHADOWS) {
+        float depthValue = texture(shadowMap, inTexcoord).r;
+        outColor = vec4(vec3(depthValue), 1.0);// Show as grayscale
+        return;
+    }
+
     //hdri
     vec3 albedo = texture(albedoMap, inTexcoord).rgb;
     vec3 normal = normalize(texture(normalMap, inTexcoord).rgb * 2.0 - 1.0);
@@ -168,11 +177,11 @@ void main()
     float ao = 1.0;
     float depth = texture(depthMap, inTexcoord).r;
 
-    if(depth >= 1.f){
+    if (depth >= 1.f){
         vec2 fragCoord = vec2(gl_FragCoord.x, gl_FragCoord.y);
         const vec3 sampleDirection = GetWorldPositionFromDepth(depth, fragCoord, ubo.viewportSize, inverse(ubo.projectionMatrix), inverse(ubo.viewMatrix));
         vec3 normalizedSampleDirection = normalize(sampleDirection);
-        normalizedSampleDirection.y *= -1.0; // Flip Y for Vulkan
+        normalizedSampleDirection.y *= -1.0;// Flip Y for Vulkan
         outColor = vec4(texture(samplerCube(hdriTexture, hdriSampler), normalizedSampleDirection).rgb, 1.0);
         //        outColor.rgb = normalizedSampleDirection;
         return;
@@ -208,31 +217,63 @@ void main()
     float NdotL = max(dot(N, L), 0.0);
     Lo += (kD * albedo / PI + specular) * radiance * NdotL;
 
+    float shadow = calculateShadow(worldPos);
+    Lo *= shadow;
+
     // Point lights contribution
     for (uint i = 0; i < ubo.pointLightCount.x; ++i) {
         PointLight light = pointLights[i];
         Lo += calculatePointLightContribution(light, worldPos, N, V, albedo, metallic, roughness, F0);
     }
 
-    const vec3 prefilteredDiffuseIrradianec = texture(samplerCube(diffuseIrradianceMap, diffuseIrradianceSampler), vec3(normal.x,-normal.y, normal.z)).rgb;
+    const vec3 prefilteredDiffuseIrradianec = texture(samplerCube(diffuseIrradianceMap, diffuseIrradianceSampler), vec3(normal.x, -normal.y, normal.z)).rgb;
     const vec3 diffuse = albedo * prefilteredDiffuseIrradianec;
 
 
     vec3 ambient = kD * diffuse;
     vec3 color = ambient + Lo;
 
-    // Tone mapping and gamma correction
-    //    color = color / (color + vec3(1.0));
-    //    color = pow(color, vec3(1.0/2.2));
-
     outColor.rgb = color;
     outColor.a = 1.0;
 
-    //    float z = depth * 2.0 - 1.0; // back to NDC
-    //    float linearDepth = (2.0 * ubo.projectionMatrix[3][2]) /
-    //    (ubo.projectionMatrix[2][2] - z * ubo.projectionMatrix[2][3]);
-    //
-    //    // Normalize depth to a viewable range (e.g., between 0 and 1)
-    //    float depthView = clamp(linearDepth / 100.0, 0.0, 1.0); // adjust 100.0 to your far plane or visual preference
-    //    outColor.rgb = vec3(depthView);
+
+    switch (ubo.debugMode) {
+        case DEBUG_MODE_ALBEDO:
+        outColor.rgb = albedo;
+        break;
+        case DEBUG_MODE_NORMAL:
+        outColor.rgb = normal * 0.5 + 0.5;
+        break;
+        case DEBUG_MODE_SPECULAR:
+        outColor.rgb = F0;
+        break;
+        case DEBUG_MODE_ROUGHNESS:
+        outColor.rgb = vec3(roughness);
+        break;
+        case DEBUG_MODE_METALLIC:
+        outColor.rgb = vec3(metallic);
+        break;
+        case DEBUG_MODE_DEPTH:
+        outColor.rgb = vec3(depth);
+        break;
+        case DEBUG_MODE_POSITION:
+        outColor.rgb = worldPos;
+        break;
+        case DEBUG_MODE_UV:
+        outColor.rgb = vec3(inTexcoord, 0.0);
+        break;
+        case DEBUG_MODE_LIGHTING:
+        outColor.rgb = Lo;
+        break;
+        case DEBUG_MODE_SPECULAR_LIGHTING:
+        outColor.rgb = specular;
+        break;
+        case DEBUG_MODE_SHADOWS:
+        outColor.rgb = vec3(shadow);
+        break;
+        default :
+        break;
+    }
+
+
 }

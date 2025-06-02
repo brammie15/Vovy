@@ -84,6 +84,9 @@ LinkVma(${PROJECT_NAME} PUBLIC)
 include(cmake/LinkASSIMP.cmake)
 LinkASSIMP(${PROJECT_NAME} PUBLIC)
 
+include(cmake/LinkDirectXTex.cmake)
+LinkDirectXTex(${PROJECT_NAME} PUBLIC)
+
 include(cmake/LinkImgui.cmake)
 LinkImGui(${PROJECT_NAME} PRIVATE)
 target_link_libraries(imgui PRIVATE Vulkan::Vulkan glfw)
@@ -107,6 +110,10 @@ endif ()
 
 target_link_libraries(${PROJECT_NAME} PUBLIC Vulkan::Vulkan ${VLD_LIBRARY} opengl32)
 target_include_directories(${PROJECT_NAME} PUBLIC ${VLD_INCLUDE_DIR})
+
+
+include(cmake/FetchResources.cmake)
+fetch_resources_if_missing()
 
 
 
