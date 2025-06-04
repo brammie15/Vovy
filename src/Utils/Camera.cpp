@@ -19,7 +19,7 @@ namespace vov {
 #pragma region Keyboard Movement
         totalPitch = glm::clamp(totalPitch, -glm::half_pi<float>() + 0.01f, glm::half_pi<float>() - 0.01f);
 
-        float MovementSpeed = 2.0f;
+        float MovementSpeed = m_movementSpeed;
         if (glfwGetKey(Window::gWindow, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
             MovementSpeed *= 2.0f;
         }
@@ -100,6 +100,8 @@ namespace vov {
 
             // Clamp pitch to avoid flipping
             totalPitch = glm::clamp(totalPitch, -glm::half_pi<float>() + 0.01f, glm::half_pi<float>() - 0.01f);
+
+            m_frustum.update(m_projectionMatrix * m_viewMatrix);
         }
 #pragma endregion
 

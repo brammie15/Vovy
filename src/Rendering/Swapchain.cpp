@@ -132,7 +132,7 @@ namespace vov {
 
     void Swapchain::init() {
         createSwapChain();
-        createImageViews();
+        // createImageViews();
         createDepthResources();
         createSyncObjects();
     }

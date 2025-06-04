@@ -65,7 +65,7 @@ private:
     std::unique_ptr<vov::Scene> m_sponzaScene{};
     std::unique_ptr<vov::Scene> m_sigmaVanniScene{};
     std::unique_ptr<vov::Scene> m_vikingRoomScene{};
-    std::unique_ptr<vov::Scene> m_sibenikScene{};
+    std::unique_ptr<vov::Scene> m_bistroScene{};
     std::unique_ptr<vov::Scene> m_flightHelmetScene{};
     std::unique_ptr<vov::Scene> m_chessScene{};
 

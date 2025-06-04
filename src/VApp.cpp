@@ -33,14 +33,14 @@ VApp::VApp() {
     m_sigmaVanniScene = std::make_unique<vov::Scene>("SigmaVanniScene");
     m_sponzaScene = std::make_unique<vov::Scene>("SponzaScene");
     m_vikingRoomScene = std::make_unique<vov::Scene>("VikingRoomScene");
-    m_sibenikScene = std::make_unique<vov::Scene>("SibenikScene");
+    m_bistroScene = std::make_unique<vov::Scene>("Bistro");
     m_flightHelmetScene = std::make_unique<vov::Scene>("FligtHelmetScene");
     m_chessScene = std::make_unique<vov::Scene>("ChessScene");
 
     m_scenes.emplace_back(m_sigmaVanniScene.get());
     m_scenes.emplace_back(m_sponzaScene.get());
     m_scenes.emplace_back(m_vikingRoomScene.get());
-    m_scenes.emplace_back(m_sibenikScene.get());
+    m_scenes.emplace_back(m_bistroScene.get());
     m_scenes.emplace_back(m_flightHelmetScene.get());
     m_scenes.emplace_back(m_chessScene.get());
 
@@ -113,7 +113,6 @@ void VApp::run() {
             m_fpsFrameCount = 0;
         }
 
-#pragma region INPUT
         m_window.PollInput();
         m_imguiRenderSystem->beginFrame();
 
@@ -121,6 +120,15 @@ void VApp::run() {
         if (!m_currentScene->getGameObjects().empty() && m_selectedTransform) {
             m_imguiRenderSystem->drawGizmos(&m_camera, m_selectedTransform, "Maintransform");
         }
+        // glm::quat directionalLightRotation = glm::quatLookAt(
+        //     m_currentScene->GetDirectionalLight().GetDirection(),
+        //     glm::vec3(0.0f, 1.0f, 0.0f)
+        // );
+        glm::vec3 dir = m_currentScene->GetDirectionalLight().GetDirection();
+        m_imguiRenderSystem->drawDirection(&m_camera, dir, "DirectionalLight");
+        m_currentScene->GetDirectionalLight().SetDirection(dir);
+
+
         m_imguiRenderSystem->endFrame();
 
         if (m_window.isKeyPressed(GLFW_KEY_GRAVE_ACCENT)) {
@@ -130,12 +138,10 @@ void VApp::run() {
                 m_window.LockCursor();
             }
         }
-#pragma endregion
+
 
         m_camera.Update(static_cast<float>(vov::DeltaTime::GetInstance().GetDeltaTime()));
         m_currentScene->GetDirectionalLight().CalculateSceneBoundsMatricies(m_currentScene);
-        // m_camera.CalculateProjectionMatrix();
-        // m_camera.CalculateViewMatrix();
 
         if (const auto commandBuffer = m_renderer.BeginFrame()) {
             const int frameIndex = m_renderer.GetFrameIndex();
@@ -170,19 +176,13 @@ void VApp::run() {
             m_lightingPass->Record(frameContext, commandBuffer, frameIndex, *m_geoPass, *m_hdrEnvironment, *m_shadowPass, *m_currentScene);
 
             depthImage.TransitionImageLayout(commandBuffer, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+
+            //Swapchain render pass
             m_renderer.beginSwapChainRenderPass(commandBuffer);
-
-            // if (m_currentScene->getLineSegments().size() > 2) {
-            //     lineRenderSystem.renderLines(frameInfo, m_currentScene->getLineSegments());
-            // }
-
-            // lineRenderSystem.renderBezier(frameInfo, m_currentScene->getBezierCurves());
-            // renderSystem.renderGameObjects(frameInfo, m_currentScene->getGameObjects());
-
-            m_blitPass->Record(frameContext, commandBuffer, frameIndex, m_renderer.getSwapchain());
-
-            m_imguiRenderSystem->renderImgui(commandBuffer);
-
+            {
+                m_blitPass->Record(frameContext, commandBuffer, frameIndex, m_renderer.getSwapchain());
+                m_imguiRenderSystem->renderImgui(commandBuffer);
+            }
             m_renderer.endSwapChainRenderPass(commandBuffer);
 
             m_renderer.endFrame();
@@ -274,6 +274,13 @@ void VApp::imGui() {
     float& shutterSpeed = m_camera.GetShutterSpeed();
     ImGui::DragFloat("Shutter Speed", &shutterSpeed, 0.1f);
 
+    //camera speed, + and - buttons
+    float cameraSpeed = m_camera.GetMovementSpeed();
+    if (ImGui::InputFloat("Camera Speed", &cameraSpeed, 0.1f)) {
+        m_camera.SetMovementSpeed(cameraSpeed);
+    }
+
+
     ImGui::Separator();
     //Presests
     if (ImGui::Button("Sunny")) {
@@ -362,7 +369,7 @@ void VApp::imGui() {
         m_currentScene->SceneLoad();
     }
     if (ImGui::Button("Sibenik")) {
-        m_currentScene = m_sibenikScene.get();
+        m_currentScene = m_bistroScene.get();
         m_currentScene->SceneLoad();
     }
     if (ImGui::Button("Chess")) {
@@ -527,9 +534,9 @@ void VApp::loadGameObjects() {
         scene->addGameObject(std::move(vikingRoom));
     });
 
-    m_sibenikScene->setSceneLoadFunction([&] (vov::Scene* scene) {
-        auto sibenik = vov::GameObject::LoadModelFromDisk(m_device, "resources/Bistro/BistroExterior.fbx");
-        scene->addGameObject(std::move(sibenik));
+    m_bistroScene->setSceneLoadFunction([&] (vov::Scene* scene) {
+        auto bistro = vov::GameObject::LoadModelFromDisk(m_device, "resources/Bistro/BistroExterior.fbx");
+        scene->addGameObject(std::move(bistro));
     });
 
     m_flightHelmetScene->setSceneLoadFunction([&] (vov::Scene* scene) {

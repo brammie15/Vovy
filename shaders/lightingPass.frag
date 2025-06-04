@@ -227,7 +227,7 @@ void main()
     }
 
     const vec3 prefilteredDiffuseIrradianec = texture(samplerCube(diffuseIrradianceMap, diffuseIrradianceSampler), vec3(normal.x, -normal.y, normal.z)).rgb;
-    const vec3 diffuse = albedo * prefilteredDiffuseIrradianec;
+    const vec3 diffuse = albedo * (prefilteredDiffuseIrradianec * 1);
 
 
     vec3 ambient = kD * diffuse;

@@ -58,14 +58,9 @@ void main()
     float exposure = ConvertEV100ToExposure(ev100);
 
     vec3 hdrColor = texture(image, fragTexCoord).rgb;
-//    outColor = vec4(clamp(hdrColor.rgb, 0.0, 1.0), 1.0);
 
-    //    // Apply exposure
     hdrColor *= exposure;
-//    // Reinhard tone mapping
     hdrColor = Uncharted2ToneMapping(hdrColor);
 
-    // Gamma correction
-//    hdrColor = pow(hdrColor, vec3(1.0 / 2.2));
     outColor = vec4(hdrColor, 1.0);
 }

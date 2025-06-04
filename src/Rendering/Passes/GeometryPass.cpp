@@ -191,8 +191,9 @@ void vov::GeometryPass::Record(const FrameContext& context, const Image& depthIm
     m_pipeline->bind(commandBuffer);
 
     for (const auto& object : context.currentScene.getGameObjects()) {
-
-        object->model->draw(commandBuffer, m_pipelineLayout);
+        if (context.camera.GetFrustum().isBoxVisible(object->model->GetBoundingBox())) {
+            object->model->draw(commandBuffer, m_pipelineLayout);
+        }
     }
 
     vkCmdEndRendering(commandBuffer);

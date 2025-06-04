@@ -11,9 +11,7 @@
 #include "Utils/DebugLabel.h"
 #include "Utils/stb_image.h"
 
-#define NOMINMAX
-#include <DirectXTex.h>
-
+#include <gli/gli.hpp>
 
 namespace vov {
     Image::Image(Device& device, VkExtent2D size, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage, bool createView, bool createSampler, VkFilter filter)
@@ -31,16 +29,40 @@ namespace vov {
 
     Image::Image(Device& device, const std::string& filename, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage, VkFilter filter)
         : m_device(device), m_image(VK_NULL_HANDLE), m_allocation(VK_NULL_HANDLE), m_imageView(VK_NULL_HANDLE), m_filename{filename}, m_format{format} {
-        int texWidth, texHeight, texChannels;
-        stbi_uc* pixels = stbi_load(filename.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-        if (!pixels) {
-            std::cerr << "Failed to load texture image!" << std::endl;
-            pixels = stbi_load("resources/TextureNotFound.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-        }
-        m_mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
-        m_extent = VkExtent2D{static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight)};
 
-        const VkDeviceSize imageSize = texWidth * texHeight * 4;
+        uint8_t* pixels = nullptr;
+        VkDeviceSize imageSize{};
+        int texWidth, texHeight, texChannels;
+        bool usingStb = true;
+
+
+        const std::string fileExtension = filename.substr(filename.find_last_of('.') + 1);
+        if (fileExtension == "dds") {
+            gli::texture texture = gli::load(filename);
+            if (texture.empty()) {
+                std::cerr << "Failed to load DDS texture image!" << std::endl;
+                pixels = stbi_load("resources/TextureNotFound.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+            } else {
+                texWidth = static_cast<int>(texture.extent().x);
+                texHeight = static_cast<int>(texture.extent().y);
+                texChannels = texture.format() == gli::FORMAT_RGBA8_UNORM_PACK8 ? 4 : 3; // Assuming RGBA8 or RGB8
+                pixels = static_cast<uint8_t*>(texture.data());
+                format = VK_FORMAT_BC1_RGB_UNORM_BLOCK;
+                imageSize = static_cast<VkDeviceSize>(texture.size());
+                m_mipLevels = static_cast<uint32_t>(texture.levels());
+                m_extent = VkExtent2D{static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight)};
+                usingStb = false;
+            }
+        } else {
+            pixels = stbi_load(filename.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+            if (!pixels) {
+                std::cerr << "Failed to load texture image!" << std::endl;
+                pixels = stbi_load("resources/TextureNotFound.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+            }
+            m_mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
+            m_extent = VkExtent2D{static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight)};
+            imageSize = texWidth * texHeight * 4;
+        }
 
         // Create a staging buffer
         const Buffer stagingBuffer(device, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY);
@@ -48,7 +70,9 @@ namespace vov {
         //TODO: should prob actually use the VMA auto mapper, o well :p
         stagingBuffer.copyTo(pixels, imageSize);
 
-        stbi_image_free(pixels);
+        if (usingStb) {
+            stbi_image_free(pixels);
+        }
 
         createImage(m_extent, m_mipLevels, format, usage | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, memoryUsage);
         createImageView(format);

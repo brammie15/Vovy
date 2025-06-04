@@ -61,6 +61,15 @@ add_executable(${PROJECT_NAME}
         ${SRC_ROOT}/Utils/BezierCurves.h ${SRC_ROOT}/Utils/BezierCurves.cpp
         ${SRC_ROOT}/Utils/DebugLabel.h ${SRC_ROOT}/Utils/DebugLabel.cpp
         ${SRC_ROOT}/Utils/AABB.h ${SRC_ROOT}/Utils/AABB.cpp
+
+        ${SRC_ROOT}/Utils/External/imguizmo_config.h
+        ${SRC_ROOT}/Utils/External/imguizmo_quat.h ${SRC_ROOT}/Utils/External/imguizmo_quat.cpp
+        ${SRC_ROOT}/Utils/External/imGuIZMOquat.h ${SRC_ROOT}/Utils/External/imGuIZMOquat.cpp
+        ${SRC_ROOT}/Utils/External/vGizmo3D.h
+        ${SRC_ROOT}/Utils/External/vGizmo3D_config.h
+        ${SRC_ROOT}/Utils/External/vgMath.h
+        ${SRC_ROOT}/Utils/External/vgMath_config.h
+
 )
 
 if (MSVC AND CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -69,6 +78,14 @@ if (MSVC AND CMAKE_BUILD_TYPE STREQUAL "Debug")
 #    target_compile_options(${PROJECT_NAME} PRIVATE /fsanitize=address)
 #    target_link_options(${PROJECT_NAME} PRIVATE /fsanitize=address)
 endif()
+
+# Suppress deprecation warnings in external projects
+if(POLICY CMP0120)
+    cmake_policy(SET CMP0120 NEW)
+endif()
+
+# Ignore deprecation warnings during FetchContent
+set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS 1 CACHE BOOL "Suppress CMake developer warnings")
 
 find_package(Vulkan REQUIRED)
 
@@ -84,8 +101,8 @@ LinkVma(${PROJECT_NAME} PUBLIC)
 include(cmake/LinkASSIMP.cmake)
 LinkASSIMP(${PROJECT_NAME} PUBLIC)
 
-include(cmake/LinkDirectXTex.cmake)
-LinkDirectXTex(${PROJECT_NAME} PUBLIC)
+include(cmake/LinkGli.cmake)
+LinkGli(${PROJECT_NAME} PUBLIC)
 
 include(cmake/LinkImgui.cmake)
 LinkImGui(${PROJECT_NAME} PRIVATE)
@@ -96,6 +113,7 @@ LinkImGuizmo(${PROJECT_NAME} PRIVATE)
 target_link_libraries(imguizmo PRIVATE imgui)
 
 
+
 find_package(VLD CONFIG)
 
 if (NOT VLD_FOUND)
@@ -104,9 +122,6 @@ endif ()
 
 
 
-
-#include(cmake/LinkTinyObjLoader.cmake)
-#LinkTinyObjLoader(${PROJECT_NAME} PUBLIC)
 
 target_link_libraries(${PROJECT_NAME} PUBLIC Vulkan::Vulkan ${VLD_LIBRARY} opengl32)
 target_include_directories(${PROJECT_NAME} PUBLIC ${VLD_INCLUDE_DIR})

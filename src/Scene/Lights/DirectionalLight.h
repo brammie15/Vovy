@@ -60,6 +60,10 @@ namespace vov {
         glm::mat4 GetProjectionMatrix();
 
         void CalculateSceneBoundsMatricies(Scene* scene);
+        void SetDirection(glm::vec3 vec) {
+            m_direction = glm::normalize(vec);
+            updateLightSpaceMatrix();
+        }
 
     private:
         void updateLightSpaceMatrix();

@@ -1,5 +1,6 @@
 #ifndef SHADOWPASS_H
 #define SHADOWPASS_H
+
 #include "Core/Device.h"
 #include "Descriptors/DescriptorPool.h"
 #include "Descriptors/DescriptorSetLayout.h"
@@ -8,7 +9,6 @@
 #include "Scene/Scene.h"
 #include "Scene/Lights/DirectionalLight.h"
 #include "Utils/FrameContext.h"
-
 
 namespace vov {
     class ShadowPass {

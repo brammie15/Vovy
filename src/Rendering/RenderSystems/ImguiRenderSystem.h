@@ -1,13 +1,19 @@
 #ifndef IMGUIRENDERSYSTEM_H
 #define IMGUIRENDERSYSTEM_H
 
+#define IMGUI_DEFINE_MATH_OPERATORS
+#define VGIZMO_USES_GLM
+#include "Utils/External/imguizmo_quat.h"
+
+
 #include "imgui.h"
+#include "imgui_internal.h"
 #include "imgui_impl_vulkan.h"
 #include "Core/Device.h"
-#include "Rendering/Pipeline.h"
 #include "Scene/GameObject.h"
 #include "Utils/Camera.h"
 #include "Utils/DebugLabel.h"
+
 
 namespace vov {
     class ImguiRenderSystem {
@@ -28,6 +34,8 @@ namespace vov {
 
         void drawGizmos(const Camera* camera, Transform* transform, const std::string& id) const;
         void drawGizmos(const Camera* camera, glm::vec3& position, const std::string& id) const;
+
+        void drawDirection(const Camera* camera, glm::vec3& dir, const std::string& id) const;
 
     private:
         void setupDockspace();

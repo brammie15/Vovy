@@ -1,11 +1,15 @@
 #include "ImguiRenderSystem.h"
 
+
 #include <ImGuizmo.h>
 #include <imgui_internal.h>
 #include <stdexcept>
 #include <backends/imgui_impl_glfw.h>
 #include <glm/gtc/type_ptr.hpp>
 #include "Rendering/Swapchain.h"
+
+
+#include <glm/gtx/matrix_decompose.hpp>
 
 namespace vov {
     ImguiRenderSystem::ImguiRenderSystem(Device& deviceRef, VkFormat colorFormat,  int width, int height): m_device{deviceRef} {
@@ -107,6 +111,28 @@ namespace vov {
 
         position = glm::vec3(objectMatrix[3]);
     }
+
+    void ImguiRenderSystem::drawDirection(const Camera* camera, glm::vec3& dir, const std::string& id) const {
+
+        // Get current quaternion rotation from the world matrix
+        // Start a panel or window if needed (optional)
+        ImGui::Begin("Direction");
+
+        ImGuizmo::PushID(id.c_str());
+
+        // Optional: define size and mode for gizmo
+        constexpr float gizmoSize = 150.f; // pixels
+        constexpr int mode = imguiGizmo::modePanDolly|imguiGizmo::sphereAtOrigin;
+
+        // Render the quaternion gizmo
+        if (ImGui::gizmo3D("Rotation", dir, gizmoSize, mode)) {
+        }
+
+        ImGuizmo::PopID();
+        ImGui::End();
+
+    }
+
 
     void ImguiRenderSystem::setupDockspace() {
         ImGuiIO& io = ImGui::GetIO();

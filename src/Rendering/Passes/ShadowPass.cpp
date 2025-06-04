@@ -47,7 +47,7 @@ vov::ShadowPass::ShadowPass(Device& deviceRef, uint32_t framesInFlight, VkFormat
                 .build(m_descriptorSets[i]);
     }
 
-    const std::array<VkDescriptorSetLayout, 1> descriptorSetLayouts = {
+    const std::array descriptorSetLayouts = {
         m_descriptorSetLayout->getDescriptorSetLayout()
     };
 

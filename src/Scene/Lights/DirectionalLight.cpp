@@ -91,7 +91,7 @@ void DirectionalLight::CalculateSceneBoundsMatricies(Scene* scene) {
     float maxProj = -FLT_MAX;
 
     for (const glm::vec3& corner : corners) {
-        const float proj = glm::dot(corner, m_direction);
+        const float proj = glm::dot(corner, direction);
         minProj = glm::min(minProj, proj);
         maxProj = glm::max(maxProj, proj);
     }
@@ -116,6 +116,7 @@ void DirectionalLight::CalculateSceneBoundsMatricies(Scene* scene) {
 
     const float nearZ = 0.0f;
     float farZ = maxLightSpace.z - minLightSpace.z;
+
     // farZ = 10;
     m_lightProjection = glm::orthoZO(
         minLightSpace.x, maxLightSpace.x,

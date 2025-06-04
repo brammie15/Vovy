@@ -141,9 +141,9 @@ namespace vov {
     }
 
     void Mesh::loadTexture(const TextureInfo& textureInfo, DescriptorSetLayout* descriptorSetLayout, DescriptorPool* descriptorPool) {
-        m_albedoTexture =   ResourceManager::GetInstance().LoadImage(m_device, textureInfo.basePath + textureInfo.albedoPath, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
+        m_albedoTexture =   ResourceManager::GetInstance().LoadImage(m_device, textureInfo.basePath + textureInfo.albedoPath, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
         m_normalTexture =   ResourceManager::GetInstance().LoadImage(m_device, textureInfo.basePath + textureInfo.normalPath, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
-        m_specularTexture = ResourceManager::GetInstance().LoadImage(m_device, textureInfo.basePath + textureInfo.specularPath, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
+        m_specularTexture = ResourceManager::GetInstance().LoadImage(m_device, textureInfo.basePath + textureInfo.specularPath, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
         m_bumpTexture =     ResourceManager::GetInstance().LoadImage(m_device, textureInfo.basePath + textureInfo.bumpPath, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
 
         //Order is
