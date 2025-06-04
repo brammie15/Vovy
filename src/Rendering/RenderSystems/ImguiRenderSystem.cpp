@@ -122,7 +122,8 @@ namespace vov {
 
         // Optional: define size and mode for gizmo
         constexpr float gizmoSize = 150.f; // pixels
-        constexpr int mode = imguiGizmo::modePanDolly|imguiGizmo::sphereAtOrigin;
+        // constexpr int mode = imguiGizmo::modePanDolly|imguiGizmo::sphereAtOrigin;
+        constexpr int mode = imguiGizmo::modeDirection;
 
         // Render the quaternion gizmo
         if (ImGui::gizmo3D("Rotation", dir, gizmoSize, mode)) {

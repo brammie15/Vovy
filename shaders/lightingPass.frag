@@ -17,15 +17,6 @@ struct PointLight {
     float range;
 };
 
-struct PointLightInfo {
-    vec3 position;
-    float pad1;
-    vec3 color;
-    float intensity;
-    float radius;
-    float padding[3];// total = 64 bytes, 16-byte aligned
-};
-
 struct CameraSettings {
     vec4 cameraPos;
     float aperture;
@@ -77,7 +68,6 @@ float calculateShadow(vec3 worldPos)
     vec4 lightSpacePosition = ubo.light.shadowViewProj * vec4(worldPos, 1.0);
     lightSpacePosition.xyz /= lightSpacePosition.w;
 
-    // Early exit if outside shadow frustum
     if (lightSpacePosition.z < 0.0 || lightSpacePosition.z > 1.0 ||
     lightSpacePosition.x < -1.0 || lightSpacePosition.x > 1.0 ||
     lightSpacePosition.y < -1.0 || lightSpacePosition.y > 1.0) {
@@ -87,12 +77,10 @@ float calculateShadow(vec3 worldPos)
     vec3 shadowMapUV = vec3(lightSpacePosition.xy * 0.5 + 0.5, lightSpacePosition.z);
     shadowMapUV.y = 1.0 - shadowMapUV.y;// Flip Y for Vulkan
 
-    // Calculate bias based on surface normal and light direction
     vec3 N = normalize(texture(normalMap, inTexcoord).rgb * 2.0 - 1.0);
     vec3 L = normalize(-ubo.light.direction);
     float bias = max(0.005 * (1.0 - dot(N, L)), 0.001);
 
-    // Percentage-closer filtering (PCF) for softer shadows
     float shadow = 0.0;
     vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
     for (int x = -1; x <= 1; ++x) {
@@ -218,7 +206,7 @@ void main()
     Lo += (kD * albedo / PI + specular) * radiance * NdotL;
 
     float shadow = calculateShadow(worldPos);
-    Lo *= shadow;
+    Lo *= 1 - shadow;
 
     // Point lights contribution
     for (uint i = 0; i < ubo.pointLightCount.x; ++i) {

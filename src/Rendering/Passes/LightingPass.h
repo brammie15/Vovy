@@ -31,7 +31,8 @@ namespace vov {
             Camera::CameraSettings camSettings{};
             DirectionalLightInfo lightInfo{};
             uint32_t  pointLightCount{};
-            float _pad2[3];
+            float enviromentIntensity{1.0f};
+            float _pad2[2];
             glm::vec2 viewportSize{};
             glm::vec2 _pad1{};
             int debugViewMode{static_cast<int>(DebugView::NONE)};

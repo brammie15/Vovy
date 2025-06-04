@@ -223,6 +223,8 @@ void vov::LightingPass::Record(const FrameContext& context, VkCommandBuffer comm
     ubo.camSettings.iso = context.camera.GetISO();
     ubo.camSettings.shutterSpeed = context.camera.GetShutterSpeed();
 
+    ubo.enviromentIntensity = scene.GetEnviromentIntensity();
+
     ubo.proj = context.camera.GetProjectionMatrix();
     ubo.view = context.camera.GetViewMatrix();
     ubo.viewportSize = {static_cast<float>(currentImage->GetExtent().width), static_cast<float>(currentImage->GetExtent().height)};

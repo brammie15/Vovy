@@ -124,9 +124,14 @@ void VApp::run() {
         //     m_currentScene->GetDirectionalLight().GetDirection(),
         //     glm::vec3(0.0f, 1.0f, 0.0f)
         // );
-        glm::vec3 dir = m_currentScene->GetDirectionalLight().GetDirection();
-        m_imguiRenderSystem->drawDirection(&m_camera, dir, "DirectionalLight");
-        m_currentScene->GetDirectionalLight().SetDirection(dir);
+        glm::vec3 worldDir = m_currentScene->GetDirectionalLight().GetDirection()  * -1.0f;
+        glm::mat3 viewRot = glm::mat3(m_camera.GetViewMatrix()); // rotation-only part
+        glm::vec3 camRelativeDir = viewRot * worldDir;
+
+        m_imguiRenderSystem->drawDirection(&m_camera, camRelativeDir, "DirectionalLight");
+        glm::vec3 updatedWorldDir = glm::transpose(viewRot) * camRelativeDir;
+        updatedWorldDir = glm::normalize(updatedWorldDir);
+        m_currentScene->GetDirectionalLight().SetDirection(updatedWorldDir * -1.0f);
 
 
         m_imguiRenderSystem->endFrame();

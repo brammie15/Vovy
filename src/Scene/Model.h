@@ -15,6 +15,12 @@ namespace vov {
 
     class Model {
     public:
+
+        struct PushConstantData {
+            glm::mat4 modelMatrix{1.f};
+            uint32_t objectId{0};
+        };
+
         explicit Model(Device& deviceRef, const std::string& path, GameObject* parent = nullptr);
         Model(Device& deviceRef, const std::vector<Mesh::Builder>& builders);
         void draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, bool isDepthPass = false) const;

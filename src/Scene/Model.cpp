@@ -7,11 +7,12 @@
 #include <assimp/scene.h>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "GameObject.h"
 #include "Descriptors/DescriptorWriter.h"
-#include "Rendering/RenderSystems/GameObjectRenderSystem.h"
 #include "Utils/Timer.h"
 
 namespace vov {
+
     Model::Model(Device& deviceRef, const std::string& path, GameObject* parent): m_device{deviceRef}, m_path{path} {
         loadModel(path);
         generateMeshes(parent);

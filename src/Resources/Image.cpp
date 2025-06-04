@@ -45,7 +45,7 @@ namespace vov {
             } else {
                 texWidth = static_cast<int>(texture.extent().x);
                 texHeight = static_cast<int>(texture.extent().y);
-                texChannels = texture.format() == gli::FORMAT_RGBA8_UNORM_PACK8 ? 4 : 3; // Assuming RGBA8 or RGB8
+
                 pixels = static_cast<uint8_t*>(texture.data());
                 format = VK_FORMAT_BC1_RGB_UNORM_BLOCK;
                 imageSize = static_cast<VkDeviceSize>(texture.size());

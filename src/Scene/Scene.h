@@ -47,6 +47,13 @@ namespace vov {
             return m_directionalLight;
         }
 
+        float GetEnviromentIntensity() const {
+            return m_enviromentIntensity;
+        }
+        void SetEnviromentIntensity(float intensity) {
+            m_enviromentIntensity = intensity;
+        }
+
     private:
         std::string m_name;
 
@@ -58,6 +65,8 @@ namespace vov {
         DirectionalLight m_directionalLight{};
 
         std::function<void(Scene*)> m_loadFunction;
+
+        float m_enviromentIntensity = 1.0f;
 
         bool m_isLoaded = false;
     };

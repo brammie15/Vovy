@@ -73,7 +73,7 @@ glm::mat4 DirectionalLight::GetProjectionMatrix() {
 void DirectionalLight::CalculateSceneBoundsMatricies(Scene* scene) {
     Model* model = scene->getGameObjects().front()->model.get();
     const glm::vec3 center = model->GetBoundingBox().GetCenter();
-    const glm::vec3 direction = glm::normalize(m_direction);
+    const glm::vec3 direction = glm::normalize(m_direction) * -1.0f; // Invert direction for light space
     const AABB& boundingBox = model->GetBoundingBox();
 
     const std::vector<glm::vec3> corners = {
@@ -96,7 +96,7 @@ void DirectionalLight::CalculateSceneBoundsMatricies(Scene* scene) {
         maxProj = glm::max(maxProj, proj);
     }
 
-    const float distance = maxProj - glm::dot(center, m_direction);
+    const float distance = maxProj - glm::dot(center, direction);
     const glm::vec3 lightPos = center + direction * distance;
 
     const glm::vec3 up = glm::abs(glm::dot(direction, glm::vec3(0.0f, 1.0f, 0.0f))) > 0.999f

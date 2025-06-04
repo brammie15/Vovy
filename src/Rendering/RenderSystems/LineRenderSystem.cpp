@@ -194,7 +194,7 @@ namespace vov {
         VkPushConstantRange pushConstantRange{};
         pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
         pushConstantRange.offset = 0;
-        pushConstantRange.size = sizeof(AnotherPushConstantData);
+        pushConstantRange.size = sizeof(glm::mat4);
 
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -216,6 +216,7 @@ namespace vov {
 
         pipelineConfig.inputAssemblyInfo.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
         pipelineConfig.pipelineLayout = m_pipelineLayout;
+
         m_pipeline = std::make_unique<Pipeline>(
             m_device,
             "shaders/line.vert.spv",
