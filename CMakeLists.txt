@@ -192,3 +192,5 @@ add_custom_target(CopyResources ALL
         COMMENT "Copying resources folder to build directory"
 )
 add_dependencies(${PROJECT_NAME} CopyResources)
+
+set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})

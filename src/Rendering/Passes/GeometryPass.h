@@ -58,7 +58,6 @@ namespace vov {
         VkDescriptorSet m_textureSet{};
 
         std::vector<std::unique_ptr<GeoBuffer>> m_geoBuffers{};
-
     };
 }
 

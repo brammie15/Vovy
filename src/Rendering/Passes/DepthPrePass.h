@@ -36,8 +36,6 @@ namespace vov {
         };
 
     private:
-
-
         Device& m_device;
         VkFormat m_depthFormat{VK_FORMAT_UNDEFINED};
         uint32_t m_framesInFlight{1};

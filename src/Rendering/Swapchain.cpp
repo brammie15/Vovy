@@ -9,10 +9,7 @@
 namespace vov {
     Swapchain::Swapchain(Device& deviceRef, VkExtent2D windowExtent): m_device(deviceRef), m_windowExtent{windowExtent} {
         createSwapChain();
-        // createImageViews();
-        // createRenderPass();
         createDepthResources();
-        // createFramebuffers();
         createSyncObjects();
     }
 

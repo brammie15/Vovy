@@ -19,19 +19,6 @@
 #include "Scene/GameObject.h"
 #include "Scene/Scene.h"
 
-// namespace std {
-//     template<typename T>
-//     using freaky_ptr = unique_ptr<T>;
-//
-//     template<typename T>
-//     using thalia_ptr = shared_ptr<T>;
-//
-//     template <typename T, typename... Args>
-//     freaky_ptr<T> get_freaky(Args&&... args) {
-//         return std::make_unique<T>(std::forward<Args>(args)...);
-//     }
-// }
-
 class VApp {
 public:
     static constexpr uint32_t WIDTH = 1200;
@@ -81,7 +68,6 @@ private:
     // bool m_shouldRotate = false; // Whether the transform should rotate to follow the curve
 
     vov::Scene* m_currentScene{nullptr};
-    std::unique_ptr<vov::DescriptorPool> m_globalPool{};
 
     std::unique_ptr<vov::ImguiRenderSystem> m_imguiRenderSystem{};
 

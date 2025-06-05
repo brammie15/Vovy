@@ -56,3 +56,11 @@ For questions, issues, or feedback. Kindly fuck off
 
 🎮 **Very Optimal? Very Yes!** 🎮
 
+
+[//]: # (Resources used
+)
+
+- Sponza scene (https://github.com/KhronosGroup/glTF-Sample-Assets)
+- Bistro Scene (https://developer.nvidia.com/orca/amazon-lumberyard-bistro)
+- Flight Helmet (https://github.com/KhronosGroup/glTF-Sample-Assets - Marko Dabrovic)
+- Circus arena (https://polyhaven.com/a/circus_arena)

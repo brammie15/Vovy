@@ -18,6 +18,8 @@ vov::LightingPass::LightingPass(Device& deviceRef, uint32_t framesInFlight, VkFo
       .addPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, framesInFlight)
       .build();
 
+    DebugLabel::SetObjectName(reinterpret_cast<uint64_t>(m_descriptorPool->GetHandle()), VK_OBJECT_TYPE_DESCRIPTOR_POOL, "LightingPass Descriptor Pool");
+
     m_geobufferSamplersSetLayout = DescriptorSetLayout::Builder(m_device)
             .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) //albedo
             .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) //normal

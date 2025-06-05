@@ -25,6 +25,8 @@ vov::GeometryPass::GeometryPass(vov::Device& deviceRef, const CreateInfo& create
             .addPoolSize(VK_DESCRIPTOR_TYPE_SAMPLER, 5)
             .build();
 
+    DebugLabel::SetObjectName(reinterpret_cast<uint64_t>(m_descriptorPool->GetHandle()), VK_OBJECT_TYPE_DESCRIPTOR_POOL, "GeometryPass Descriptor Pool");
+
     m_descriptorSetLayout = DescriptorSetLayout::Builder(m_device)
         .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
         .build();
@@ -116,22 +118,10 @@ vov::GeometryPass::GeometryPass(vov::Device& deviceRef, const CreateInfo& create
         "shaders/deferred.frag.spv",
         pipelineConfig
     );
-
-    // m_stagingBuffer = std::make_unique<vov::Buffer>(
-    //     m_device,
-    //     sizeof(glm::vec4),
-    //     VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-    //     VMA_MEMORY_USAGE_GPU_TO_CPU
-    // );
-    //
-    // VkFenceCreateInfo fenceInfo{};
-    // fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-    // vkCreateFence(m_device.device(), &fenceInfo, nullptr, &m_pixelQueryFence);
 }
 
 vov::GeometryPass::~GeometryPass() {
     vkDestroyPipelineLayout(m_device.device(), m_pipelineLayout, nullptr);
-    // vkDestroyFence(m_device.device(), m_pixelQueryFence, nullptr);
 }
 
 void vov::GeometryPass::Record(const FrameContext& context, const Image& depthImage) {

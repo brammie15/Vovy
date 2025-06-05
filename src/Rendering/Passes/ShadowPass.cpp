@@ -14,6 +14,8 @@ vov::ShadowPass::ShadowPass(Device& deviceRef, uint32_t framesInFlight, VkFormat
             .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, framesInFlight * 2)
             .build();
 
+    DebugLabel::SetObjectName(reinterpret_cast<uint64_t>(m_descriptorPool->GetHandle()), VK_OBJECT_TYPE_DESCRIPTOR_POOL, "ShadowPass Descriptor Pool");
+
     m_descriptorSetLayout = DescriptorSetLayout::Builder(m_device)
         .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT)
         .build();
@@ -88,8 +90,6 @@ vov::ShadowPass::ShadowPass(Device& deviceRef, uint32_t framesInFlight, VkFormat
        "",
        pipelineConfig
    );
-
-
 }
 
 vov::ShadowPass::~ShadowPass() {

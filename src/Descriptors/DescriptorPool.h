@@ -39,6 +39,8 @@ namespace vov {
         void freeDescriptors(const std::vector<VkDescriptorSet> &descriptors) const;
         void resetPool() const;
 
+        VkDescriptorPool GetHandle() const { return m_descriptorPool; }
+
     private:
         Device& m_device;
         VkDescriptorPool m_descriptorPool{};

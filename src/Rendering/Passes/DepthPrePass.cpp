@@ -27,6 +27,12 @@ void vov::DepthPrePass::Init(VkFormat depthFormat, uint32_t framesInFlight) {
         .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, framesInFlight * 2)
         .build();
 
+    DebugLabel::SetObjectName(
+        reinterpret_cast<uint64_t>(m_descriptorPool->GetHandle()),
+        VK_OBJECT_TYPE_DESCRIPTOR_POOL,
+        "Depth Pre Pass Descriptor Pool"
+    );
+
     m_descriptorSetLayout = DescriptorSetLayout::Builder(m_device)
         .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
         .build();
@@ -160,4 +166,5 @@ void vov::DepthPrePass::Record(const FrameContext& context, Image& depthImage) {
 }
 
 void vov::DepthPrePass::Resize(VkExtent2D newSize) {
+    //Swapchain handles
 }

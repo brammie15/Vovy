@@ -3,8 +3,8 @@
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_FORCE_ALIGNED_GENTYPES
-#include <glm/glm.hpp>
 #include <chrono>
+#include <glm/glm.hpp>
 
 #include <functional>
 #include <iostream>
@@ -23,12 +23,6 @@
 #include "Utils/LineManager.h"
 
 VApp::VApp() {
-    m_globalPool =
-            vov::DescriptorPool::Builder(m_device)
-            .setMaxSets(vov::Swapchain::MAX_FRAMES_IN_FLIGHT * 3)
-            .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, vov::Swapchain::MAX_FRAMES_IN_FLIGHT * 3)
-            .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, vov::Swapchain::MAX_FRAMES_IN_FLIGHT * 3)
-            .build();
 
     m_sigmaVanniScene = std::make_unique<vov::Scene>("SigmaVanniScene");
     m_sponzaScene = std::make_unique<vov::Scene>("SponzaScene");
@@ -229,6 +223,15 @@ void VApp::imGui() {
         if (ImGui::BeginMenu("Tools")) {
             if (ImGui::MenuItem("Save config")) {
                 ImGui::SaveIniSettingsToDisk("resources/imgui.ini");
+            }
+            if (ImGui::MenuItem("Dump VMA")) {
+                char* StatsString = nullptr;
+                vmaBuildStatsString(m_device.allocator(), &StatsString, true);
+                {
+                    std::ofstream OutStats{ "VmaStats.json" };
+                    OutStats << StatsString;
+                }
+                vmaFreeStatsString(m_device.allocator(), StatsString);
             }
             ImGui::EndMenu();
         }
@@ -537,6 +540,7 @@ void VApp::ResizeScreen(const VkExtent2D newSize) {
     m_geoPass->Resize(newSize);
     m_lightingPass->Resize(newSize);
     m_blitPass->Resize(newSize, *m_lightingPass);
+    m_linePass->Resize(newSize);
 
     m_camera.setAspectRatio(static_cast<float>(newSize.width) / static_cast<float>(newSize.height));
 }
@@ -573,6 +577,7 @@ void VApp::loadGameObjects() {
     });
 
     m_chessScene->setSceneLoadFunction([&] (vov::Scene* scene) {
+        //From GLTF example models
         auto chess = vov::GameObject::LoadModelFromDisk(m_device, "resources/ABeautifulGame/glTF/ABeautifulGame.gltf");
         scene->addGameObject(std::move(chess));
     });
