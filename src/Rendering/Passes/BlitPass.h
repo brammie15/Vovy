@@ -23,7 +23,6 @@ namespace vov {
 
         void UpdateDescriptor(uint32_t frameIndex, const Image& lightingOutput, const Image& lineOutput);
 
-        //TODO: not the best in consistancy
         void Resize(VkExtent2D newSize, const LightingPass& lightingPass);
 
     private:

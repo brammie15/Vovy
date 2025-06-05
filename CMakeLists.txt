@@ -104,8 +104,8 @@ LinkVma(${PROJECT_NAME} PUBLIC)
 include(cmake/LinkASSIMP.cmake)
 LinkASSIMP(${PROJECT_NAME} PUBLIC)
 
-include(cmake/LinkGli.cmake)
-LinkGli(${PROJECT_NAME} PUBLIC)
+#include(cmake/LinkGli.cmake)
+#LinkGli(${PROJECT_NAME} PUBLIC)
 
 include(cmake/LinkImgui.cmake)
 LinkImGui(${PROJECT_NAME} PRIVATE)
@@ -182,7 +182,6 @@ foreach (SPV ${SPIRV_BINARY_FILES})
 endforeach ()
 
 add_dependencies(${PROJECT_NAME} CompileShaders)
-
 
 set(RESOURCE_SRC_DIR "${PROJECT_SOURCE_DIR}/resources")
 set(RESOURCE_DST_DIR "${CMAKE_BINARY_DIR}/resources")

@@ -11,7 +11,7 @@
 #include "Utils/DebugLabel.h"
 #include "Utils/stb_image.h"
 
-#include <gli/gli.hpp>
+// #include <gli/gli.hpp>
 
 namespace vov {
     Image::Image(Device& device, VkExtent2D size, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage, bool createView, bool createSampler, VkFilter filter)
@@ -34,25 +34,25 @@ namespace vov {
         VkDeviceSize imageSize{};
         int texWidth, texHeight, texChannels;
         bool usingStb = true;
-        gli::texture texture;
+        // gli::texture texture;
 
         const std::string fileExtension = filename.substr(filename.find_last_of('.') + 1);
         if (fileExtension == "dds") {
-            texture = gli::load(filename);
-            if (texture.empty()) {
-                std::cerr << "Failed to load DDS texture image!" << std::endl;
-                pixels = stbi_load("resources/TextureNotFound.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-            } else {
-                texWidth = static_cast<int>(texture.extent().x);
-                texHeight = static_cast<int>(texture.extent().y);
-
-                pixels = static_cast<uint8_t*>(texture.data());
-                format = VK_FORMAT_BC1_RGB_UNORM_BLOCK;
-                imageSize = static_cast<VkDeviceSize>(texture.size());
-                m_mipLevels = static_cast<uint32_t>(texture.levels());
-                m_extent = VkExtent2D{static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight)};
-                usingStb = false;
-            }
+            // texture = gli::load(filename);
+            // if (texture.empty()) {
+            //     std::cerr << "Failed to load DDS texture image!" << std::endl;
+            //     pixels = stbi_load("resources/TextureNotFound.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+            // } else {
+            //     texWidth = static_cast<int>(texture.extent().x);
+            //     texHeight = static_cast<int>(texture.extent().y);
+            //
+            //     pixels = static_cast<uint8_t*>(texture.data());
+            //     format = VK_FORMAT_BC1_RGB_UNORM_BLOCK;
+            //     imageSize = static_cast<VkDeviceSize>(texture.size());
+            //     m_mipLevels = static_cast<uint32_t>(texture.levels());
+            //     m_extent = VkExtent2D{static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight)};
+            //     usingStb = false;
+            // }
         } else {
             pixels = stbi_load(filename.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
             if (!pixels) {
