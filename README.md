@@ -12,6 +12,10 @@ Beats opengl suckers 😎
 
 ---
 
+## Made by Bram Verhulst 2GD11E
+[Github Link](https://github.com/Howest-DAE-GD/graphics-programming-2-vulkan-project-brammie15)
+
+
 ## 🚀 Features
 - **Preformance:** Runs
 - **Multi-Platform Support:** Runs on Windows, and Windows.
