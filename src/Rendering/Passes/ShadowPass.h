@@ -19,11 +19,11 @@ namespace vov {
         };
 
         struct PushConstant {
-            glm::mat4 model;
+            glm::mat4 model{};
             uint32_t objectId{0};
         };
 
-        explicit ShadowPass(Device& deviceRef, uint32_t framesInFlight, VkFormat format, VkExtent2D extent, DirectionalLight& directionalLight);
+        explicit ShadowPass(Device& deviceRef, uint32_t framesInFlight, VkFormat format, VkExtent2D extent);
         ~ShadowPass();
 
         void Record(const FrameContext& context);
@@ -36,7 +36,6 @@ namespace vov {
         uint32_t m_framesInFlight{};
         VkFormat m_imageFormat{};
 
-        DirectionalLight& m_directionalLight;
 
         std::unique_ptr<DescriptorPool> m_descriptorPool{};
         std::unique_ptr<DescriptorSetLayout> m_descriptorSetLayout{};

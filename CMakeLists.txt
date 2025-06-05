@@ -132,7 +132,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${VLD_INCLUDE_DIR})
 
 include(cmake/FetchResources.cmake)
 fetch_resources_if_missing()
-
+add_dependencies(${PROJECT_NAME} DownloadResources)
 
 
 find_program(GLSL_VALIDATOR glslangValidator HINTS /usr/bin /usr/local/bin $ENV{VULKAN_SDK}/Bin/ $ENV{VULKAN_SDK}/Bin32/)

@@ -10,13 +10,14 @@
 vov::BlitPass::BlitPass(Device& deviceRef, uint32_t framesInFlight, LightingPass& lightingPass, const Swapchain& swapchain): m_device{deviceRef}, m_lightingPass{lightingPass}, m_framesInFlight{framesInFlight} {
     m_descriptorPool = DescriptorPool::Builder(m_device)
             .setMaxSets(framesInFlight * 2)
-            .addPoolSize(VK_DESCRIPTOR_TYPE_SAMPLER, framesInFlight * 2)
-            .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, framesInFlight * 2)
+            .addPoolSize(VK_DESCRIPTOR_TYPE_SAMPLER, framesInFlight * 3)
+            .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, framesInFlight * 3)
             .build();
 
     m_descriptorSetLayout = DescriptorSetLayout::Builder(m_device)
             .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT) //exposure ubo
             .addBinding(1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+            .addBinding(2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
             .build();
 
     const std::array descriptorSetLayouts = {
@@ -82,6 +83,7 @@ vov::BlitPass::BlitPass(Device& deviceRef, uint32_t framesInFlight, LightingPass
         DescriptorWriter(*m_descriptorSetLayout, *m_descriptorPool)
                 .writeBuffer(0, &bufferInfo)
                 .writeImage(1, &dummyInfo)
+                .writeImage(2, &dummyInfo)
                 .build(m_descriptorSets[i]);
     }
 }
@@ -142,10 +144,14 @@ void vov::BlitPass::Record(const FrameContext& context, VkCommandBuffer commandB
     DebugLabel::EndCmdLabel(commandBuffer);
 }
 
-void vov::BlitPass::UpdateDescriptor(uint32_t frameIndex, const Image& lightingOutput) {
-    const auto imageInfo = lightingOutput.descriptorInfo();
+void vov::BlitPass::UpdateDescriptor(uint32_t frameIndex, const Image& lightingOutput, const Image& lineOutput) {
+    const auto lightingInfo = lightingOutput.descriptorInfo();
+    const auto lineInfo = lineOutput.descriptorInfo();
+    const auto bufferInfo = m_exposureBuffers[frameIndex]->descriptorInfo();
     DescriptorWriter(*m_descriptorSetLayout, *m_descriptorPool)
-            .writeImage(0, &imageInfo)
+            .writeBuffer(0, &bufferInfo)
+            .writeImage(1, &lightingInfo)
+            .writeImage(2, &lineInfo)
             .overwrite(m_descriptorSets[frameIndex]);
 }
 
@@ -161,6 +167,7 @@ void vov::BlitPass::Resize(VkExtent2D newSize, const LightingPass& lightingPass)
         DescriptorWriter(*m_descriptorSetLayout, *m_descriptorPool)
                 .writeBuffer(0, &bufferInfo)
                 .writeImage(1, &imageInfo)
+                .writeImage(2, &imageInfo)
                 .overwrite(m_descriptorSets[i]);
     }
 }

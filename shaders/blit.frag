@@ -16,6 +16,7 @@ layout(std140, set = 0, binding = 0) uniform globalUBO
 } ubo;
 
 layout(set = 0, binding = 1) uniform sampler2D image;
+layout(set = 0, binding = 2) uniform sampler2D line;
 
 layout(location = 0) in vec2 fragTexCoord;
 
@@ -62,5 +63,12 @@ void main()
     hdrColor *= exposure;
     hdrColor = Uncharted2ToneMapping(hdrColor);
 
+    vec4 lineSample = texture(line, fragTexCoord);
+
     outColor = vec4(hdrColor, 1.0);
+
+    //TODO: use mix
+    if(lineSample.rgb != vec3(0,0,0)){
+        outColor = lineSample;
+    }
 }

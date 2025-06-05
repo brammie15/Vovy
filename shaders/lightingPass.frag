@@ -171,7 +171,7 @@ void main()
         vec3 normalizedSampleDirection = normalize(sampleDirection);
         normalizedSampleDirection.y *= -1.0;// Flip Y for Vulkan
         outColor = vec4(texture(samplerCube(hdriTexture, hdriSampler), normalizedSampleDirection).rgb, 1.0);
-        //        outColor.rgb = normalizedSampleDirection;
+//                outColor.rgb = normalizedSampleDirection;
         return;
     }
 
@@ -188,6 +188,7 @@ void main()
     vec3 L = normalize(-ubo.light.direction);
     vec3 H = normalize(V + L);
     vec3 radiance = ubo.light.color * ubo.light.intensity;
+    
 
     // Cook-Torrance BRDF for directional light
     float NDF = NormalDistributionGGX(N, H, roughness);

@@ -12,6 +12,7 @@
 namespace vov {
     class LinePass {
     public:
+        static constexpr size_t MAX_VERTEX_COUNT = 1000000;
         struct UniformBuffer {
             glm::mat4 viewProjectionMatrix{1.f};
             glm::vec3 cameraPosition{0.f, 0.f, 0.f};
@@ -21,7 +22,7 @@ namespace vov {
         explicit LinePass(Device& deviceRef, uint32_t framesInFlight, VkExtent2D extent);
         ~LinePass();
 
-        void Record(FrameContext context, VkCommandBuffer commandBuffer, uint32_t imageIndex);
+        void Record(FrameContext context, VkCommandBuffer commandBuffer, uint32_t imageIndex, Image& depthImage);
 
         void Resize(VkExtent2D newSize);
 

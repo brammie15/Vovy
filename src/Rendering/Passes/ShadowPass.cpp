@@ -7,7 +7,7 @@
 #include "Resources/Buffer.h"
 #include "Utils/DebugLabel.h"
 
-vov::ShadowPass::ShadowPass(Device& deviceRef, uint32_t framesInFlight, VkFormat format, VkExtent2D extent, DirectionalLight& directionalLight): m_device{deviceRef}, m_framesInFlight{framesInFlight}, m_imageFormat{format}, m_directionalLight{directionalLight} {
+vov::ShadowPass::ShadowPass(Device& deviceRef, uint32_t framesInFlight, VkFormat format, VkExtent2D extent): m_device{deviceRef}, m_framesInFlight{framesInFlight}, m_imageFormat{format} {
     m_descriptorPool = DescriptorPool::Builder(m_device)
             .setMaxSets(framesInFlight * 2)
             .addPoolSize(VK_DESCRIPTOR_TYPE_SAMPLER, framesInFlight * 2)
@@ -101,8 +101,8 @@ void vov::ShadowPass::Record(const FrameContext& context) {
     const auto commandBuffer = context.commandBuffer;
 
     UniformBuffer ubo{};
-    ubo.lightViewMatrix = m_directionalLight.GetViewMatrix();
-    ubo.lightProjectionMatrix = m_directionalLight.GetProjectionMatrix();
+    ubo.lightViewMatrix = context.currentScene.GetDirectionalLight().GetViewMatrix();
+    ubo.lightProjectionMatrix = context.currentScene.GetDirectionalLight().GetProjectionMatrix();
 
     ubo.lightProjectionMatrix[1][1] *= -1;
 

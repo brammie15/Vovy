@@ -3,8 +3,8 @@
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_FORCE_ALIGNED_GENTYPES
-#include <chrono>
 #include <glm/glm.hpp>
+#include <chrono>
 
 #include <functional>
 #include <iostream>
@@ -15,12 +15,12 @@
 #include "Descriptors/DescriptorWriter.h"
 #include "Rendering/RenderSystems/ImguiRenderSystem.h"
 #include "Rendering/RenderSystems/LineRenderSystem.h"
-#include "Resources/Buffer.h"
 #include "Scene/Lights/DirectionalLight.h"
 #include "Utils/BezierCurves.h"
 #include "Utils/Camera.h"
 #include "Utils/DeltaTime.h"
 #include "Utils/FrameContext.h"
+#include "Utils/LineManager.h"
 
 VApp::VApp() {
     m_globalPool =
@@ -45,7 +45,7 @@ VApp::VApp() {
     m_scenes.emplace_back(m_chessScene.get());
 
     loadGameObjects();
-    m_currentScene = m_chessScene.get();
+    m_currentScene = m_flightHelmetScene.get();
     m_currentScene->SceneLoad();
 
     m_renderer.SetResizeCallback([&] (const VkExtent2D newSize) {
@@ -66,8 +66,7 @@ VApp::VApp() {
         m_device,
         vov::Swapchain::MAX_FRAMES_IN_FLIGHT,
         VK_FORMAT_D32_SFLOAT,
-        m_renderer.getSwapchain().GetSwapChainExtent(),
-        m_currentScene->GetDirectionalLight()
+        m_renderer.getSwapchain().GetSwapChainExtent()
     );
 
     vov::GeometryPass::CreateInfo createInfo = {
@@ -81,6 +80,10 @@ VApp::VApp() {
 
     m_blitPass = std::make_unique<vov::BlitPass>(
         m_device, vov::Swapchain::MAX_FRAMES_IN_FLIGHT, *m_lightingPass, m_renderer.getSwapchain()
+    );
+
+    m_linePass = std::make_unique<vov::LinePass>(
+        m_device, vov::Swapchain::MAX_FRAMES_IN_FLIGHT, m_renderer.getSwapchain().GetSwapChainExtent()
     );
 
     m_imguiRenderSystem = std::make_unique<vov::ImguiRenderSystem>(
@@ -107,7 +110,6 @@ void VApp::run() {
         m_fpsFrameCount++;
 
         if (m_fpsFrameCount >= 100) {
-            // Average over 100 frames
             m_avgFps = m_fpsAccumulated / m_fpsFrameCount;
             m_fpsAccumulated = 0.0;
             m_fpsFrameCount = 0;
@@ -120,12 +122,9 @@ void VApp::run() {
         if (!m_currentScene->getGameObjects().empty() && m_selectedTransform) {
             m_imguiRenderSystem->drawGizmos(&m_camera, m_selectedTransform, "Maintransform");
         }
-        // glm::quat directionalLightRotation = glm::quatLookAt(
-        //     m_currentScene->GetDirectionalLight().GetDirection(),
-        //     glm::vec3(0.0f, 1.0f, 0.0f)
-        // );
-        glm::vec3 worldDir = m_currentScene->GetDirectionalLight().GetDirection()  * -1.0f;
-        glm::mat3 viewRot = glm::mat3(m_camera.GetViewMatrix()); // rotation-only part
+
+        glm::vec3 worldDir = m_currentScene->GetDirectionalLight().GetDirection() * -1.0f;
+        auto viewRot = glm::mat3(m_camera.GetViewMatrix());
         glm::vec3 camRelativeDir = viewRot * worldDir;
 
         m_imguiRenderSystem->drawDirection(&m_camera, camRelativeDir, "DirectionalLight");
@@ -133,6 +132,11 @@ void VApp::run() {
         updatedWorldDir = glm::normalize(updatedWorldDir);
         m_currentScene->GetDirectionalLight().SetDirection(updatedWorldDir * -1.0f);
 
+        if (m_currentDebugViewMode != vov::DebugView::FULLSCREEN_SHADOW && m_RenderBoundingBoxes) {
+            m_currentScene->getGameObjects()[0]->model->RenderBox();
+        }
+
+        vov::LineManager::GetInstance().DrawWireSphere(glm::vec3(0,10,0), 5, 32);
 
         m_imguiRenderSystem->endFrame();
 
@@ -142,6 +146,10 @@ void VApp::run() {
             } else {
                 m_window.LockCursor();
             }
+        }
+
+        if (m_window.isKeyPressed(GLFW_KEY_F1)) {
+            m_renderImgui = !m_renderImgui;
         }
 
 
@@ -166,6 +174,16 @@ void VApp::run() {
 
             m_geoPass->Record(frameContext, depthImage);
 
+            depthImage.TransitionImageLayout(
+                commandBuffer,
+                VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT
+            );
+
+
+            m_linePass->Record(frameContext, commandBuffer, frameIndex, depthImage);
+
             depthImage.TransitionImageLayout(commandBuffer, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 
             m_lightingPass->UpdateDescriptors(
@@ -180,19 +198,23 @@ void VApp::run() {
 
             m_lightingPass->Record(frameContext, commandBuffer, frameIndex, *m_geoPass, *m_hdrEnvironment, *m_shadowPass, *m_currentScene);
 
+            m_blitPass->UpdateDescriptor(frameIndex, m_lightingPass->GetImage(frameIndex), m_linePass->GetImage(frameIndex));
+
             depthImage.TransitionImageLayout(commandBuffer, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
 
             //Swapchain render pass
-            m_renderer.beginSwapChainRenderPass(commandBuffer);
-            {
+            m_renderer.beginSwapChainRenderPass(commandBuffer); {
                 m_blitPass->Record(frameContext, commandBuffer, frameIndex, m_renderer.getSwapchain());
-                m_imguiRenderSystem->renderImgui(commandBuffer);
+                if (m_renderImgui) {
+                    m_imguiRenderSystem->renderImgui(commandBuffer);
+                }
             }
             m_renderer.endSwapChainRenderPass(commandBuffer);
 
             m_renderer.endFrame();
         }
 
+        vov::LineManager::GetInstance().clear();
         // FPS limiter
         const auto sleepTime = vov::DeltaTime::GetInstance().SleepDuration();
         if (sleepTime > std::chrono::nanoseconds(0)) {
@@ -408,6 +430,7 @@ void VApp::imGui() {
     };
 
     ImGui::Begin("Scene");
+    ImGui::Checkbox("Render Bounding Boxes", &m_RenderBoundingBoxes);
     if (ImGui::Button("Deslect")) {
         m_selectedTransform = nullptr;
     }
@@ -540,7 +563,7 @@ void VApp::loadGameObjects() {
     });
 
     m_bistroScene->setSceneLoadFunction([&] (vov::Scene* scene) {
-        auto bistro = vov::GameObject::LoadModelFromDisk(m_device, "resources/Bistro/BistroExterior.fbx");
+        auto bistro = vov::GameObject::LoadModelFromDisk(m_device, "resources/PWP/PWP.gltf");
         scene->addGameObject(std::move(bistro));
     });
 

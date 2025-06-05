@@ -387,6 +387,10 @@ void vov::HDRI::CreateDiffuseIrradianceMap() {
                     "shaders/cubemap.vert.spv", "shaders/diffuseIrradiance.frag.spv");
     DebugLabel::NameImage(m_diffuseIrradianceMap, "Diffuse Irradiance Map");
 
+    //Mipmaps
+    const uint32_t mipLevels = static_cast<uint32_t>(std::floor(std::log2(m_diffuseIrradianceMapSize))) + 1;
+    //GenerateMipmaps(m_diffuseIrradianceMap, VK_FORMAT_R32G32B32A32_SFLOAT, m_diffuseIrradianceMapSize, m_diffuseIrradianceMapSize, mipLevels, 6);
+
     // Clean up temporary face views
     for (const auto& view : faceViews) {
         vkDestroyImageView(m_device.device(), view, nullptr);

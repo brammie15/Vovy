@@ -12,6 +12,7 @@
 #include "Rendering/Passes/DepthPrePass.h"
 #include "Rendering/Passes/GeometryPass.h"
 #include "Rendering/Passes/LightingPass.h"
+#include "Rendering/Passes/LinePass.h"
 #include "Rendering/Passes/ShadowPass.h"
 #include "Rendering/RenderSystems/ImguiRenderSystem.h"
 #include "Resources/HDRI.h"
@@ -90,8 +91,12 @@ private:
     std::unique_ptr<vov::LightingPass> m_lightingPass{};
     std::unique_ptr<vov::BlitPass> m_blitPass{};
 
+    std::unique_ptr<vov::LinePass> m_linePass{};
+
     vov::DebugView m_currentDebugViewMode{vov::DebugView::NONE};
     bool m_showLineTools{false};
+    bool m_renderImgui{ true };
+    bool m_RenderBoundingBoxes{ false };
 };
 
 #endif //VAPP_H

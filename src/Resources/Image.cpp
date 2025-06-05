@@ -34,11 +34,11 @@ namespace vov {
         VkDeviceSize imageSize{};
         int texWidth, texHeight, texChannels;
         bool usingStb = true;
-
+        gli::texture texture;
 
         const std::string fileExtension = filename.substr(filename.find_last_of('.') + 1);
         if (fileExtension == "dds") {
-            gli::texture texture = gli::load(filename);
+            texture = gli::load(filename);
             if (texture.empty()) {
                 std::cerr << "Failed to load DDS texture image!" << std::endl;
                 pixels = stbi_load("resources/TextureNotFound.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
@@ -59,7 +59,8 @@ namespace vov {
                 std::cerr << "Failed to load texture image!" << std::endl;
                 pixels = stbi_load("resources/TextureNotFound.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
             }
-            m_mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
+            // m_mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
+            m_mipLevels = 1;
             m_extent = VkExtent2D{static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight)};
             imageSize = texWidth * texHeight * 4;
         }
@@ -79,7 +80,9 @@ namespace vov {
 
         device.TransitionImageLayout(m_image, format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, m_mipLevels);
         device.copyBufferToImage(stagingBuffer.getBuffer(), m_image, texWidth, texHeight);
-        generateMipmaps(format, texWidth, texHeight);
+        if(usingStb)  {
+            generateMipmaps(format, texWidth, texHeight);
+        }
         // device.TransitionImageLayout(m_image, format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_mipLevels);
 
         createImageSampler(filter, VK_SAMPLER_ADDRESS_MODE_REPEAT);

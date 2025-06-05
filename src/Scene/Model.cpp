@@ -9,6 +9,7 @@
 
 #include "GameObject.h"
 #include "Descriptors/DescriptorWriter.h"
+#include "Utils/LineManager.h"
 #include "Utils/Timer.h"
 
 namespace vov {
@@ -52,10 +53,47 @@ namespace vov {
         }
     }
 
+    void Model::RenderBox(const glm::vec3& color) const {
+        using namespace glm;
+
+        const vec3& min = m_boundingBox.min;
+        const vec3& max = m_boundingBox.max;
+
+        std::vector<vec3> corners = {
+            {min.x, min.y, min.z},
+            {max.x, min.y, min.z},
+            {max.x, max.y, min.z},
+            {min.x, max.y, min.z},
+            {min.x, min.y, max.z},
+            {max.x, min.y, max.z},
+            {max.x, max.y, max.z},
+            {min.x, max.y, max.z}
+        };
+
+        for (auto& mesh : m_meshes) {
+            mat4 transform = mesh->getTransform().GetWorldMatrix();
+            std::vector<vec3> transformedCorners(8);
+            for (int i = 0; i < 8; ++i) {
+                vec4 transformed = transform * vec4(corners[i], 1.0f);
+                transformedCorners[i] = vec3(transformed);
+            }
+
+            const int edges[12][2] = {
+                {0, 1}, {1, 2}, {2, 3}, {3, 0},
+                {4, 5}, {5, 6}, {6, 7}, {7, 4},
+                {0, 4}, {1, 5}, {2, 6}, {3, 7}
+            };
+
+            for (auto edge : edges) {
+                LineManager::GetInstance().AddLine(transformedCorners[edge[0]], transformedCorners[edge[1]]);
+            }
+        }
+    }
+
     void Model::loadModel(const std::string& path) {
         Timer loadModelTimer("path");
         Assimp::Importer import;
-        const aiScene* scene = import.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace | aiProcess_GenNormals);
+        const aiScene* scene = import.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace | aiProcess_GenNormals | aiProcess_GenBoundingBoxes);
 
         if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
             std::cout << "ERROR::ASSIMP::" << import.GetErrorString() << std::endl;
@@ -97,11 +135,18 @@ namespace vov {
         std::vector<uint32_t> indices;
         std::string texturePath{};
 
+        // AABB aabb{};
+        // if (mesh->mNumVertices > 0) {
+        //     aabb.min = glm::vec3(mesh->mVertices[0].x, mesh->mVertices[0].y, mesh->mVertices[0].z);
+        //     aabb.max = aabb.min;
+        // }
+
         AABB aabb{};
-        if (mesh->mNumVertices > 0) {
-            aabb.min = glm::vec3(mesh->mVertices[0].x, mesh->mVertices[0].y, mesh->mVertices[0].z);
-            aabb.max = aabb.min;
+        if (mesh->mAABB.mMin.x <= mesh->mAABB.mMax.x) { // Check it's valid
+            aabb.min = glm::vec3(mesh->mAABB.mMin.x, mesh->mAABB.mMin.y, mesh->mAABB.mMin.z);
+            aabb.max = glm::vec3(mesh->mAABB.mMax.x, mesh->mAABB.mMax.y, mesh->mAABB.mMax.z);
         }
+
         // Retrieve material if available
         if (scene->mNumMaterials > 0 && mesh->mMaterialIndex >= 0) {
             aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
@@ -263,21 +308,49 @@ namespace vov {
             return;
         }
 
-        // Initialize with first mesh's transformed AABB
-        m_boundingBox = TransformAABB(
-            m_meshes[0]->GetBoundingBox(),
-            m_meshes[0]->getTransform().GetWorldMatrix()
-        );
+        AABB finalBox;
+        bool first = true;
 
-        // Expand to include all other meshes
-        for (size_t i = 1; i < m_meshes.size(); i++) {
-            AABB transformed = TransformAABB(
-                m_meshes[i]->GetBoundingBox(),
-                m_meshes[i]->getTransform().GetWorldMatrix()
-            );
+        for (const auto& mesh : m_meshes) {
+            const AABB& localBox = mesh->GetBoundingBox();
+            const glm::mat4& transform = mesh->getTransform().GetWorldMatrix();
 
-            m_boundingBox.min = glm::min(m_boundingBox.min, transformed.min);
-            m_boundingBox.max = glm::max(m_boundingBox.max, transformed.max);
+            // Compute the 8 corners of the local AABB
+            glm::vec3 corners[8] = {
+                {localBox.min.x, localBox.min.y, localBox.min.z},
+                {localBox.max.x, localBox.min.y, localBox.min.z},
+                {localBox.max.x, localBox.max.y, localBox.min.z},
+                {localBox.min.x, localBox.max.y, localBox.min.z},
+                {localBox.min.x, localBox.min.y, localBox.max.z},
+
+
+                {localBox.max.x, localBox.min.y, localBox.max.z},
+                {localBox.max.x, localBox.max.y, localBox.max.z},
+                {localBox.min.x, localBox.max.y, localBox.max.z}
+            };
+
+            // Transform all corners and compute a new AABB from them
+            AABB transformedBox;
+            for (int i = 0; i < 8; ++i) {
+                glm::vec3 transformed = glm::vec3(transform * glm::vec4(corners[i], 1.0f));
+                if (i == 0) {
+                    transformedBox.min = transformedBox.max = transformed;
+                } else {
+                    transformedBox.min = glm::min(transformedBox.min, transformed);
+                    transformedBox.max = glm::max(transformedBox.max, transformed);
+                }
+            }
+
+            // Expand the final bounding box
+            if (first) {
+                finalBox = transformedBox;
+                first = false;
+            } else {
+                finalBox.min = glm::min(finalBox.min, transformedBox.min);
+                finalBox.max = glm::max(finalBox.max, transformedBox.max);
+            }
         }
+
+        m_boundingBox = finalBox;
     }
 }

@@ -34,6 +34,9 @@ namespace vov {
 
         void clear();
 
+        void DrawWireSphere(glm::vec3 center, float radius, int segments = 16);
+        void DrawDeathStar(glm::vec3 center, float radius, int segments = 16);
+
     private:
         LineManager() = default;
 

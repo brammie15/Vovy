@@ -31,6 +31,7 @@ namespace vov {
         [[nodiscard]] const AABB& GetBoundingBox() const { return m_boundingBox; }
 
         std::string GetPath() { return m_path; }
+        void RenderBox(const glm::vec3& color = {1.0f, 0.0f, 0.0f}) const;
     private:
         void loadModel(const std::string& path);
         void processNode(aiNode* node, const aiScene* scene, glm::mat4 parentTransform = glm::mat4(1.0f));
