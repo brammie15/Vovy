@@ -667,6 +667,7 @@ IMGUI_API bool gizmo3D(const char* t, vec3& vm, quat& q, vec4& v , float sz=IMGU
 IMGUI_API bool gizmo3D(const char* t, vec3& vm, quat& q, vec3& v , float sz=IMGUIZMO_DEF_SIZE, uint32_t flag=imguiGizmo::modeDual|imguiGizmo::cubeAtOrigin);
 
 #endif
+    void EndMenu();
 }
 
 //#undef imguiGizmo_DEF_SIZE

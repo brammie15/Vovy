@@ -18,6 +18,7 @@
 #include "Resources/HDRI.h"
 #include "Scene/GameObject.h"
 #include "Scene/Scene.h"
+#include "Utils/AppGui.h"
 
 class VApp {
 public:
@@ -83,6 +84,8 @@ private:
     bool m_showLineTools{false};
     bool m_renderImgui{ true };
     bool m_RenderBoundingBoxes{ false };
+
+    std::unique_ptr<AppGui> m_appGui{};
 };
 
 #endif //VAPP_H

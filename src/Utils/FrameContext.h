@@ -23,6 +23,8 @@ namespace vov {
         SHADOWMAP,
         FULLSCREEN_SHADOW,
 
+        VISUALISE_DEFERRED_LAYERS,
+
         COUNT
     };
 
@@ -41,6 +43,7 @@ namespace vov {
             case DebugView::SPECULAR_LIGHTING: return "Specular Lighting";
             case DebugView::SHADOWMAP: return "Shadowmap";
             case DebugView::FULLSCREEN_SHADOW: return "Fullscreen Shadow";
+            case DebugView::VISUALISE_DEFERRED_LAYERS: return "Visualise Deferred Layers";
             default: return "Unknown";
         }
     }

@@ -165,7 +165,7 @@ void main()
     float ao = 1.0;
     float depth = texture(depthMap, inTexcoord).r;
 
-    if (depth >= 1.f){
+    if (depth >= 1.f && ubo.debugMode != DEBUG_MODE_VISUALISE_DEFERRED_LAYERS){
         vec2 fragCoord = vec2(gl_FragCoord.x, gl_FragCoord.y);
         const vec3 sampleDirection = GetWorldPositionFromDepth(depth, fragCoord, ubo.viewportSize, inverse(ubo.projectionMatrix), inverse(ubo.viewMatrix));
         vec3 normalizedSampleDirection = normalize(sampleDirection);
@@ -264,5 +264,40 @@ void main()
         break;
     }
 
+    if (ubo.debugMode == DEBUG_MODE_VISUALISE_DEFERRED_LAYERS) {
+        vec2 fragCoord = gl_FragCoord.xy;
+        vec2 viewport = ubo.viewportSize;
 
+        bool topHalf = fragCoord.y >= viewport.y * 0.5;
+        bool leftHalf = fragCoord.x < viewport.x * 0.5;
+
+        // Map fragCoord to [0,1] UV within each quarter
+        vec2 debugUV = vec2(
+        (fragCoord.x - (leftHalf ? 0.0 : viewport.x * 0.5)) / (viewport.x * 0.5),
+        (fragCoord.y - (topHalf ? viewport.y * 0.5 : 0.0)) / (viewport.y * 0.5)
+        );
+
+        // Sample all required textures at debugUV
+        vec3 albedo_q = texture(albedoMap, debugUV).rgb;
+        vec3 normal_q = normalize(texture(normalMap, debugUV).rgb * 2.0 - 1.0);
+        vec3 worldPos_q = texture(worldPosMap, debugUV).rgb;
+        vec2 metallicRoughness_q = texture(metallicRoughnessMap, debugUV).bg;
+        float metallic_q = metallicRoughness_q.x;
+        float roughness_q = metallicRoughness_q.y;
+
+        if (topHalf && leftHalf) {
+            // Top-left: Normal (remap from [-1,1] to [0,1])
+            outColor = vec4(normal_q * 0.5 + 0.5, 1.0);
+        } else if (topHalf && !leftHalf) {
+            // Top-right: Albedo
+            outColor = vec4(albedo_q, 1.0);
+        } else if (!topHalf && leftHalf) {
+            // Bottom-left: World Position (assuming worldPos in some range, maybe just visualize RGB)
+            outColor = vec4(worldPos_q, 1.0);
+        } else {
+            // Bottom-right: Metalness / Roughness, show metallic in R, roughness in G, zero in B
+            outColor = vec4(metallic_q, roughness_q, 0.0, 1.0);
+        }
+        return;
+    }
 }

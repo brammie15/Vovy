@@ -13,5 +13,6 @@ macro(LinkVma TARGET ACCESS)
         FetchContent_MakeAvailable(vma)
     endif()
 
-    target_include_directories(${TARGET} ${ACCESS} ${vma_SOURCE_DIR})
+#    target_include_directories(${TARGET} ${ACCESS} ${vma_SOURCE_DIR} ${vma_INCLUDE_DIR})
+    target_link_libraries(${TARGET} ${ACCESS} GPUOpen::VulkanMemoryAllocator)
 endmacro()

@@ -64,6 +64,7 @@ add_executable(${PROJECT_NAME}
         ${SRC_ROOT}/Utils/DebugLabel.h ${SRC_ROOT}/Utils/DebugLabel.cpp
         ${SRC_ROOT}/Utils/AABB.h ${SRC_ROOT}/Utils/AABB.cpp
         ${SRC_ROOT}/Utils/LineManager.h ${SRC_ROOT}/Utils/LineManager.cpp
+        ${SRC_ROOT}/Utils/AppGui.h ${SRC_ROOT}/Utils/AppGui.cpp
 
         ${SRC_ROOT}/Utils/External/imguizmo_config.h
         ${SRC_ROOT}/Utils/External/imguizmo_quat.h ${SRC_ROOT}/Utils/External/imguizmo_quat.cpp
@@ -129,10 +130,10 @@ endif ()
 target_link_libraries(${PROJECT_NAME} PUBLIC Vulkan::Vulkan ${VLD_LIBRARY} opengl32)
 target_include_directories(${PROJECT_NAME} PUBLIC ${VLD_INCLUDE_DIR})
 
-
-include(cmake/FetchResources.cmake)
-fetch_resources_if_missing()
-add_dependencies(${PROJECT_NAME} DownloadResources)
+#
+#include(cmake/FetchResources.cmake)
+#fetch_resources_if_missing()
+#add_dependencies(${PROJECT_NAME} DownloadResources)
 
 
 find_program(GLSL_VALIDATOR glslangValidator HINTS /usr/bin /usr/local/bin $ENV{VULKAN_SDK}/Bin/ $ENV{VULKAN_SDK}/Bin32/)

@@ -12,3 +12,4 @@
 #define DEBUG_MODE_SPECULAR_LIGHTING   10  // Show specular lighting contribution
 #define DEBUG_MODE_SHADOWS             11  // Show shadows
 #define DEBUG_MODE_FULLSCREEN_SHADOWS  12
+#define DEBUG_MODE_VISUALISE_DEFERRED_LAYERS 13

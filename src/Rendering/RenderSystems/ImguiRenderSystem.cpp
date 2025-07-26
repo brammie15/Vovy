@@ -245,6 +245,6 @@ namespace vov {
         ImGui_ImplVulkan_Init(&init_info);
         ImGui_ImplGlfw_InitForVulkan(Window::gWindow, true);
 
-        ImGui_ImplVulkan_CreateFontsTexture();
+        // ImGui_ImplVulkan_CreateFontsTexture();
     }
 }

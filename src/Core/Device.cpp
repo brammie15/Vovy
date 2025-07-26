@@ -8,7 +8,8 @@
 #include "Resources/Buffer.h"
 
 #define VMA_IMPLEMENTATION
-#include <vma/vk_mem_alloc.h>
+#include "vk_mem_alloc.h"
+// #include <vma/vk_mem_alloc.h>
 
 #include "Utils/DebugLabel.h"
 #include "Utils/ResourceManager.h"
@@ -16,7 +17,6 @@
 namespace vov {
     PFN_vkCmdBeginRenderingKHR vkCmdBeginRenderingKHR = nullptr;
     PFN_vkCmdEndRenderingKHR vkCmdEndRenderingKHR = nullptr;
-
 }
 
 

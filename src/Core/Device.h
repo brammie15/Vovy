@@ -1,7 +1,8 @@
 #ifndef DEVICE_H
 #define DEVICE_H
 
-#include <vma/vk_mem_alloc.h>
+// #include <vma/vk_mem_alloc.h>
+#include <vk_mem_alloc.h>
 
 #include <vector>
 
