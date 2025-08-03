@@ -9,6 +9,7 @@ namespace vov {
         ~ImageView();
 
         [[nodiscard]] VkImageView getHandle() const { return m_view; }
+        void SetName(const std::string& name) const;
 
     private:
         Device& m_device;

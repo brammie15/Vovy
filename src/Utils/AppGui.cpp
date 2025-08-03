@@ -5,10 +5,10 @@
 #include <fstream>
 #include <iostream>
 
-AppGui::AppGui(vov::ImguiRenderSystem* imguiRenderSystem, vov::Scene* scene, vov::Camera* camera)
+AppGui::AppGui(vov::ImguiRenderSystem* imguiRenderSystem, vov::Scene*& scene, vov::Camera* camera)
     : m_imguiRenderSystem(imguiRenderSystem), m_scene(scene), m_camera(camera) {}
 
-void AppGui::Render(double avgFps, int windowWidth, int windowHeight, vov::Transform* selectedTransform, vov::DebugView& currentDebugMode) {
+void AppGui::Render(double avgFps, int windowWidth, int windowHeight, vov::Transform*& selectedTransform,  vov::DebugView& currentDebugMode, const std::vector<vov::Scene*>& scenes) {
     RenderMainMenuBar();
     RenderSceneLight();
     RenderStats(avgFps, windowWidth, windowHeight);
@@ -16,6 +16,7 @@ void AppGui::Render(double avgFps, int windowWidth, int windowHeight, vov::Trans
     RenderPointLights(selectedTransform);
     RenderCameraSettings();
     RenderDebugModes(currentDebugMode);
+    RenderSceneSelector(scenes, m_scene);
 }
 
 void AppGui::RenderMainMenuBar() {
@@ -62,7 +63,7 @@ void AppGui::RenderControls() {
     ImGui::End();
 }
 
-void AppGui::RenderPointLights(vov::Transform* selectedTransform) {
+void AppGui::RenderPointLights(vov::Transform*& selectedTransform) {
     ImGui::Begin("Point Lights");
     if (ImGui::Button("Add Point Light")) {
         auto pointLight = std::make_unique<vov::PointLight>(glm::vec3(0.0f, 0.0f, 0.0f));
@@ -122,6 +123,23 @@ void AppGui::RenderDebugModes(vov::DebugView& currentDebugMode) {
             }
         }
         ImGui::EndCombo();
+    }
+    ImGui::End();
+}
+
+void AppGui::RenderSceneSelector(const std::vector<vov::Scene*>& scenes, vov::Scene*& currentScene) {
+    ImGui::Begin("Scene Selector");
+    for (const auto & scene : scenes) {
+        ImGui::PushID(scene->getName().c_str());
+        if (ImGui::Button(("Load " + scene->getName()).c_str())) {
+            if (currentScene != scene) {
+                // currentScene->Unload();
+                currentScene = scene;
+                currentScene->SceneLoad();
+                std::cout << "Switched to scene: " << currentScene->getName() << std::endl;
+            }
+        }
+        ImGui::PopID();
     }
     ImGui::End();
 }

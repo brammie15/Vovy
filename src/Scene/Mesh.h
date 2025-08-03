@@ -31,7 +31,7 @@ namespace vov {
             static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions();
         };
 
-        struct TextureInfo {
+        struct Material {
             std::string basePath;
 
             std::string albedoPath;
@@ -47,8 +47,8 @@ namespace vov {
             std::string modelPath{};
             std::string name{};
 
-            TextureInfo textureInfo{};
-            AABB boundingBox{}; // Add this
+            Material material{};
+            AABB boundingBox{};
 
             //TODO: ask if this is properly done
             DescriptorSetLayout* descriptorSetLayout{};
@@ -73,7 +73,7 @@ namespace vov {
         [[nodiscard]] uint32_t getVertexCount() const { return m_vertexCount; }
         [[nodiscard]] uint32_t getIndexCount() const { return m_indexCount; }
 
-        void bind(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, bool isDepthPass = false) const;
+        void bind(VkCommandBuffer commandBuffer) const;
         void draw(VkCommandBuffer commandBuffer) const;
 
         static std::unique_ptr<Mesh> createModelFromFile(
@@ -89,7 +89,7 @@ namespace vov {
     private:
         void createVertexBuffer(const std::vector<Vertex>& vertices);
         void createIndexBuffer(const std::vector<uint32_t>& indices);
-        void loadTexture(const TextureInfo& textureInfo, DescriptorSetLayout* descriptorSetLayout, DescriptorPool* descriptorPool);
+        void loadTexture(const Material& textureInfo, DescriptorSetLayout* descriptorSetLayout, DescriptorPool* descriptorPool);
 
         Device& m_device;
         uint32_t m_vertexCount;

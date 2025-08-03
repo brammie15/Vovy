@@ -2,6 +2,8 @@
 
 #include <stdexcept>
 
+#include "Utils/DebugLabel.h"
+
 vov::ImageView::ImageView(Device& device, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels)
     : m_device(device) {
     VkImageViewCreateInfo viewInfo{};
@@ -24,4 +26,8 @@ vov::ImageView::~ImageView() {
     if (m_view) {
         vkDestroyImageView(m_device.device(), m_view, nullptr);
     }
+}
+
+void vov::ImageView::SetName(const std::string& name) const {
+    DebugLabel::SetObjectName(reinterpret_cast<uint64_t>(m_view), VK_OBJECT_TYPE_IMAGE_VIEW, name);
 }

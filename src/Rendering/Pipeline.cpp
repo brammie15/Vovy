@@ -8,6 +8,7 @@
 #include <Utils/Chalk.h>
 
 #include "Scene/Mesh.h"
+#include "Utils/DebugLabel.h"
 
 namespace vov {
     Pipeline::Pipeline(Device& device, const std::string& vertPath, const std::string& fragPath,
@@ -205,6 +206,15 @@ namespace vov {
 
         pipelineInfo.basePipelineIndex = -1;
         pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+
+        if (!configInfo.name.empty()) {
+            DebugLabel::SetObjectName(
+                reinterpret_cast<uint64_t>(pipelineInfo.layout),
+                VK_OBJECT_TYPE_PIPELINE_LAYOUT,
+                configInfo.name.c_str()
+            );
+        }
+
 
         if (vkCreateGraphicsPipelines(m_device.device(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_graphicsPipeline) != VK_SUCCESS) {
             throw std::runtime_error("Can't make pipeline!");

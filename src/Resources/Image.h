@@ -7,6 +7,9 @@
 #include "Image/ImageView.h"
 #include "Image/Sampler.h"
 
+#include <gli/gli.hpp>
+
+
 namespace vov {
     class ImageView;
 
@@ -80,6 +83,8 @@ namespace vov {
         void generateMipmaps(VkFormat format, uint32_t width, uint32_t height) const;
 
         static VkImageAspectFlags getImageAspect(VkFormat format);
+        VkFormat gliFormatToVkFormat(gli::format format);
+
 
         Device& m_device;
         VkImage m_image;

@@ -20,7 +20,7 @@ namespace vov {
         void Update();
 
     private:
-        friend class Singleton<DeltaTime>;
+        friend class Singleton;
 
         DeltaTime() = default;
         static constexpr double m_FixedDeltaTime{1.0 / 60.0};

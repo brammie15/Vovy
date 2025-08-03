@@ -100,6 +100,10 @@ namespace vov {
 
     void Device::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usageFlags, VmaMemoryUsage memoryUsage, bool mappable,
                               VkBuffer& buffer, VmaAllocation& allocation) const {
+        if (size == 0) {
+            throw std::runtime_error("Buffer size must be greater than 0");
+        }
+
         VkBufferCreateInfo bufferInfo{};
         bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
         bufferInfo.usage = usageFlags;
@@ -425,7 +429,7 @@ namespace vov {
             throw std::runtime_error("Failed to load VK_KHR_dynamic_rendering function pointers.");
         }
 
-        DebugLabel::Init(m_device);
+        DebugLabel::Init(this);
         vkGetDeviceQueue(m_device, indices.graphicsFamily, 0, &m_graphicsQueue);
         vkGetDeviceQueue(m_device, indices.presentFamily, 0, &m_presentQueue);
     }

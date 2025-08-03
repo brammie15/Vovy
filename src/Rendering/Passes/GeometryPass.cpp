@@ -11,11 +11,13 @@
 #include "Utils/DebugLabel.h"
 #include "Utils/ResourceManager.h"
 
-vov::GeometryPass::GeometryPass(vov::Device& deviceRef, const CreateInfo& createInfo): m_device{deviceRef} {
+vov::GeometryPass::GeometryPass(vov::Device& deviceRef, const CreateInfo& createInfo): m_device{deviceRef}, m_uniformBuffer{deviceRef} {
     m_geoBuffers.resize(createInfo.maxFrames);
     for (auto & buffer : m_geoBuffers) {
         buffer = std::make_unique<GeoBuffer>(deviceRef, createInfo.size);
     }
+
+    m_uniformBuffer.SetName("GeometryPass Uniform Buffer");
 
     m_descriptorPool = DescriptorPool::Builder(m_device)
             .setMaxSets(createInfo.maxFrames * 3)
@@ -50,20 +52,11 @@ vov::GeometryPass::GeometryPass(vov::Device& deviceRef, const CreateInfo& create
         m_textureSetLayout->getDescriptorSetLayout()
     };
 
-    m_uniformBuffers.resize(createInfo.maxFrames);
-    for (size_t i{ 0 }; i < m_uniformBuffers.size(); i++) {
-        m_uniformBuffers[i] = std::make_unique<Buffer>(
-            m_device, sizeof(UniformBuffer),
-            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-            VMA_MEMORY_USAGE_CPU_TO_GPU, true
-        );
-    }
-
     m_descriptorSets.resize(createInfo.maxFrames);
 
     for (size_t i{0}; i < createInfo.maxFrames; i++) {
         m_descriptorPool->allocateDescriptor(m_descriptorSetLayout->getDescriptorSetLayout(), m_descriptorSets[i]);
-        auto bufferInfo = m_uniformBuffers[i]->descriptorInfo();
+        auto bufferInfo = m_uniformBuffer.getDescriptorBufferInfo(i);
         DescriptorWriter(*m_descriptorSetLayout, *m_descriptorPool)
             .writeBuffer(0, &bufferInfo)
             .build(m_descriptorSets[i]);
@@ -84,6 +77,7 @@ vov::GeometryPass::GeometryPass(vov::Device& deviceRef, const CreateInfo& create
     //Making the pipeline
     PipelineConfigInfo pipelineConfig{};
     Pipeline::DefaultPipelineConfigInfo(pipelineConfig);
+    pipelineConfig.name = "Geometry Pass Pipeline";
 
     pipelineConfig.pipelineLayout = m_pipelineLayout;
 
@@ -128,13 +122,12 @@ void vov::GeometryPass::Record(const FrameContext& context, const Image& depthIm
     const uint32_t imageIndex = context.frameIndex;
     const auto commandBuffer = context.commandBuffer;
 
-    UniformBuffer ubo{};
+    UniformBufferData ubo{};
     ubo.view = context.camera.GetViewMatrix();
     ubo.proj = context.camera.GetProjectionMatrix();
     ubo.proj[1][1] *= -1;
 
-    m_uniformBuffers[imageIndex]->copyTo(&ubo, sizeof(ubo));
-    m_uniformBuffers[imageIndex]->flush();
+    m_uniformBuffer.update(imageIndex, ubo);
 
     m_geoBuffers[imageIndex]->TransitionWriting(commandBuffer);
 
@@ -182,7 +175,33 @@ void vov::GeometryPass::Record(const FrameContext& context, const Image& depthIm
 
     for (const auto& object : context.currentScene.getGameObjects()) {
         if (context.camera.GetFrustum().isBoxVisible(object->model->GetBoundingBox())) {
-            object->model->draw(commandBuffer, m_pipelineLayout);
+            for (const auto& mesh : object->model->getMeshes()) {
+                PushConstant push{};
+                push.model = mesh->getTransform().GetWorldMatrix();
+                vkCmdPushConstants(
+                    commandBuffer,
+                    m_pipelineLayout,
+                    VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                    0,
+                    sizeof(PushConstant),
+                    &push
+                );
+
+                auto meshDescriptorSet = mesh->getDescriptorSet();
+
+                vkCmdBindDescriptorSets(
+                    commandBuffer,
+                    VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    m_pipelineLayout,
+                    1, // Texture set
+                    1, &meshDescriptorSet,
+                    0, nullptr
+                );
+
+                mesh->bind(commandBuffer);
+                mesh->draw(commandBuffer);
+
+            }
         }
     }
 

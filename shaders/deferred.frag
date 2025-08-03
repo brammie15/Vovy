@@ -73,6 +73,10 @@ void main(){
     if(textureBindingInfo.hasAlbedo) {
 //        outAlbedo.rgb = pow(texture(albedoSampler, inTexCoord).rgb, vec3(2.2)); // Assume sRGB
         outAlbedo.rgb = texture(albedoSampler, inTexCoord).rgb; // Assume sRGB
+
+        if(outAlbedo.a < 0.1) {
+            discard;
+        }
     } else {
         outAlbedo.rgb = pow(inColor, vec3(2.2));
     }

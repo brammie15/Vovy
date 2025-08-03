@@ -23,36 +23,6 @@ namespace vov {
         generateMeshes();
     }
 
-    void Model::draw(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, bool isDepthPass) const {
-        int testCounter{0};
-        for (const auto& mesh: m_meshes) {
-            PushConstantData push{};
-            push.modelMatrix = mesh->getTransform().GetWorldMatrix();
-            if (m_Owner != nullptr) {
-                push.objectId = m_Owner->getId() + testCounter++;
-            } else {
-                push.objectId = 0;
-            }
-            vkCmdPushConstants(
-                commandBuffer,
-                pipelineLayout,
-                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-                0,
-                sizeof(PushConstantData),
-                &push
-            );
-
-            mesh->bind(commandBuffer, pipelineLayout, isDepthPass);
-            mesh->draw(commandBuffer);
-        }
-    }
-
-    void Model::bind(VkCommandBuffer commandBuffer, VkPipelineLayout layout) const {
-        for (const auto& mesh: m_meshes) {
-            mesh->bind(commandBuffer, layout);
-        }
-    }
-
     void Model::RenderBox(const glm::vec3& color) const {
         using namespace glm;
 
@@ -101,7 +71,6 @@ namespace vov {
         }
         m_directory = path.substr(0, path.find_last_of('/'));
 
-        // PrintMaterials(scene);
         processNode(scene->mRootNode, scene);
         loadModelTimer.stop();
     }
@@ -197,7 +166,7 @@ namespace vov {
                 vertex.bitTangent = {
                     mesh->mBitangents[i].x,
                     mesh->mBitangents[i].y,
-                    mesh->mBitangents[i].x
+                    mesh->mBitangents[i].z
                 };
             }
 
@@ -217,7 +186,7 @@ namespace vov {
         builder.name = mesh->mName.C_Str();
         builder.boundingBox = aabb; // Store the AABB
 
-        Mesh::TextureInfo textureInfo{};
+        Mesh::Material textureInfo{};
 
         if (scene->mNumMaterials > 0 && mesh->mMaterialIndex >= 0) {
             aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
@@ -254,7 +223,7 @@ namespace vov {
 
         textureInfo.basePath = builder.modelPath;
 
-        builder.textureInfo = textureInfo;
+        builder.material = textureInfo;
 
         return builder;
     }

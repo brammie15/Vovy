@@ -14,7 +14,6 @@ vov::DepthPrePass::~DepthPrePass() {
     m_descriptorPool.reset();
     m_descriptorSetLayout.reset();
     m_pipeline.reset();
-    m_uniformBuffers.clear();
 }
 
 void vov::DepthPrePass::Init(VkFormat depthFormat, uint32_t framesInFlight) {
@@ -37,36 +36,28 @@ void vov::DepthPrePass::Init(VkFormat depthFormat, uint32_t framesInFlight) {
         .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT)
         .build();
 
+    m_uniformBuffer.SetName("Depth Pre Pass Uniform Buffer");
+
 
     VkPushConstantRange pushConstantRange{};
     pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
     pushConstantRange.offset = 0;
     pushConstantRange.size = sizeof(PushConstant);
 
+
     const std::array<VkDescriptorSetLayout, 1> descriptorSetLayouts = {
         m_descriptorSetLayout->getDescriptorSetLayout()
     };
-
-    m_uniformBuffers.resize(framesInFlight);
-    for (size_t i{ 0 }; i < m_uniformBuffers.size(); i++) {
-        m_uniformBuffers[i] = std::make_unique<Buffer>(
-            m_device, sizeof(UniformBuffer),
-            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-            VMA_MEMORY_USAGE_CPU_TO_GPU, true
-        );
-    }
 
     m_descriptorSets.resize(framesInFlight);
 
     for (size_t i{0}; i < framesInFlight; i++) {
         m_descriptorPool->allocateDescriptor(m_descriptorSetLayout->getDescriptorSetLayout(), m_descriptorSets[i]);
-        auto bufferInfo = m_uniformBuffers[i]->descriptorInfo();
+        auto bufferInfo = m_uniformBuffer[i]->descriptorInfo();
         DescriptorWriter(*m_descriptorSetLayout, *m_descriptorPool)
             .writeBuffer(0, &bufferInfo)
             .build(m_descriptorSets[i]);
     }
-
-
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -83,6 +74,7 @@ void vov::DepthPrePass::Init(VkFormat depthFormat, uint32_t framesInFlight) {
     //Making the pipeline
     PipelineConfigInfo pipelineConfig{};
     Pipeline::DefaultPipelineConfigInfo(pipelineConfig);
+    pipelineConfig.name = "Depth Pre Pass Pipeline";
 
     pipelineConfig.pipelineLayout = m_pipelineLayout;
 
@@ -102,13 +94,12 @@ void vov::DepthPrePass::Record(const FrameContext& context, Image& depthImage) {
     const uint32_t imageIndex = context.frameIndex;
     const auto commandBuffer = context.commandBuffer;
 
-    UniformBuffer ubo{};
+    UniformBufferData ubo{};
     ubo.view = context.camera.GetViewMatrix();
     ubo.proj = context.camera.GetProjectionMatrix();
     ubo.proj[1][1] *= -1;
 
-    m_uniformBuffers[imageIndex]->copyTo(&ubo, sizeof(ubo));
-    m_uniformBuffers[imageIndex]->flush();
+    m_uniformBuffer.update(imageIndex, ubo);
 
     depthImage.TransitionImageLayout(commandBuffer, VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT);
 
@@ -156,7 +147,22 @@ void vov::DepthPrePass::Record(const FrameContext& context, Image& depthImage) {
     m_pipeline->bind(commandBuffer);
 
     for (const auto& object : context.currentScene.getGameObjects()) {
-        object->model->draw(commandBuffer, m_pipelineLayout, true);
+        for (const auto& mesh : object->model->getMeshes()) {
+            PushConstant push{};
+            push.model = mesh->getTransform().GetWorldMatrix();
+
+            vkCmdPushConstants(
+                commandBuffer,
+                m_pipelineLayout,
+                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                0,
+                sizeof(PushConstant),
+                &push
+            );
+
+            mesh->bind(commandBuffer);
+            mesh->draw(commandBuffer);
+        }
     }
 
     vkCmdEndRendering(commandBuffer);

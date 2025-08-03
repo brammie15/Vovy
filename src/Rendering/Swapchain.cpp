@@ -19,9 +19,18 @@ namespace vov {
     }
 
     Swapchain::~Swapchain() {
-
         m_swapChainImages.clear();
         m_depthImages.clear();
+
+        for (auto semaphore: m_imageAvailableSemaphores) {
+            vkDestroySemaphore(m_device.device(), semaphore, nullptr);
+        }
+        for (auto semaphore: m_renderFinishedSemaphores) {
+            vkDestroySemaphore(m_device.device(), semaphore, nullptr);
+        }
+        for (auto fence: m_inFlightFences) {
+            vkDestroyFence(m_device.device(), fence, nullptr);
+        }
 
         if (m_swapchain != nullptr) {
             vkDestroySwapchainKHR(m_device.device(), m_swapchain, nullptr);
@@ -29,16 +38,7 @@ namespace vov {
         }
 
         vkDestroyRenderPass(m_device.device(), m_renderPass, nullptr);
-
-        // cleanup synchronization objects
-        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            vkDestroySemaphore(m_device.device(), m_renderFinishedSemaphores[i], nullptr);
-            vkDestroySemaphore(m_device.device(), m_imageAvailableSemaphores[i], nullptr);
-            vkDestroyFence(m_device.device(), m_inFlightFences[i], nullptr);
-        }
     }
-
-
 
     VkFormat Swapchain::findDepthFormat() const {
         return m_device.FindSupportedFormat(
@@ -69,11 +69,11 @@ namespace vov {
             VK_TRUE,
             std::numeric_limits<uint64_t>::max());
 
-        const VkResult result = vkAcquireNextImageKHR(
+        const auto result = vkAcquireNextImageKHR(
             m_device.device(),
             m_swapchain,
             std::numeric_limits<uint64_t>::max(),
-            m_imageAvailableSemaphores[m_currentFrame],
+            m_imageAvailableSemaphores[m_currentFrame], // ✅ correct
             VK_NULL_HANDLE,
             imageIndex);
 
@@ -82,7 +82,6 @@ namespace vov {
 
     VkResult Swapchain::submitCommandBuffers(const VkCommandBuffer* buffers, const uint32_t* imageIndex) {
         if (m_imagesInFlight[*imageIndex] != VK_NULL_HANDLE) {
-            // Wait until the image is no longer in use
             vkWaitForFences(m_device.device(), 1, &m_imagesInFlight[*imageIndex], VK_TRUE, UINT64_MAX);
         }
         m_imagesInFlight[*imageIndex] = m_inFlightFences[m_currentFrame];
@@ -110,26 +109,21 @@ namespace vov {
 
         VkPresentInfoKHR presentInfo = {};
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-
         presentInfo.waitSemaphoreCount = 1;
-        presentInfo.pWaitSemaphores = signalSemaphores;
 
         const VkSwapchainKHR swapChains[] = {m_swapchain};
         presentInfo.swapchainCount = 1;
         presentInfo.pSwapchains = swapChains;
-
         presentInfo.pImageIndices = imageIndex;
-
-        const auto result = vkQueuePresentKHR(m_device.presentQueue(), &presentInfo);
+        presentInfo.pWaitSemaphores = signalSemaphores;
 
         m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 
-        return result;
+        return vkQueuePresentKHR(m_device.presentQueue(), &presentInfo);
     }
 
     void Swapchain::init() {
         createSwapChain();
-        // createImageViews();
         createDepthResources();
         createSyncObjects();
     }
@@ -141,17 +135,14 @@ namespace vov {
         const VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
         const VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities);
 
-
         uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
-        if (swapChainSupport.capabilities.maxImageCount > 0 &&
-            imageCount > swapChainSupport.capabilities.maxImageCount) {
+        if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount) {
             imageCount = swapChainSupport.capabilities.maxImageCount;
         }
 
         VkSwapchainCreateInfoKHR createInfo = {};
         createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
         createInfo.surface = m_device.surface();
-
         createInfo.minImageCount = imageCount;
         createInfo.imageFormat = surfaceFormat.format;
         createInfo.imageColorSpace = surfaceFormat.colorSpace;
@@ -168,17 +159,13 @@ namespace vov {
             createInfo.pQueueFamilyIndices = queueFamilyIndices;
         } else {
             createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-            createInfo.queueFamilyIndexCount = 0; // Optional
-            createInfo.pQueueFamilyIndices = nullptr; // Optional
         }
 
         createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
         createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-
         createInfo.presentMode = presentMode;
         createInfo.clipped = VK_TRUE;
-
-        createInfo.oldSwapchain = m_oldSwapChain == nullptr ? VK_NULL_HANDLE : m_oldSwapChain->m_swapchain;
+        createInfo.oldSwapchain = m_oldSwapChain ? m_oldSwapChain->m_swapchain : VK_NULL_HANDLE;
 
         if (vkCreateSwapchainKHR(m_device.device(), &createInfo, nullptr, &m_swapchain) != VK_SUCCESS) {
             throw std::runtime_error("failed to create swap chain!");
@@ -189,41 +176,19 @@ namespace vov {
         vkGetSwapchainImagesKHR(m_device.device(), m_swapchain, &imageCount, vkImages.data());
 
         m_swapChainImages.clear();
-        for (auto image : vkImages) {
+        for (auto image: vkImages) {
             auto vovImage = std::make_unique<vov::Image>(
                 m_device,
                 extent,
                 surfaceFormat.format,
                 VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
                 VMA_MEMORY_USAGE_GPU_ONLY,
-                image); // Using the constructor that wraps an existing VkImage
+                image);
             m_swapChainImages.push_back(std::move(vovImage));
         }
 
         m_swapChainImageFormat = surfaceFormat.format;
         m_swapChainExtent = extent;
-    }
-
-    void Swapchain::createImageViews() {
-        m_swapChainImages.clear(); // Clear any existing images
-
-        // Get the VkImages from the swapchain
-        uint32_t imageCount;
-        vkGetSwapchainImagesKHR(m_device.device(), m_swapchain, &imageCount, nullptr);
-        std::vector<VkImage> vkImages(imageCount);
-        vkGetSwapchainImagesKHR(m_device.device(), m_swapchain, &imageCount, vkImages.data());
-
-        // Create vov::Image wrappers for each swapchain image
-        for (auto image : vkImages) {
-            auto vovImage = std::make_unique<vov::Image>(
-                m_device,
-                m_swapChainExtent,
-                m_swapChainImageFormat,
-                VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                VMA_MEMORY_USAGE_GPU_ONLY,
-                image); // Need to add a constructor in Image class that takes existing VkImage
-            m_swapChainImages.push_back(std::move(vovImage));
-        }
     }
 
     void Swapchain::createDepthResources() {
@@ -242,10 +207,12 @@ namespace vov {
     }
 
     void Swapchain::createSyncObjects() {
-        m_imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-        m_renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+        size_t imageCount = this->imageCount();
+
+        m_imageAvailableSemaphores.resize(imageCount);
+        m_renderFinishedSemaphores.resize(imageCount);
         m_inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
-        m_imagesInFlight.resize(imageCount(), VK_NULL_HANDLE);
+        m_imagesInFlight.resize(imageCount, VK_NULL_HANDLE);
 
         VkSemaphoreCreateInfo semaphoreInfo = {};
         semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -254,25 +221,27 @@ namespace vov {
         fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
         fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
+        for (size_t i = 0; i < imageCount; i++) {
+            if (vkCreateSemaphore(m_device.device(), &semaphoreInfo, nullptr, &m_imageAvailableSemaphores[i]) != VK_SUCCESS ||
+                vkCreateSemaphore(m_device.device(), &semaphoreInfo, nullptr, &m_renderFinishedSemaphores[i]) != VK_SUCCESS) {
+                throw std::runtime_error("failed to create synchronization semaphores for swapchain images!");
+            }
+        }
+
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            if (vkCreateSemaphore(m_device.device(), &semaphoreInfo, nullptr, &m_imageAvailableSemaphores[i]) !=
-                VK_SUCCESS ||
-                vkCreateSemaphore(m_device.device(), &semaphoreInfo, nullptr, &m_renderFinishedSemaphores[i]) !=
-                VK_SUCCESS ||
-                vkCreateFence(m_device.device(), &fenceInfo, nullptr, &m_inFlightFences[i]) != VK_SUCCESS) {
-                throw std::runtime_error("failed to create synchronization objects for a frame!");
+            if (vkCreateFence(m_device.device(), &fenceInfo, nullptr, &m_inFlightFences[i]) != VK_SUCCESS) {
+                throw std::runtime_error("failed to create frame fences!");
             }
         }
     }
 
     VkSurfaceFormatKHR Swapchain::chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) {
         for (const auto& availableFormat: availableFormats) {
-            if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace ==
-                VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+            if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB &&
+                availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
                 return availableFormat;
             }
         }
-
         return availableFormats[0];
     }
 
@@ -282,7 +251,6 @@ namespace vov {
                 return availablePresentMode;
             }
         }
-
         return VK_PRESENT_MODE_FIFO_KHR;
     }
 
@@ -297,7 +265,6 @@ namespace vov {
             actualExtent.height = std::max(
                 capabilities.minImageExtent.height,
                 std::min(capabilities.maxImageExtent.height, actualExtent.height));
-
             return actualExtent;
         }
     }

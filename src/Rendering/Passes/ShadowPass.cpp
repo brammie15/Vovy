@@ -7,12 +7,15 @@
 #include "Resources/Buffer.h"
 #include "Utils/DebugLabel.h"
 
-vov::ShadowPass::ShadowPass(Device& deviceRef, uint32_t framesInFlight, VkFormat format, VkExtent2D extent): m_device{deviceRef}, m_framesInFlight{framesInFlight}, m_imageFormat{format} {
+vov::ShadowPass::ShadowPass(Device& deviceRef, uint32_t framesInFlight, VkFormat format, VkExtent2D extent): m_device{deviceRef}, m_framesInFlight{framesInFlight}, m_imageFormat{format}, m_uniformBuffer{deviceRef} {
     m_descriptorPool = DescriptorPool::Builder(m_device)
+            .SetName("ShadowPass Descriptor Pool")
             .setMaxSets(framesInFlight * 2)
             .addPoolSize(VK_DESCRIPTOR_TYPE_SAMPLER, framesInFlight * 2)
             .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, framesInFlight * 2)
             .build();
+
+    m_uniformBuffer.SetName("ShadowPass Uniform Buffer");
 
     DebugLabel::SetObjectName(reinterpret_cast<uint64_t>(m_descriptorPool->GetHandle()), VK_OBJECT_TYPE_DESCRIPTOR_POOL, "ShadowPass Descriptor Pool");
 
@@ -33,17 +36,10 @@ vov::ShadowPass::ShadowPass(Device& deviceRef, uint32_t framesInFlight, VkFormat
     );
     m_depthImage->SetName("ShadowDepthImage");
 
-    m_uniformBuffers.resize(framesInFlight);
-    for (size_t i{0}; i < m_framesInFlight; i++) {
-        m_uniformBuffers[i] = std::make_unique<Buffer>(
-            m_device, sizeof(UniformBuffer),
-            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-            VMA_MEMORY_USAGE_CPU_TO_GPU, true
-        );
-    }
+
 
     for (size_t i{0}; i < m_framesInFlight; i++) {
-        auto bufferInfo = m_uniformBuffers[i]->descriptorInfo();
+        auto bufferInfo = m_uniformBuffer[i]->descriptorInfo();
         DescriptorWriter(*m_descriptorSetLayout, *m_descriptorPool)
                 .writeBuffer(0, &bufferInfo)
                 .build(m_descriptorSets[i]);
@@ -71,6 +67,7 @@ vov::ShadowPass::ShadowPass(Device& deviceRef, uint32_t framesInFlight, VkFormat
 
     PipelineConfigInfo pipelineConfig{};
     Pipeline::DefaultPipelineConfigInfo(pipelineConfig);
+    pipelineConfig.name = "Shadow Pass Pipeline";
 
     pipelineConfig.pipelineLayout = m_pipelineLayout;
 
@@ -100,14 +97,13 @@ void vov::ShadowPass::Record(const FrameContext& context) {
     const uint32_t imageIndex = context.frameIndex;
     const auto commandBuffer = context.commandBuffer;
 
-    UniformBuffer ubo{};
+    UniformBufferData ubo{};
     ubo.lightViewMatrix = context.currentScene.GetDirectionalLight().GetViewMatrix();
     ubo.lightProjectionMatrix = context.currentScene.GetDirectionalLight().GetProjectionMatrix();
 
     ubo.lightProjectionMatrix[1][1] *= -1;
 
-    m_uniformBuffers[imageIndex]->copyTo(&ubo, sizeof(UniformBuffer));
-    m_uniformBuffers[imageIndex]->flush();
+    m_uniformBuffer.update(imageIndex, ubo);
 
     m_depthImage->TransitionImageLayout(commandBuffer, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT);
 
@@ -153,8 +149,22 @@ void vov::ShadowPass::Record(const FrameContext& context) {
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineLayout, 0, 1, &m_descriptorSets[imageIndex], 0, nullptr);
 
     for (const auto& object : context.currentScene.getGameObjects()) {
+        for (const auto& mesh : object->model->getMeshes()) {
+            PushConstant push{};
+            push.model = mesh->getTransform().GetWorldMatrix();
 
-        object->model->draw(commandBuffer, m_pipelineLayout, true);
+            vkCmdPushConstants(
+                commandBuffer,
+                m_pipelineLayout,
+                VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                0,
+                sizeof(PushConstant),
+                &push
+            );
+
+            mesh->bind(commandBuffer);
+            mesh->draw(commandBuffer);
+        }
     }
 
     vkCmdEndRendering(commandBuffer);

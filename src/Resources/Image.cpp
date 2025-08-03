@@ -11,12 +11,13 @@
 #include "Utils/DebugLabel.h"
 #include "Utils/stb_image.h"
 
-// #include <gli/gli.hpp>
+#include <gli/gli.hpp>
 
 namespace vov {
     Image::Image(Device& device, VkExtent2D size, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage, bool createView, bool createSampler, VkFilter filter)
-    : m_device(device), m_image(VK_NULL_HANDLE), m_allocation(VK_NULL_HANDLE),
-      m_imageView(VK_NULL_HANDLE), m_mipLevels(1), m_format{format} {  // Initialize m_mipLevels here
+        : m_device(device), m_image(VK_NULL_HANDLE), m_allocation(VK_NULL_HANDLE),
+          m_imageView(VK_NULL_HANDLE), m_mipLevels(1), m_format{format} {
+        // Initialize m_mipLevels here
         createImage(size, 1, format, usage, memoryUsage);
         if (createView) {
             createImageView(format);
@@ -29,30 +30,31 @@ namespace vov {
 
     Image::Image(Device& device, const std::string& filename, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage, VkFilter filter)
         : m_device(device), m_image(VK_NULL_HANDLE), m_allocation(VK_NULL_HANDLE), m_imageView(VK_NULL_HANDLE), m_filename{filename}, m_format{format} {
-
         uint8_t* pixels = nullptr;
         VkDeviceSize imageSize{};
         int texWidth, texHeight, texChannels;
         bool usingStb = true;
-        // gli::texture texture;
+        gli::texture texture;
 
         const std::string fileExtension = filename.substr(filename.find_last_of('.') + 1);
         if (fileExtension == "dds") {
-            // texture = gli::load(filename);
-            // if (texture.empty()) {
-            //     std::cerr << "Failed to load DDS texture image!" << std::endl;
-            //     pixels = stbi_load("resources/TextureNotFound.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-            // } else {
-            //     texWidth = static_cast<int>(texture.extent().x);
-            //     texHeight = static_cast<int>(texture.extent().y);
-            //
-            //     pixels = static_cast<uint8_t*>(texture.data());
-            //     format = VK_FORMAT_BC1_RGB_UNORM_BLOCK;
-            //     imageSize = static_cast<VkDeviceSize>(texture.size());
-            //     m_mipLevels = static_cast<uint32_t>(texture.levels());
-            //     m_extent = VkExtent2D{static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight)};
-            //     usingStb = false;
-            // }
+            texture = gli::load(filename);
+            if (texture.empty()) {
+                std::cerr << "Failed to load DDS texture image!" << std::endl;
+                pixels = stbi_load("resources/TextureNotFound.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+            } else {
+                texWidth = static_cast<int>(texture.extent().x);
+                texHeight = static_cast<int>(texture.extent().y);
+
+                pixels = static_cast<uint8_t*>(texture.data());
+                // format = VK_FORMAT_BC1_RGBA_UNORM_BLOCK;
+                format = gliFormatToVkFormat(texture.format());
+                imageSize = static_cast<VkDeviceSize>(texture.size());
+                // m_mipLevels = static_cast<uint32_t>(texture.levels());
+                m_mipLevels = 1;
+                m_extent = VkExtent2D{static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight)};
+                usingStb = false;
+            }
         } else {
             pixels = stbi_load(filename.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
             if (!pixels) {
@@ -80,19 +82,20 @@ namespace vov {
 
         device.TransitionImageLayout(m_image, format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, m_mipLevels);
         device.copyBufferToImage(stagingBuffer.getBuffer(), m_image, texWidth, texHeight);
-        if(usingStb)  {
+        if (usingStb) {
             generateMipmaps(format, texWidth, texHeight);
+        } else {
+            device.TransitionImageLayout(m_image, format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_mipLevels);
         }
-        // device.TransitionImageLayout(m_image, format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, m_mipLevels);
 
         createImageSampler(filter, VK_SAMPLER_ADDRESS_MODE_REPEAT);
 
-        DebugLabel::NameImage(m_image, filename);
+        SetName(filename);
     }
 
     Image::Image(Device& device, VkExtent2D size, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage, VkImage existingImage)
-    : m_device(device), m_image(existingImage), m_allocation(VK_NULL_HANDLE),
-      m_imageView(VK_NULL_HANDLE), m_mipLevels(1), m_extent{size}, m_format(format) {
+        : m_device(device), m_image(existingImage), m_allocation(VK_NULL_HANDLE),
+          m_imageView(VK_NULL_HANDLE), m_mipLevels(1), m_extent{size}, m_format(format) {
         createImageView(format);
         m_isSwapchainImage = true; // Mark this image as a swapchain image
     }
@@ -123,12 +126,10 @@ namespace vov {
         barrier.image = m_image;
 
         barrier.subresourceRange.aspectMask = 0;
-        if (HasDepth())
-        {
+        if (HasDepth()) {
             barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
             if (HasStencil()) barrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
-        }
-        else barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        } else barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 
         barrier.subresourceRange.baseMipLevel = 0;
         barrier.subresourceRange.levelCount = m_mipLevels;
@@ -151,7 +152,7 @@ namespace vov {
     }
 
     void Image::TransitionImageLayout(VkCommandBuffer commandBuffer, VkImageLayout newLayout,
-                                 VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask) {
+                                      VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask) {
         VkImageMemoryBarrier barrier{};
         barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
         barrier.oldLayout = m_imageLayout;
@@ -164,8 +165,7 @@ namespace vov {
         if (HasDepth()) {
             barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
             if (HasStencil()) barrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
-        }
-        else barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        } else barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 
         barrier.subresourceRange.baseMipLevel = 0;
         barrier.subresourceRange.levelCount = m_mipLevels;
@@ -176,8 +176,8 @@ namespace vov {
 
         vkCmdPipelineBarrier(
             commandBuffer,
-            srcStageMask,  // Use provided source stage mask
-            dstStageMask,  // Use provided destination stage mask
+            srcStageMask, // Use provided source stage mask
+            dstStageMask, // Use provided destination stage mask
             0,
             0, nullptr,
             0, nullptr,
@@ -189,6 +189,13 @@ namespace vov {
 
     void Image::SetName(const std::string& name) {
         DebugLabel::SetObjectName(reinterpret_cast<uint64_t>(m_image), VK_OBJECT_TYPE_IMAGE, name.c_str());
+
+        if (m_imageView) {
+            DebugLabel::SetObjectName(reinterpret_cast<uint64_t>(m_imageView->getHandle()), VK_OBJECT_TYPE_IMAGE_VIEW, name + "_view");
+        }
+        if (m_sampler) {
+            DebugLabel::SetObjectName(reinterpret_cast<uint64_t>(m_sampler->getHandle()), VK_OBJECT_TYPE_SAMPLER, name + "_sampler");
+        }
     }
 
     void Image::createImage(VkExtent2D size, uint32_t miplevels, VkFormat format, VkImageUsageFlags usage, VmaMemoryUsage memoryUsage) {
@@ -348,6 +355,40 @@ namespace vov {
                 return VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
             default:
                 return VK_IMAGE_ASPECT_COLOR_BIT;
+        }
+    }
+
+    VkFormat Image::gliFormatToVkFormat(gli::format format) {
+        switch (format) {
+            case gli::FORMAT_R8_UNORM_PACK8:
+                return VK_FORMAT_R8_UNORM;
+            case gli::FORMAT_RG8_UNORM_PACK8:
+                return VK_FORMAT_R8G8_UNORM;
+            case gli::FORMAT_RGBA8_UNORM_PACK8:
+                return VK_FORMAT_R8G8B8A8_UNORM;
+
+            case gli::FORMAT_RGB_DXT1_UNORM_BLOCK8:
+                return VK_FORMAT_BC1_RGB_UNORM_BLOCK;
+            case gli::FORMAT_RGBA_DXT1_UNORM_BLOCK8:
+                return VK_FORMAT_BC1_RGBA_UNORM_BLOCK;
+            case gli::FORMAT_RGBA_DXT3_UNORM_BLOCK16:
+                return VK_FORMAT_BC2_UNORM_BLOCK;
+            case gli::FORMAT_RGBA_DXT5_UNORM_BLOCK16:
+                return VK_FORMAT_BC3_UNORM_BLOCK;
+
+            case gli::FORMAT_R_ATI1N_UNORM_BLOCK8:
+                return VK_FORMAT_BC4_UNORM_BLOCK;
+            case gli::FORMAT_RG_ATI2N_UNORM_BLOCK16:
+                return VK_FORMAT_BC5_UNORM_BLOCK;
+
+            case gli::FORMAT_RGBA16_SFLOAT_PACK16:
+                return VK_FORMAT_R16G16B16A16_SFLOAT;
+            case gli::FORMAT_RGBA32_SFLOAT_PACK32:
+                return VK_FORMAT_R32G32B32A32_SFLOAT;
+
+                // Add more formats as needed
+            default:
+                throw std::runtime_error("Unsupported or unknown GLI format");
         }
     }
 }

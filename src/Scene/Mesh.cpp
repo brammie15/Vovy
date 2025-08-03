@@ -57,23 +57,10 @@ namespace vov {
 
         // std::string texturePath = builder.modelPath + builder.texturePath;
         // std::cout << "Loading texture: " << texturePath << std::endl;
-        loadTexture(builder.textureInfo, builder.descriptorSetLayout, builder.descriptorPool);
+        loadTexture(builder.material, builder.descriptorSetLayout, builder.descriptorPool);
     }
 
-    void Mesh::bind(VkCommandBuffer commandBuffer, VkPipelineLayout pipelineLayout, bool isDepthPass) const {
-        if (!isDepthPass) {
-            vkCmdBindDescriptorSets(
-                commandBuffer,
-                VK_PIPELINE_BIND_POINT_GRAPHICS,
-                pipelineLayout,
-                1,
-                1,
-                &m_descriptorSet,
-                0,
-                nullptr
-            );
-        }
-
+    void Mesh::bind(VkCommandBuffer commandBuffer) const {
         const VkBuffer buffers[] = {m_vertexBuffer->getBuffer()};
         const VkDeviceSize offsets[] = {0};
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, buffers, offsets);
@@ -94,14 +81,12 @@ namespace vov {
     std::unique_ptr<Mesh> Mesh::createModelFromFile(Device& device, const std::string& filepath) {
         Builder builder{};
         throw std::runtime_error("Not implemented yet");
-        // return std::make_unique<VMesh>(device, builder);
     }
 
     void Mesh::createVertexBuffer(const std::vector<Vertex>& vertices) {
         m_vertexCount = static_cast<uint32_t>(vertices.size());
         VkDeviceSize bufferSize = sizeof(vertices[0]) * m_vertexCount;
 
-        // Create staging buffer (CPU-accessible)
         const auto stagingBuffer = std::make_unique<Buffer>(
             m_device, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VMA_MEMORY_USAGE_CPU_ONLY
         );
@@ -115,6 +100,7 @@ namespace vov {
             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
             VMA_MEMORY_USAGE_GPU_ONLY
         );
+        m_vertexBuffer->SetName("Vertex Buffer: " + m_transform.GetName());
 
         m_device.copyBuffer(stagingBuffer.get(), m_vertexBuffer.get(), bufferSize);
     }
@@ -136,11 +122,12 @@ namespace vov {
             VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
             VMA_MEMORY_USAGE_GPU_ONLY
         );
+        m_indexBuffer->SetName("Index Buffer: " + m_transform.GetName());
 
         m_device.copyBuffer(stagingBuffer.get(), m_indexBuffer.get(), bufferSize);
     }
 
-    void Mesh::loadTexture(const TextureInfo& textureInfo, DescriptorSetLayout* descriptorSetLayout, DescriptorPool* descriptorPool) {
+    void Mesh::loadTexture(const Material& textureInfo, DescriptorSetLayout* descriptorSetLayout, DescriptorPool* descriptorPool) {
         m_albedoTexture =   ResourceManager::GetInstance().LoadImage(m_device, textureInfo.basePath + textureInfo.albedoPath, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
         m_normalTexture =   ResourceManager::GetInstance().LoadImage(m_device, textureInfo.basePath + textureInfo.normalPath, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
         m_specularTexture = ResourceManager::GetInstance().LoadImage(m_device, textureInfo.basePath + textureInfo.specularPath, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
@@ -182,6 +169,7 @@ namespace vov {
             VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
             VMA_MEMORY_USAGE_GPU_ONLY
         );
+        m_textureBindingInfoBuffer->SetName("Texture Binding Info Buffer: " + m_transform.GetName());
 
         m_device.copyBuffer(stagingBuffer.get(), m_textureBindingInfoBuffer.get(), sizeof(Mesh::TextureBindingInfo));
 

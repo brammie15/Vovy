@@ -7,14 +7,14 @@
 #include "Utils/DebugLabel.h"
 #include "Utils/ResourceManager.h"
 
-vov::BlitPass::BlitPass(Device& deviceRef, uint32_t framesInFlight, LightingPass& lightingPass, const Swapchain& swapchain): m_device{deviceRef}, m_lightingPass{lightingPass}, m_framesInFlight{framesInFlight} {
+vov::BlitPass::BlitPass(Device& deviceRef, uint32_t framesInFlight, LightingPass& lightingPass, const Swapchain& swapchain): m_device{deviceRef}, m_lightingPass{lightingPass}, m_framesInFlight{framesInFlight}, m_exposureBuffers{deviceRef} {
     m_descriptorPool = DescriptorPool::Builder(m_device)
+            .SetName("BlitPass Descriptor Pool")
             .setMaxSets(framesInFlight * 2)
             .addPoolSize(VK_DESCRIPTOR_TYPE_SAMPLER, framesInFlight * 3)
             .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, framesInFlight * 3)
+            .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, framesInFlight * 3)
             .build();
-
-    DebugLabel::SetObjectName(reinterpret_cast<uint64_t>(m_descriptorPool->GetHandle()), VK_OBJECT_TYPE_DESCRIPTOR_POOL, "BlitPass Descriptor Pool");
 
     m_descriptorSetLayout = DescriptorSetLayout::Builder(m_device)
             .addBinding(0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT) //exposure ubo
@@ -39,6 +39,7 @@ vov::BlitPass::BlitPass(Device& deviceRef, uint32_t framesInFlight, LightingPass
 
     PipelineConfigInfo pipelineConfig{};
     Pipeline::DefaultPipelineConfigInfo(pipelineConfig);
+    pipelineConfig.name = "BlitPass Pipeline";
 
     pipelineConfig.vertexBindingDescriptions = {};
     pipelineConfig.vertexAttributeDescriptions = {};
@@ -61,21 +62,13 @@ vov::BlitPass::BlitPass(Device& deviceRef, uint32_t framesInFlight, LightingPass
     );
 
     m_descriptorSets.resize(framesInFlight);
-    m_exposureBuffers.resize(framesInFlight);
 
     auto dummyImage = ResourceManager::GetInstance().LoadImage(m_device, "resources/Gear.png", VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
 
     for (size_t i{0}; i < m_framesInFlight; i++) {
         m_descriptorPool->allocateDescriptor(m_descriptorSetLayout->getDescriptorSetLayout(), m_descriptorSets[i]);
 
-        m_exposureBuffers[i] = std::make_unique<Buffer>(
-            m_device, sizeof(Camera::CameraSettings),
-            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-            VMA_MEMORY_USAGE_CPU_TO_GPU, true
-        );
-
         auto bufferInfo = m_exposureBuffers[i]->descriptorInfo();
-
 
         VkDescriptorImageInfo dummyInfo{};
         dummyInfo.sampler = lightingPass.GetImage(i).getSampler();
@@ -97,15 +90,13 @@ vov::BlitPass::~BlitPass() {
 void vov::BlitPass::Record(const FrameContext& context, VkCommandBuffer commandBuffer, uint32_t imageIndex, const Swapchain& swapchain) {
     const Image& currentImage = swapchain.GetImage(static_cast<int>(imageIndex));
 
-    Camera::CameraSettings ubo{};
+    UniformBufferData ubo{};
 
-    ubo.apeture = context.camera.GetAperture();
-    ubo.iso = context.camera.GetISO();
-    ubo.shutterSpeed = context.camera.GetShutterSpeed();
+    ubo.camSettings.apeture = context.camera.GetAperture();
+    ubo.camSettings.iso = context.camera.GetISO();
+    ubo.camSettings.shutterSpeed = context.camera.GetShutterSpeed();
 
-    // ubo.exposure = context.camera.GetExposure();
-
-    m_exposureBuffers[imageIndex]->copyTo(&ubo, sizeof(Camera::CameraSettings));
+    m_exposureBuffers.update(imageIndex, ubo);
 
     VkRenderingAttachmentInfo colorAttachment{};
     colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;

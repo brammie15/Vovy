@@ -71,38 +71,42 @@ namespace vov {
 #pragma endregion
 
 #pragma region Mouse Looking
+        static bool wasCursorLockedLastFrame = false;
         static double lastMouseX = 0.0;
         static double lastMouseY = 0.0;
         static bool firstMouse = true;
 
-        if (MyWindow->isCursorLocked()) {
+        bool isLocked = MyWindow->isCursorLocked();
+        if (isLocked) {
             double mouseX, mouseY;
             glfwGetCursorPos(Window::gWindow, &mouseX, &mouseY);
 
-            if (firstMouse) {
+            // Reset mouse reference when locking the cursor (prevents jump)
+            if (!wasCursorLockedLastFrame) {
                 lastMouseX = mouseX;
                 lastMouseY = mouseY;
                 firstMouse = false;
             }
 
-            auto xOffset = static_cast<float>(mouseX - lastMouseX);
-            auto yOffset = static_cast<float>(lastMouseY - mouseY); // Reversed: y goes from bottom to top
+            float xOffset = static_cast<float>(mouseX - lastMouseX);
+            float yOffset = static_cast<float>(lastMouseY - mouseY); // Reversed: y goes up
 
             lastMouseX = mouseX;
             lastMouseY = mouseY;
 
-            constexpr float sensitivity = 0.002f; // Adjust to your liking
+            constexpr float sensitivity = 0.002f;
             xOffset *= sensitivity;
             yOffset *= sensitivity;
 
             totalYaw += xOffset;
             totalPitch += yOffset;
 
-            // Clamp pitch to avoid flipping
             totalPitch = glm::clamp(totalPitch, -glm::half_pi<float>() + 0.01f, glm::half_pi<float>() - 0.01f);
 
             m_frustum.update(m_projectionMatrix * m_viewMatrix);
         }
+
+        wasCursorLockedLastFrame = isLocked;
 #pragma endregion
 
 #pragma region Controller Movement

@@ -25,7 +25,7 @@ namespace vov {
             glm::mat4 lightProjView{};
         };
 
-        struct alignas(16) UniformBuffer{
+        struct alignas(16) UniformBufferData {
             glm::mat4 proj{};
             glm::mat4 view{};
             Camera::CameraSettings camSettings{};
@@ -49,7 +49,6 @@ namespace vov {
         void Resize(VkExtent2D newSize);
 
     private:
-
         Device& m_device;
 
         std::unique_ptr<DescriptorPool> m_descriptorPool{};
@@ -58,9 +57,9 @@ namespace vov {
         std::unique_ptr<DescriptorSetLayout> m_geobufferSamplersSetLayout{};
         std::vector<VkDescriptorSet> m_textureDescriptors{};
 
-        std::vector<std::unique_ptr<Buffer>> m_uniformBuffers{};
         std::vector<VkDescriptorSet> m_descriptorSets{};
         std::unique_ptr<DescriptorSetLayout> m_descriptorSetLayout{};
+        UniformBuffer<UniformBufferData> m_uniformBuffers;
 
         std::vector<std::unique_ptr<Buffer>> m_pointLightBuffers{};
         std::vector<VkDescriptorSet> m_pointLightDescriptorSets{};

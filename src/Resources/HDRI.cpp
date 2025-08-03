@@ -63,15 +63,16 @@ void vov::HDRI::LoadHDR(const std::string& filename) {
     if (vmaCreateImage(m_device.allocator(), &imageInfo, &allocInfo, &m_hdrImage, &m_allocation, nullptr) != VK_SUCCESS) {
         throw std::runtime_error("Failed to create image with VMA!");
     }
+    DebugLabel::NameImage(m_hdrImage, filename);
 
     m_hdrView = std::make_unique<ImageView>(m_device, m_hdrImage, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+    m_hdrView->SetName("HDRI Image View");
 
     m_device.TransitionImageLayout(m_hdrImage, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1);
     m_device.copyBufferToImage(stagingBuffer.getBuffer(), m_hdrImage, width, height);
 
     m_hdrSampler = std::make_unique<Sampler>(m_device, VK_FILTER_LINEAR, VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, 1);
-
-    DebugLabel::NameImage(m_hdrImage, filename);
+    m_hdrSampler->SetName("HDRI Sampler");
 
     m_device.TransitionImageLayout(m_hdrImage, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, 1);
 }
@@ -112,6 +113,7 @@ void vov::HDRI::RenderToCubemap(VkImage inputImage, VkImageView inputView, VkSam
     );
 
     std::unique_ptr<DescriptorPool> descriptorPool = DescriptorPool::Builder(m_device)
+        .SetName("HDRI Descriptor Pool")
         .setMaxSets(1)
         .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1)
         .build();

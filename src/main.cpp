@@ -14,14 +14,6 @@
 
 
 int main() {
-    if (!std::filesystem::exists("resources") || std::filesystem::is_empty("resources")) {
-        std::cerr << "Error: The 'resources' folder does not exist." << std::endl;
-        std::cerr << "Try to rebuild because python failed to download the resources." << std::endl;
-        std::cerr << "Worst case look in \"download resources.py\" and download the resources manually." << std::endl;
-        return EXIT_FAILURE;
-    }
-
-
     VApp app{};
 
     try {

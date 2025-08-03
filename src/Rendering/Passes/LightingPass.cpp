@@ -10,15 +10,18 @@
 #include "Utils/DebugLabel.h"
 #include "Utils/ResourceManager.h"
 
-vov::LightingPass::LightingPass(Device& deviceRef, uint32_t framesInFlight, VkFormat format, VkExtent2D extent, const HDRI* hdri): m_device{deviceRef}, m_framesInFlight{framesInFlight}, m_imageFormat{format} {
+vov::LightingPass::LightingPass(Device& deviceRef, uint32_t framesInFlight, VkFormat format, VkExtent2D extent, const HDRI* hdri): m_device{deviceRef}, m_framesInFlight{framesInFlight}, m_imageFormat{format}, m_uniformBuffers{deviceRef} {
     m_descriptorPool = DescriptorPool::Builder(m_device)
-      .setMaxSets(framesInFlight * 10)
-      .addPoolSize(VK_DESCRIPTOR_TYPE_SAMPLER, framesInFlight *  6)
-      .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, framesInFlight * 3)
-      .addPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, framesInFlight)
-      .build();
+            .setMaxSets(framesInFlight * 10)
+            .addPoolSize(VK_DESCRIPTOR_TYPE_SAMPLER, framesInFlight * 3)
+            .addPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, framesInFlight * 6)
+            .addPoolSize(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, framesInFlight * 2)
+            .addPoolSize(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, framesInFlight * 3)
+            .addPoolSize(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, framesInFlight)
+            .build();
 
     DebugLabel::SetObjectName(reinterpret_cast<uint64_t>(m_descriptorPool->GetHandle()), VK_OBJECT_TYPE_DESCRIPTOR_POOL, "LightingPass Descriptor Pool");
+    m_uniformBuffers.SetName("LightingPass Uniform Buffer");
 
     m_geobufferSamplersSetLayout = DescriptorSetLayout::Builder(m_device)
             .addBinding(0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT) //albedo
@@ -35,30 +38,21 @@ vov::LightingPass::LightingPass(Device& deviceRef, uint32_t framesInFlight, VkFo
             .build();
 
     m_pointLightSetLayout = DescriptorSetLayout::Builder(m_device)
-       .addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
-       .build();
+            .addBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
+            .build();
 
     m_hdriSamplerSetLayout = DescriptorSetLayout::Builder(m_device)
-        .addBinding(0, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT)
-        .addBinding(1, VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-        .addBinding(2, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT)
-        .addBinding(3, VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
-        .build();
+            .addBinding(0, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT)
+            .addBinding(1, VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+            .addBinding(2, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT)
+            .addBinding(3, VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT)
+            .build();
 
-
-    m_uniformBuffers.resize(m_framesInFlight);
-    for (size_t i{0}; i < m_uniformBuffers.size(); i++) {
-        m_uniformBuffers[i] = std::make_unique<Buffer>(
-            m_device, sizeof(UniformBuffer),
-            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-            VMA_MEMORY_USAGE_CPU_TO_GPU, true
-        );
-    }
 
     m_descriptorSets.resize(m_framesInFlight);
     for (size_t i{0}; i < m_framesInFlight; i++) {
         m_descriptorPool->allocateDescriptor(m_descriptorSetLayout->getDescriptorSetLayout(), m_descriptorSets[i]);
-        auto bufferInfo = m_uniformBuffers[i]->descriptorInfo();
+        auto bufferInfo = m_uniformBuffers.getDescriptorBufferInfo(i);
         DescriptorWriter(*m_descriptorSetLayout, *m_descriptorPool)
                 .writeBuffer(0, &bufferInfo)
                 .build(m_descriptorSets[i]);
@@ -78,14 +72,15 @@ vov::LightingPass::LightingPass(Device& deviceRef, uint32_t framesInFlight, VkFo
             VMA_MEMORY_USAGE_CPU_TO_GPU,
             true
         );
+        m_pointLightBuffers[i]->SetName("PointLightBuffer:" + std::to_string(i));
 
         // Allocate descriptor set
         m_descriptorPool->allocateDescriptor(m_pointLightSetLayout->getDescriptorSetLayout(), m_pointLightDescriptorSets[i]);
 
         auto bufferInfo = m_pointLightBuffers[i]->descriptorInfo();
         DescriptorWriter(*m_pointLightSetLayout, *m_descriptorPool)
-            .writeBuffer(0, &bufferInfo)
-            .build(m_pointLightDescriptorSets[i]);
+                .writeBuffer(0, &bufferInfo)
+                .build(m_pointLightDescriptorSets[i]);
     }
 
 
@@ -114,6 +109,7 @@ vov::LightingPass::LightingPass(Device& deviceRef, uint32_t framesInFlight, VkFo
 
     PipelineConfigInfo pipelineConfig{};
     Pipeline::DefaultPipelineConfigInfo(pipelineConfig);
+    pipelineConfig.name = "Lighting Pass Pipeline";
 
     pipelineConfig.vertexBindingDescriptions = {};
     pipelineConfig.vertexAttributeDescriptions = {};
@@ -137,15 +133,13 @@ vov::LightingPass::LightingPass(Device& deviceRef, uint32_t framesInFlight, VkFo
 
     m_textureDescriptors.resize(framesInFlight);
 
-    const auto dummyImage = ResourceManager::GetInstance().LoadImage(m_device, "resources/Gear.png", VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VMA_MEMORY_USAGE_GPU_ONLY);
+    const auto dummyImage = ResourceManager::GetInstance().LoadDummyImage(m_device);
     VkDescriptorImageInfo dummyInfo{};
     dummyInfo.sampler = dummyImage->getSampler();
     dummyInfo.imageView = dummyImage->GetImageView();
     dummyInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
     for (uint32_t i{0}; i < framesInFlight; ++i) {
-
-
         DescriptorWriter writer(*m_geobufferSamplersSetLayout, *m_descriptorPool);
         writer.writeImage(0, &dummyInfo);
         writer.writeImage(1, &dummyInfo);
@@ -168,15 +162,13 @@ vov::LightingPass::LightingPass(Device& deviceRef, uint32_t framesInFlight, VkFo
     // For the sampler
     VkDescriptorImageInfo skyboxSampler{};
     skyboxSampler.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED; // Ignored for SAMPLER
-    skyboxSampler.imageView = VK_NULL_HANDLE;              // Ignored for SAMPLER
+    skyboxSampler.imageView = VK_NULL_HANDLE; // Ignored for SAMPLER
     skyboxSampler.sampler = hdri->GetHDRSampler();
 
     VkDescriptorImageInfo irradianceInfo{};
     irradianceInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     irradianceInfo.imageView = hdri->GetIrradianceView();
     irradianceInfo.sampler = VK_NULL_HANDLE; // Ignored for SAMPLED_IMAGE
-
-
 
 
     DescriptorWriter hdriWriter(*m_hdriSamplerSetLayout, *m_descriptorPool);
@@ -202,7 +194,6 @@ vov::LightingPass::LightingPass(Device& deviceRef, uint32_t framesInFlight, VkFo
         );
         m_renderTargets[index]->SetName("LightTarget:" + std::to_string(index));
     }
-
 }
 
 vov::LightingPass::~LightingPass() {
@@ -213,7 +204,7 @@ void vov::LightingPass::Record(const FrameContext& context, VkCommandBuffer comm
     auto& currentImage = m_renderTargets[imageIndex];
 
     auto cameraPos = glm::vec4(context.camera.m_position, 0);
-    UniformBuffer ubo{};
+    UniformBufferData ubo{};
     ubo.camSettings.cameraPos = cameraPos;
 
     ubo.lightInfo.direction = scene.GetDirectionalLight().GetDirection();
@@ -236,7 +227,7 @@ void vov::LightingPass::Record(const FrameContext& context, VkCommandBuffer comm
 
     ubo.debugViewMode = static_cast<int>(context.debugView);
 
-    m_uniformBuffers[imageIndex]->copyTo(&ubo, sizeof(UniformBuffer));
+    m_uniformBuffers.update(imageIndex, ubo);
 
     if (m_pointLightBuffers[imageIndex]->GetSize() < sizeof(PointLight::PointLightData) * pointLights.size()) {
         m_pointLightBuffers[imageIndex] = std::make_unique<Buffer>(
@@ -250,14 +241,14 @@ void vov::LightingPass::Record(const FrameContext& context, VkCommandBuffer comm
         // Update descriptor
         auto bufferInfo = m_pointLightBuffers[imageIndex]->descriptorInfo();
         DescriptorWriter(*m_pointLightSetLayout, *m_descriptorPool)
-            .writeBuffer(0, &bufferInfo)
-            .overwrite(m_pointLightDescriptorSets[imageIndex]);
+                .writeBuffer(0, &bufferInfo)
+                .overwrite(m_pointLightDescriptorSets[imageIndex]);
     }
 
     if (!pointLights.empty()) {
         std::vector<PointLight::PointLightData> pointLightData;
         pointLightData.reserve(pointLights.size());
-        for (const auto& light : pointLights) {
+        for (const auto& light: pointLights) {
             pointLightData.push_back(light->getPointLightData());
         }
         m_pointLightBuffers[imageIndex]->copyTo(pointLightData.data(), sizeof(PointLight::PointLightData) * pointLights.size());

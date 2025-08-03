@@ -2,6 +2,8 @@
 
 #include <stdexcept>
 
+#include "Utils/DebugLabel.h"
+
 namespace vov {
     DescriptorPool::Builder& DescriptorPool::Builder::addPoolSize(VkDescriptorType descriptorType, uint32_t count) {
         m_poolSizes.push_back({descriptorType, count});
@@ -18,11 +20,16 @@ namespace vov {
         return *this;
     }
 
-    std::unique_ptr<DescriptorPool> DescriptorPool::Builder::build() const {
-        return std::make_unique<DescriptorPool>(m_device, m_maxSets, m_poolFlags, m_poolSizes);
+    DescriptorPool::Builder& DescriptorPool::Builder::SetName(const std::string& name) {
+        m_name = name;
+        return *this;
     }
 
-    DescriptorPool::DescriptorPool(Device& deviceRef, uint32_t maxSets, VkDescriptorPoolCreateFlags poolFlags,
+    std::unique_ptr<DescriptorPool> DescriptorPool::Builder::build() const {
+        return std::make_unique<DescriptorPool>(m_device, m_name, m_maxSets, m_poolFlags, m_poolSizes);
+    }
+
+    DescriptorPool::DescriptorPool(Device& deviceRef, const std::string& name, uint32_t maxSets, VkDescriptorPoolCreateFlags poolFlags,
                                    const std::vector<VkDescriptorPoolSize>& poolSizes): m_device{deviceRef} {
         VkDescriptorPoolCreateInfo descriptorPoolInfo{};
         descriptorPoolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -34,6 +41,12 @@ namespace vov {
         if (vkCreateDescriptorPool(m_device.device(), &descriptorPoolInfo, nullptr, &m_descriptorPool) != VK_SUCCESS) {
             throw std::runtime_error("failed to create descriptor pool!");
         }
+
+        DebugLabel::SetObjectName(
+            reinterpret_cast<uint64_t>(m_descriptorPool),
+            VK_OBJECT_TYPE_DESCRIPTOR_POOL,
+            name.c_str()
+        );
     }
 
     DescriptorPool::~DescriptorPool() {

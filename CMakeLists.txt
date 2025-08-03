@@ -40,6 +40,7 @@ add_executable(${PROJECT_NAME}
         ${SRC_ROOT}/Resources/Image.h ${SRC_ROOT}/Resources/Image.cpp
         ${SRC_ROOT}/Resources/GeoBuffer.h ${SRC_ROOT}/Resources/GeoBuffer.cpp
         ${SRC_ROOT}/Resources/HDRI.h ${SRC_ROOT}/Resources/HDRI.cpp
+        ${SRC_ROOT}/Resources/UniformBuffer.h ${SRC_ROOT}/Resources/UniformBuffer.cpp
 
         ${SRC_ROOT}/Resources/Image/ImageView.h ${SRC_ROOT}/Resources/Image/ImageView.cpp
         ${SRC_ROOT}/Resources/Image/Sampler.h ${SRC_ROOT}/Resources/Image/Sampler.cpp
@@ -105,8 +106,8 @@ LinkVma(${PROJECT_NAME} PUBLIC)
 include(cmake/LinkASSIMP.cmake)
 LinkASSIMP(${PROJECT_NAME} PUBLIC)
 
-#include(cmake/LinkGli.cmake)
-#LinkGli(${PROJECT_NAME} PUBLIC)
+include(cmake/LinkGli.cmake)
+LinkGli(${PROJECT_NAME} PUBLIC)
 
 include(cmake/LinkImgui.cmake)
 LinkImGui(${PROJECT_NAME} PRIVATE)

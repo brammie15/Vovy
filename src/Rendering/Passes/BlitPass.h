@@ -10,7 +10,7 @@ namespace vov {
     class DescriptorSetLayout;
     class Pipeline;
 
-    struct UniformBuffer {
+    struct UniformBufferData {
         Camera::CameraSettings camSettings{};
     };
 
@@ -34,7 +34,7 @@ namespace vov {
 
         std::vector<VkDescriptorSet> m_descriptorSets{};
         std::unique_ptr<DescriptorSetLayout> m_descriptorSetLayout{};
-        std::vector<std::unique_ptr<Buffer>> m_exposureBuffers{};
+        UniformBuffer<UniformBufferData> m_exposureBuffers;
 
         VkPipelineLayout m_pipelineLayout{};
         std::unique_ptr<Pipeline> m_pipeline;

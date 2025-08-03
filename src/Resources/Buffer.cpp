@@ -1,5 +1,7 @@
 #include "Buffer.h"
 
+#include "Utils/DebugLabel.h"
+
 namespace vov {
     Buffer::Buffer(Device& deviceRef, VkDeviceSize size, VkBufferUsageFlags usageFlags, VmaMemoryUsage memoryUsage, bool mappable): m_device{deviceRef} {
         VmaAllocationCreateInfo allocInfo{};
@@ -48,5 +50,12 @@ namespace vov {
 
     void Buffer::flush() const {
         vmaFlushAllocation(m_device.allocator(), m_allocation, 0, VK_WHOLE_SIZE);
+    }
+
+    void Buffer::SetName(const std::string& name) const {
+        DebugLabel::NameBuffer(m_buffer, name);
+        if (m_allocation) {
+            DebugLabel::NameAllocation(m_allocation, name);
+        }
     }
 }

@@ -24,7 +24,6 @@
 #include "Utils/LineManager.h"
 
 VApp::VApp() {
-
     m_sigmaVanniScene = std::make_unique<vov::Scene>("SigmaVanniScene");
     m_sponzaScene = std::make_unique<vov::Scene>("SponzaScene");
     m_vikingRoomScene = std::make_unique<vov::Scene>("VikingRoomScene");
@@ -38,6 +37,7 @@ VApp::VApp() {
     m_scenes.emplace_back(m_bistroScene.get());
     m_scenes.emplace_back(m_flightHelmetScene.get());
     m_scenes.emplace_back(m_chessScene.get());
+
 
     loadGameObjects();
     m_currentScene = m_flightHelmetScene.get();
@@ -133,7 +133,7 @@ void VApp::run() {
             m_currentScene->getGameObjects()[0]->model->RenderBox();
         }
 
-        vov::LineManager::GetInstance().DrawWireSphere(glm::vec3(0,10,0), 5, 32);
+        // vov::LineManager::GetInstance().DrawWireSphere(glm::vec3(0, 10, 0), 5, 32);
 
         m_imguiRenderSystem->endFrame();
 
@@ -174,7 +174,7 @@ void VApp::run() {
             depthImage.TransitionImageLayout(
                 commandBuffer,
                 VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
-            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
                 VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT
             );
 
@@ -222,7 +222,7 @@ void VApp::run() {
 }
 
 void VApp::imGui() {
-   m_appGui->Render(m_avgFps, WIDTH, HEIGHT, m_selectedTransform, m_currentDebugViewMode);
+    m_appGui->Render(m_avgFps, WIDTH, HEIGHT, m_selectedTransform, m_currentDebugViewMode,m_scenes);
 }
 
 void VApp::ResizeScreen(const VkExtent2D newSize) {
@@ -258,7 +258,10 @@ void VApp::loadGameObjects() {
     });
 
     m_bistroScene->setSceneLoadFunction([&] (vov::Scene* scene) {
-        auto bistro = vov::GameObject::LoadModelFromDisk(m_device, "resources/PWP/PWP.gltf");
+        // auto bistro = vov::GameObject::LoadModelFromDisk(m_device, "resources/PWP/PWP.gltf");
+        auto bistro = vov::GameObject::LoadModelFromDisk(m_device, "resources/Bistro_v5_2/BistroExterior.fbx");
+        // auto bistro = vov::GameObject::LoadModelFromDisk(m_device, "resources/testdds.fbx");
+        bistro->transform.SetWorldScale(0.1f, 0.1f, 0.1f);
         scene->addGameObject(std::move(bistro));
     });
 

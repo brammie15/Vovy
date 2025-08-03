@@ -18,7 +18,6 @@ layout(set = 0, binding = 0) uniform LightUbo {
 
 layout(push_constant) uniform PushConstants {
     mat4 model;
-    int objectId;
 } push;
 
 void main() {

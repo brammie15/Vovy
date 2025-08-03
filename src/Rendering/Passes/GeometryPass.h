@@ -2,6 +2,7 @@
 #define GEOMETRYPASS_H
 #include "Core/Device.h"
 #include "Resources/GeoBuffer.h"
+#include "Resources/UniformBuffer.h"
 #include "Scene/Scene.h"
 
 namespace vov {
@@ -14,7 +15,7 @@ namespace vov {
             VkFormat depthFormat{};
         };
 
-        struct alignas(16) UniformBuffer {
+        struct alignas(16) UniformBufferData {
             glm::mat4 view;
             glm::mat4 proj;
         };
@@ -51,7 +52,7 @@ namespace vov {
 
         std::unique_ptr<Pipeline> m_pipeline{};
 
-        std::vector<std::unique_ptr<Buffer>> m_uniformBuffers{};
+        UniformBuffer<UniformBufferData> m_uniformBuffer;
         std::vector<VkDescriptorSet> m_descriptorSets{};
 
         std::unique_ptr<DescriptorSetLayout> m_textureSetLayout{};

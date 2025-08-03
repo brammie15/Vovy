@@ -3,6 +3,8 @@
 
 #include <stdexcept>
 
+#include "Utils/DebugLabel.h"
+
 vov::Sampler::Sampler(Device& device, VkFilter filter, VkSamplerAddressMode addressMode, uint32_t mipLevels)
     : m_device(device) {
     VkSamplerCreateInfo samplerInfo{};
@@ -32,4 +34,8 @@ vov::Sampler::~Sampler() {
     if (m_sampler) {
         vkDestroySampler(m_device.device(), m_sampler, nullptr);
     }
+}
+
+void vov::Sampler::SetName(const std::string& name) const {
+    DebugLabel::SetObjectName(reinterpret_cast<uint64_t>(m_sampler), VK_OBJECT_TYPE_SAMPLER, name);
 }

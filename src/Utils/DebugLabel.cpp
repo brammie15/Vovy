@@ -1,18 +1,18 @@
 #include "DebugLabel.h"
 
-void DebugLabel::Init(VkDevice device) {
+void DebugLabel::Init(vov::Device* device) {
     std::call_once(initFlag, [device]() {
         vkCmdBeginDebugUtilsLabelEXT =
                 reinterpret_cast<PFN_vkCmdBeginDebugUtilsLabelEXT>(
-                    vkGetDeviceProcAddr(device, "vkCmdBeginDebugUtilsLabelEXT"));
+                    vkGetDeviceProcAddr(device->device(), "vkCmdBeginDebugUtilsLabelEXT"));
 
         vkCmdEndDebugUtilsLabelEXT =
                 reinterpret_cast<PFN_vkCmdEndDebugUtilsLabelEXT>(
-                    vkGetDeviceProcAddr(device, "vkCmdEndDebugUtilsLabelEXT"));
+                    vkGetDeviceProcAddr(device->device(), "vkCmdEndDebugUtilsLabelEXT"));
 
         vkSetDebugUtilsObjectNameEXT =
                 reinterpret_cast<PFN_vkSetDebugUtilsObjectNameEXT>(
-                    vkGetDeviceProcAddr(device, "vkSetDebugUtilsObjectNameEXT"));
+                    vkGetDeviceProcAddr(device->device(), "vkSetDebugUtilsObjectNameEXT"));
 
         s_device = device;
     });
@@ -69,7 +69,7 @@ void DebugLabel::SetObjectName(uint64_t objectHandle, VkObjectType objectType, c
             objectHandle,
             name.c_str()
         };
-        vkSetDebugUtilsObjectNameEXT(s_device, &nameInfo);
+        vkSetDebugUtilsObjectNameEXT(s_device->device(), &nameInfo);
     }
 }
 
@@ -83,4 +83,18 @@ void DebugLabel::NameImage(VkImage image, const std::string& name) {
 
 void DebugLabel::NameCommandBuffer(VkCommandBuffer cmdBuffer, const std::string& name) {
     SetObjectName(reinterpret_cast<uint64_t>(cmdBuffer), VK_OBJECT_TYPE_COMMAND_BUFFER, name);
+}
+
+void DebugLabel::NameAllocation(VmaAllocation vma_allocation, const std::string& name) {
+
+    VmaAllocationInfo allocInfo;
+    vmaGetAllocationInfo(s_device->allocator(), vma_allocation, &allocInfo);
+
+    VkDebugUtilsObjectNameInfoEXT nameInfo = {};
+    nameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+    nameInfo.objectType = VK_OBJECT_TYPE_DEVICE_MEMORY; // Memory is the underlying object
+    nameInfo.objectHandle = reinterpret_cast<uint64_t>(allocInfo.deviceMemory);
+    nameInfo.pObjectName = name.c_str();
+
+    vkSetDebugUtilsObjectNameEXT(s_device->device(), &nameInfo);
 }

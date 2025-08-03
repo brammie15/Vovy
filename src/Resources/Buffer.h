@@ -24,6 +24,8 @@ namespace vov {
         [[nodiscard]] size_t GetSize() const { return m_size; }
         [[nodiscard]] bool isMapped() const { return m_data != nullptr; }
 
+        void SetName(const std::string& name) const;
+
     private:
         Device& m_device;
         VkBuffer m_buffer = VK_NULL_HANDLE;

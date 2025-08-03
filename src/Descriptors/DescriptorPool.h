@@ -14,6 +14,7 @@ namespace vov {
             Builder& addPoolSize(VkDescriptorType descriptorType, uint32_t count);
             Builder& setPoolFlags(VkDescriptorPoolCreateFlags flags);
             Builder& setMaxSets(uint32_t count);
+            Builder& SetName(const std::string& name);
             [[nodiscard]] std::unique_ptr<DescriptorPool> build() const;
 
         private:
@@ -21,10 +22,12 @@ namespace vov {
             std::vector<VkDescriptorPoolSize> m_poolSizes{};
             uint32_t m_maxSets = 1000;
             VkDescriptorPoolCreateFlags m_poolFlags = 0;
+            std::string m_name = "DescriptorPool";
         };
 
         DescriptorPool(
             Device& deviceRef,
+            const std::string& name,
             uint32_t maxSets,
             VkDescriptorPoolCreateFlags poolFlags,
             const std::vector<VkDescriptorPoolSize> &poolSizes);

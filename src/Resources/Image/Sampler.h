@@ -9,6 +9,7 @@ namespace vov {
         ~Sampler();
 
         [[nodiscard]] VkSampler getHandle() const { return m_sampler; }
+        void SetName(const std::string& name) const;
 
     private:
         Device& m_device;

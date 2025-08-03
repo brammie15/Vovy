@@ -5,6 +5,7 @@
 #include <unordered_map>
 
 #include "Singleton.h"
+#include "Resources/Buffer.h"
 #include "Resources/Image.h"
 namespace vov {
     class ResourceManager final: public Singleton<ResourceManager> {
@@ -14,9 +15,13 @@ namespace vov {
         void Clear();
         void UnloadImage(Image* image);
 
+        Image* LoadDummyImage(Device& deviceRef);
+
     private:
 
         std::unordered_map<std::string, std::unique_ptr<Image>> m_images;
+
+        std::unique_ptr<Image> m_dummyImage;
 
         ResourceManager() = default;
 

@@ -7,11 +7,13 @@
 #include <string>
 #include <vulkan/vulkan.h>
 
+#include "vk_mem_alloc.h"
+#include "Core/Device.h"
 #include "glm/vec4.hpp"
 
 class DebugLabel {
 public:
-    static void Init(VkDevice device);
+    static void Init(vov::Device* device);
 
     static bool IsAvailable();
 
@@ -41,11 +43,13 @@ public:
 
     static void NameCommandBuffer(VkCommandBuffer cmdBuffer, const std::string& name);
 
+    static void NameAllocation(VmaAllocation vma_allocation, const std::string& name);
+
 private:
     static inline PFN_vkCmdBeginDebugUtilsLabelEXT vkCmdBeginDebugUtilsLabelEXT = nullptr;
     static inline PFN_vkCmdEndDebugUtilsLabelEXT vkCmdEndDebugUtilsLabelEXT = nullptr;
     static inline PFN_vkSetDebugUtilsObjectNameEXT vkSetDebugUtilsObjectNameEXT = nullptr;
-    static inline VkDevice s_device = VK_NULL_HANDLE;
+    static inline vov::Device* s_device;
     static inline std::once_flag initFlag;
 };
 

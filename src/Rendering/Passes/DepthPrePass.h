@@ -6,17 +6,15 @@
 #include <glm/glm.hpp>
 
 #include "Resources/Image.h"
+#include "Resources/UniformBuffer.h"
 #include "Scene/Scene.h"
 #include "Utils/FrameContext.h"
 
 namespace vov {
-    class Pipeline;
-    class DescriptorSetLayout;
-
     class DepthPrePass final {
     public:
 
-        explicit DepthPrePass(Device& deviceRef) : m_device{deviceRef} {}
+        explicit DepthPrePass(Device& deviceRef) : m_device{deviceRef}, m_uniformBuffer{deviceRef} {}
         ~DepthPrePass();
 
         void Init(VkFormat depthFormat, uint32_t framesInFlight);
@@ -24,7 +22,7 @@ namespace vov {
 
         void Resize(VkExtent2D newSize);
 
-        struct alignas(16) UniformBuffer
+        struct alignas(16) UniformBufferData
         {
             glm::mat4 view;
             glm::mat4 proj;
@@ -47,9 +45,9 @@ namespace vov {
 
         std::unique_ptr<Pipeline> m_pipeline;
 
-        std::vector<std::unique_ptr<Buffer>> m_uniformBuffers;
-        std::vector<VkDescriptorSet> m_descriptorSets{};
+        UniformBuffer<UniformBufferData> m_uniformBuffer;
 
+        std::vector<VkDescriptorSet> m_descriptorSets{};
     };
 }
 
